@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { 
@@ -6,13 +6,12 @@ import {
   Activity, 
   User, 
   LogOut, 
-  PlusCircle, 
   Building2, 
   ShieldCheck, 
   Menu, 
   X,
-  Sparkles,
-  Search
+  Search,
+  ChevronRight
 } from 'lucide-react';
 import Badge from './Badge';
 
@@ -21,209 +20,235 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     logout();
+    setMobileMenuOpen(false);
     navigate('/login');
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/#how-it-works') return location.hash === '#how-it-works';
+    if (path === '/') return location.pathname === '/' && !location.hash;
+    return location.pathname === path;
+  };
+
+  const NavLink = ({ to, children, highlighted }) => {
+    const active = isActive(to);
+    
+    if (highlighted) {
+      return (
+        <Link
+          to={to}
+          onClick={() => setMobileMenuOpen(false)}
+          className={`flex items-center space-x-1 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+            active 
+              ? 'bg-rose-100 text-rose-600 border border-rose-200' 
+              : 'text-rose-600 border border-transparent hover:bg-rose-50'
+          }`}
+        >
+          {children}
+        </Link>
+      );
+    }
+    
+    return (
+      <a
+        href={to}
+        onClick={() => setMobileMenuOpen(false)}
+        className={`text-sm font-medium transition-colors hover:text-rose-600 ${
+          active ? 'text-rose-600 font-semibold' : 'text-slate-600'
+        }`}
+      >
+        {children}
+      </a>
+    );
+  };
 
   return (
-    <nav className="sticky top-0 z-50 glass-panel border-b border-slate-800/80 bg-[#0b0f19]/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 flex items-center justify-center shadow-lg shadow-rose-600/30 group-hover:scale-105 transition-transform duration-300">
-              <HeartHandshake className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-rose-400">
-                Life<span className="text-rose-500">Link</span>
-              </span>
-              <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-semibold -mt-1">
-                Smart Donor Network
-              </span>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
-              className={`text-sm font-medium transition-colors hover:text-rose-400 ${
-                isActive('/') ? 'text-rose-400 font-semibold' : 'text-slate-300'
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/find-donors"
-              className={`text-sm font-medium transition-colors hover:text-rose-400 flex items-center space-x-1 ${
-                isActive('/find-donors') ? 'text-rose-400 font-semibold' : 'text-slate-300'
-              }`}
-            >
-              <Search className="w-4 h-4 mr-1" />
-              Find Donors
-            </Link>
-            <Link
-              to="/emergency-request"
-              className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all flex items-center shadow-sm"
-            >
-              <Activity className="w-4 h-4 mr-1 animate-pulse" />
-              Emergency Request
-            </Link>
-
-            {/* Role-Specific Portal Links */}
-            {user && (
-              <>
-                {role === 'donor' && (
-                  <Link
-                    to="/donor/dashboard"
-                    className={`text-sm font-medium transition-colors hover:text-rose-400 ${
-                      isActive('/donor/dashboard') ? 'text-rose-400 font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    Donor Hub
-                  </Link>
-                )}
-                {role === 'recipient' && (
-                  <Link
-                    to="/recipient/dashboard"
-                    className={`text-sm font-medium transition-colors hover:text-rose-400 ${
-                      isActive('/recipient/dashboard') ? 'text-rose-400 font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    Recipient Dashboard
-                  </Link>
-                )}
-                {role === 'hospital' && (
-                  <Link
-                    to="/hospital/dashboard"
-                    className={`text-sm font-medium transition-colors hover:text-rose-400 flex items-center ${
-                      isActive('/hospital/dashboard') ? 'text-rose-400 font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    <Building2 className="w-4 h-4 mr-1 text-sky-400" />
-                    Hospital Portal
-                  </Link>
-                )}
-                {role === 'admin' && (
-                  <Link
-                    to="/admin/dashboard"
-                    className={`text-sm font-medium transition-colors hover:text-amber-400 flex items-center ${
-                      isActive('/admin/dashboard') ? 'text-amber-400 font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    <ShieldCheck className="w-4 h-4 mr-1 text-amber-400" />
-                    Admin Command
-                  </Link>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* User Auth Section */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-rose-900/40 border border-rose-500/40 flex items-center justify-center text-rose-300 font-bold text-xs">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-semibold text-slate-200 leading-tight">{user.name}</div>
-                  <Badge role={user.role} />
-                </div>
-                <button
-                  onClick={handleLogout}
-                  title="Sign Out"
-                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-full transition-colors ml-1"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
+    <>
+      <nav 
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200 py-3' 
+            : 'bg-transparent py-4'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            {/* LEFT: Logo */}
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 flex items-center justify-center shadow-md shadow-rose-600/20 group-hover:scale-105 transition-transform duration-300">
+                <HeartHandshake className="w-6 h-6 text-white" />
               </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="text-sm font-semibold text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 px-4 py-2 rounded-xl shadow-lg shadow-rose-600/25 transition-all transform hover:-translate-y-0.5"
-                >
-                  Register Now
-                </Link>
+              <div className="flex flex-col">
+                <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
+                  Life<span className="text-rose-600">Link</span>
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mt-0.5">
+                  Smart Donor Network
+                </span>
               </div>
-            )}
-          </div>
+            </Link>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-      </div>
+            {/* CENTER: Navigation */}
+            <div className="hidden lg:flex items-center justify-center space-x-8">
+              <NavLink to="/#how-it-works">How It Works</NavLink>
+              <NavLink to="/find-donors">Find Donors</NavLink>
+              
+              {/* Role-Specific Portal Links */}
+              {user && (
+                <>
+                  {role === 'donor' && <NavLink to="/donor/dashboard">Donor Hub</NavLink>}
+                  {role === 'recipient' && <NavLink to="/recipient/dashboard">Dashboard</NavLink>}
+                  {role === 'hospital' && <NavLink to="/hospital/dashboard">Hospital Portal</NavLink>}
+                  {role === 'admin' && <NavLink to="/admin/dashboard">Admin Command</NavLink>}
+                </>
+              )}
+              
+              <NavLink to="/emergency-request" highlighted={true}>
+                <Activity className="w-4 h-4 mr-1.5 animate-pulse" />
+                Emergency Request
+              </NavLink>
+            </div>
 
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0f172a] border-b border-slate-800 px-4 pt-2 pb-6 space-y-3">
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-white font-medium py-2"
-          >
-            Home
-          </Link>
-          <Link
-            to="/find-donors"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-slate-300 hover:text-white font-medium py-2"
-          >
-            Find Donors
-          </Link>
-          <Link
-            to="/emergency-request"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-rose-400 font-semibold py-2"
-          >
-            Emergency Request
-          </Link>
-          {user ? (
-            <div className="pt-4 border-t border-slate-800 space-y-2">
-              <div className="text-sm font-semibold text-slate-200">{user.name} ({user.role})</div>
-              {role === 'donor' && <Link to="/donor/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-300 py-1">Donor Dashboard</Link>}
-              {role === 'recipient' && <Link to="/recipient/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-300 py-1">Recipient Dashboard</Link>}
-              {role === 'hospital' && <Link to="/hospital/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-300 py-1">Hospital Dashboard</Link>}
-              {role === 'admin' && <Link to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-amber-400 py-1">Admin Panel</Link>}
+            {/* RIGHT: Auth */}
+            <div className="hidden lg:flex items-center justify-end space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-3 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 font-bold text-xs">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-left hidden xl:block">
+                    <div className="text-xs font-semibold text-slate-900 leading-tight">{user.name}</div>
+                    <Badge role={user.role} />
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    title="Sign Out"
+                    className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-50 rounded-full transition-colors ml-1"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link
+                    to="/login"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900 px-4 py-2 rounded-full transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 px-5 py-2.5 rounded-full shadow-md shadow-rose-600/20 transition-all transform hover:-translate-y-0.5"
+                  >
+                    Register Now
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="lg:hidden flex items-center">
               <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left text-rose-400 font-medium py-2 flex items-center"
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                <Menu className="w-6 h-6" />
               </button>
             </div>
-          ) : (
-            <div className="pt-4 border-t border-slate-800 flex flex-col space-y-2">
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-center py-2 text-slate-200 bg-slate-800 rounded-lg">Sign In</Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="text-center py-2 text-white bg-rose-600 rounded-lg font-semibold">Register</Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] lg:hidden animate-fadeIn"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Menu Drawer */}
+      <div 
+        className={`fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
+          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <span className="text-lg font-bold text-slate-900">Menu</span>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-6 px-6 space-y-6">
+          <div className="flex flex-col space-y-4">
+            <a href="/#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-base font-medium text-slate-600 hover:text-rose-600 flex items-center justify-between">
+              How It Works <ChevronRight className="w-4 h-4" />
+            </a>
+            <a href="/find-donors" onClick={() => setMobileMenuOpen(false)} className="text-base font-medium text-slate-600 hover:text-rose-600 flex items-center justify-between">
+              Find Donors <ChevronRight className="w-4 h-4" />
+            </a>
+            <Link to="/emergency-request" onClick={() => setMobileMenuOpen(false)} className="text-base font-semibold text-rose-600 bg-rose-50 px-4 py-3 rounded-xl flex items-center justify-between">
+              <span className="flex items-center"><Activity className="w-5 h-5 mr-2" /> Emergency Request</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {user && (
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">Your Portal</span>
+              {role === 'donor' && <Link to="/donor/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 font-medium hover:text-rose-600">Donor Hub</Link>}
+              {role === 'recipient' && <Link to="/recipient/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 font-medium hover:text-rose-600">Recipient Dashboard</Link>}
+              {role === 'hospital' && <Link to="/hospital/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 font-medium hover:text-rose-600">Hospital Dashboard</Link>}
+              {role === 'admin' && <Link to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 font-medium hover:text-rose-600">Admin Panel</Link>}
             </div>
           )}
         </div>
-      )}
-    </nav>
+
+        <div className="p-6 border-t border-slate-100 bg-slate-50">
+          {user ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900">{user.name}</div>
+                  <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-rose-600 bg-white rounded-full shadow-sm">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col space-y-3">
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="w-full py-3 text-center text-white bg-rose-600 rounded-xl font-bold shadow-md">
+                Register Now
+              </Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="w-full py-3 text-center text-slate-700 bg-white border border-slate-200 rounded-xl font-bold hover:bg-slate-50">
+                Sign In
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 

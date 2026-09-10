@@ -44,27 +44,27 @@ const RequestForm = ({ onSubmit, initialValues = {}, loading = false }) => {
       )}
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1">Patient Name</label>
+        <label className="block text-xs font-semibold text-black mb-1">Patient Name</label>
         <div className="relative">
-          <User className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+          <User className="w-4 h-4 absolute left-3 top-3 text-black" />
           <input
             type="text"
             required
             value={patientName}
             onChange={(e) => setPatientName(e.target.value)}
             placeholder="e.g. Robert Vance"
-            className="w-full bg-slate-900/90 text-slate-100 text-sm pl-9 pr-4 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Blood Group Needed</label>
+          <label className="block text-xs font-semibold text-black mb-1">Blood Group Needed</label>
           <select
             value={bloodGroup}
             onChange={(e) => setBloodGroup(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           >
             {ALL_BLOOD_GROUPS.map((bg) => (
               <option key={bg} value={bg}>
@@ -75,7 +75,7 @@ const RequestForm = ({ onSubmit, initialValues = {}, loading = false }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Units Needed</label>
+          <label className="block text-xs font-semibold text-black mb-1">Units Needed</label>
           <input
             type="number"
             min="1"
@@ -83,13 +83,13 @@ const RequestForm = ({ onSubmit, initialValues = {}, loading = false }) => {
             required
             value={unitsNeeded}
             onChange={(e) => setUnitsNeeded(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1">Urgency Level</label>
+        <label className="block text-xs font-semibold text-black mb-1">Urgency Level</label>
         <div className="grid grid-cols-4 gap-2">
           {['low', 'medium', 'high', 'critical'].map((lvl) => (
             <button
@@ -101,7 +101,7 @@ const RequestForm = ({ onSubmit, initialValues = {}, loading = false }) => {
                   ? lvl === 'critical'
                     ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-600/30'
                     : 'bg-rose-500/20 text-rose-400 border-rose-500'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  : 'bg-lightbg text-black border-slate-200 hover:bg-white'
               }`}
             >
               {lvl}
@@ -111,28 +111,28 @@ const RequestForm = ({ onSubmit, initialValues = {}, loading = false }) => {
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1">Hospital / Delivery Address</label>
+        <label className="block text-xs font-semibold text-black mb-1">Hospital / Delivery Address</label>
         <div className="relative">
-          <MapPin className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+          <MapPin className="w-4 h-4 absolute left-3 top-3 text-black" />
           <input
             type="text"
             required
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Hospital name, ward number & city address"
-            className="w-full bg-slate-900/90 text-slate-100 text-sm pl-9 pr-4 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1">Medical Notes (Optional)</label>
+        <label className="block text-xs font-semibold text-black mb-1">Medical Notes (Optional)</label>
         <textarea
           rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any specific medical requirements..."
-          className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none resize-none"
+          className="w-full bg-lightbg/90 text-black text-sm px-3 py-2 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none resize-none"
         ></textarea>
       </div>
 

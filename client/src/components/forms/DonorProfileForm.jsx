@@ -41,11 +41,11 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading = false }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Blood Group</label>
+          <label className="block text-xs font-semibold text-black mb-1">Blood Group</label>
           <select
             value={bloodGroup}
             onChange={(e) => setBloodGroup(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           >
             {ALL_BLOOD_GROUPS.map((bg) => (
               <option key={bg} value={bg}>
@@ -56,25 +56,25 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading = false }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Age (18 - 65)</label>
+          <label className="block text-xs font-semibold text-black mb-1">Age (18 - 65)</label>
           <input
             type="number"
             min="18"
             max="65"
             value={age}
             onChange={(e) => setAge(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Gender</label>
+          <label className="block text-xs font-semibold text-black mb-1">Gender</label>
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value)}
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
@@ -83,37 +83,37 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading = false }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">Contact Phone</label>
+          <label className="block text-xs font-semibold text-black mb-1">Contact Phone</label>
           <input
             type="text"
             value={contactNumber}
             onChange={(e) => setContactNumber(e.target.value)}
             placeholder="+91 9876543210"
-            className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-300 mb-1">Location Address / Area</label>
+        <label className="block text-xs font-semibold text-black mb-1">Location Address / Area</label>
         <input
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="e.g. Connaught Place, New Delhi"
-          className="w-full bg-slate-900/90 text-slate-100 text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+          className="w-full bg-lightbg/90 text-black text-sm px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
         />
       </div>
 
-      <div className="flex items-center space-x-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+      <div className="flex items-center space-x-3 p-3 bg-lightbg/60 rounded-xl border border-slate-200">
         <input
           type="checkbox"
           id="isAvailable"
           checked={isAvailable}
           onChange={(e) => setIsAvailable(e.target.checked)}
-          className="w-4 h-4 text-rose-600 rounded border-slate-700 bg-slate-900 focus:ring-rose-500"
+          className="w-4 h-4 text-rose-600 rounded border-slate-200 bg-lightbg focus:ring-rose-500"
         />
-        <label htmlFor="isAvailable" className="text-xs font-medium text-slate-200 cursor-pointer">
+        <label htmlFor="isAvailable" className="text-xs font-medium text-black cursor-pointer">
           Currently Standby Available for Emergency Blood Donations
         </label>
       </div>

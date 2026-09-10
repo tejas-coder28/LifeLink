@@ -49,18 +49,18 @@ const TrackRequest = () => {
   };
 
   if (loading) return <Loader text="Querying live matching engine & donor pool..." />;
-  if (!request) return <div className="text-center py-12 text-slate-400">Request not found.</div>;
+  if (!request) return <div className="text-center py-12 text-black">Request not found.</div>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Request Header */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-[#151c2e] border border-slate-800 space-y-6">
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-[#151c2e] border border-slate-200 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <Badge bloodGroup={request.bloodGroup} />
             <div>
               <h1 className="text-2xl font-black text-white">{request.patientName}</h1>
-              <p className="text-xs text-slate-400">Request ID: {request._id}</p>
+              <p className="text-xs text-black">Request ID: {request._id}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -70,8 +70,8 @@ const TrackRequest = () => {
         </div>
 
         {/* Lifecycle Steps Indicator */}
-        <div className="pt-4 border-t border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">
+        <div className="pt-4 border-t border-slate-200">
+          <span className="text-xs font-bold text-black uppercase tracking-wider block mb-3">
             Request Lifecycle Status
           </span>
           <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
@@ -81,7 +81,7 @@ const TrackRequest = () => {
                 className={`py-2 rounded-xl border transition-all ${
                   request.status === st
                     ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30'
-                    : 'bg-slate-900/60 text-slate-500 border-slate-800'
+                    : 'bg-lightbg/60 text-black border-slate-200'
                 }`}
               >
                 {st.toUpperCase()}
@@ -90,17 +90,17 @@ const TrackRequest = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 pt-4 border-t border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-black pt-4 border-t border-slate-200">
           <div>
-            <span className="text-slate-500 block">Required Units</span>
+            <span className="text-black block">Required Units</span>
             <span className="font-bold text-white text-sm">{request.unitsNeeded} Unit(s)</span>
           </div>
           <div>
-            <span className="text-slate-500 block">Hospital / Location</span>
+            <span className="text-black block">Hospital / Location</span>
             <span className="font-bold text-white text-sm">{request.address}</span>
           </div>
           <div>
-            <span className="text-slate-500 block">Actions</span>
+            <span className="text-black block">Actions</span>
             {request.status !== 'fulfilled' && (
               <button
                 onClick={() => handleUpdateStatus('fulfilled')}
@@ -122,7 +122,7 @@ const TrackRequest = () => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">Smart Donor Matching Engine</h2>
-              <p className="text-xs text-slate-400">Rule-based scoring: Compatibility + Cooldown + Distance + Health Flags</p>
+              <p className="text-xs text-black">Rule-based scoring: Compatibility + Cooldown + Distance + Health Flags</p>
             </div>
           </div>
           <span className="px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-full text-xs font-extrabold">
@@ -132,16 +132,16 @@ const TrackRequest = () => {
 
         {matches.length === 0 ? (
           <Card hover={false} className="text-center py-12">
-            <p className="text-slate-400 text-sm">No compatible standby donors found within radius.</p>
+            <p className="text-black text-sm">No compatible standby donors found within radius.</p>
           </Card>
         ) : (
           <div className="space-y-4">
             {matches.map((res, index) => (
-              <Card key={index} hover={false} className="border-slate-800 bg-[#151c2e]/90">
+              <Card key={index} hover={false} className="border-slate-200 bg-[#151c2e]/90">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 rounded-2xl bg-rose-600/20 border border-rose-500/40 flex flex-col items-center justify-center text-rose-400 shrink-0">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Rank</span>
+                      <span className="text-[10px] uppercase font-bold text-black">Rank</span>
                       <span className="text-lg font-black leading-none">#{index + 1}</span>
                     </div>
 
@@ -153,7 +153,7 @@ const TrackRequest = () => {
                         <Badge bloodGroup={res.donor?.bloodGroup} />
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-black">
                         <span className="flex items-center text-rose-400 font-semibold">
                           <MapPin className="w-3.5 h-3.5 mr-1" /> {res.distanceKm} km away
                         </span>
@@ -170,7 +170,7 @@ const TrackRequest = () => {
                       {/* Rationale badges */}
                       <div className="flex flex-wrap gap-1 mt-2">
                         {res.rationale.map((r, rIdx) => (
-                          <span key={rIdx} className="px-2 py-0.5 rounded bg-slate-900 text-[10px] font-medium text-slate-300 border border-slate-800">
+                          <span key={rIdx} className="px-2 py-0.5 rounded bg-lightbg text-[10px] font-medium text-black border border-slate-200">
                             {r}
                           </span>
                         ))}
@@ -179,10 +179,10 @@ const TrackRequest = () => {
                   </div>
 
                   {/* Match Score Display */}
-                  <div className="text-right shrink-0 bg-slate-900/80 p-3 rounded-2xl border border-slate-800 min-w-[140px]">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Match Score</span>
+                  <div className="text-right shrink-0 bg-lightbg/80 p-3 rounded-2xl border border-slate-200 min-w-[140px]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-black block">Match Score</span>
                     <span className="text-2xl font-black text-rose-400 block mt-0.5">{res.matchScore}%</span>
-                    <div className="text-[10px] text-slate-500 mt-1">
+                    <div className="text-[10px] text-black mt-1">
                       Compat: {res.breakdown?.compatibilityScore} | Geo: {res.breakdown?.geoScore}
                     </div>
                   </div>

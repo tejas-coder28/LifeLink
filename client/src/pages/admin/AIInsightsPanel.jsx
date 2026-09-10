@@ -50,14 +50,14 @@ const AIInsightsPanel = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-rose-950/60 via-[#151c2e] to-[#151c2e] border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-rose-950/60 via-[#151c2e] to-[#151c2e] border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
           <div className="flex items-center space-x-2 text-rose-400 mb-1">
             <Sparkles className="w-5 h-5 animate-pulse" />
             <span className="text-xs font-bold uppercase tracking-wider">AI Service Layer • Predictive Intelligence</span>
           </div>
           <h1 className="text-3xl font-black text-white">AI Medical Logistics Insights</h1>
-          <p className="text-slate-300 text-sm mt-1">
+          <p className="text-black text-sm mt-1">
             Synthesizes live network demand, rare blood group shortages, and fulfillment telemetry into actionable narrative reports.
           </p>
         </div>
@@ -87,7 +87,7 @@ const AIInsightsPanel = () => {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="e.g. Focus analysis on rare blood group deficit risks for emergency surgical reserves..."
-            className="flex-1 bg-slate-900 text-slate-100 text-sm px-4 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="flex-1 bg-lightbg text-black text-sm px-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           />
           <button
             type="submit"
@@ -104,7 +104,7 @@ const AIInsightsPanel = () => {
         <Loader text="Aggregating database stats & generating narrative insights..." />
       ) : insights.length === 0 ? (
         <Card hover={false} className="text-center py-12">
-          <p className="text-slate-400 text-sm">No insights generated yet. Click above to generate your first AI report.</p>
+          <p className="text-black text-sm">No insights generated yet. Click above to generate your first AI report.</p>
         </Card>
       ) : (
         <div className="space-y-6">

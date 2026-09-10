@@ -39,25 +39,25 @@ const EmergencyRequest = () => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-600/20 text-rose-400 text-xs font-bold uppercase tracking-wider animate-pulse">
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-100 text-rose-600 text-xs font-bold uppercase tracking-wider animate-pulse">
           <Activity className="w-4 h-4" />
           <span>Priority Emergency Portal</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-white">Broadcast Emergency Blood Need</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-3xl font-extrabold text-black">Broadcast Emergency Blood Need</h1>
+        <p className="text-black text-sm">
           Submitting this request immediately triggers the Smart Matching Engine to evaluate nearby standby donors and send high-priority notifications.
         </p>
       </div>
 
       {!user && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-xs flex items-center justify-between">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
+            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600" />
             <span>You need an active recipient or donor account to create a request.</span>
           </div>
           <button
             onClick={() => navigate('/login')}
-            className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-colors"
+            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors"
           >
             Sign In
           </button>
@@ -65,7 +65,7 @@ const EmergencyRequest = () => {
       )}
 
       {successMsg && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-400 text-sm font-semibold flex items-center">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-sm font-semibold flex items-center">
           <ShieldCheck className="w-5 h-5 mr-2 shrink-0" />
           {successMsg}
         </div>

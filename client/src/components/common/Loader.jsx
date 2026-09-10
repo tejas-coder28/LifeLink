@@ -8,7 +8,7 @@ const Loader = ({ text = 'Processing...' }) => {
         <div className="w-12 h-12 rounded-full border-4 border-rose-500/20 border-t-rose-500 animate-spin"></div>
         <Heart className="w-5 h-5 text-rose-500 absolute animate-pulse" />
       </div>
-      {text && <p className="text-sm font-medium text-slate-400 animate-pulse">{text}</p>}
+      {text && <p className="text-sm font-medium text-black animate-pulse">{text}</p>}
     </div>
   );
 };

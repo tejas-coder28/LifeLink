@@ -30,7 +30,7 @@ const DonationHistory = () => {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white">Your Donation Impact History</h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-black text-sm">
           Track your past pledges, completed blood donations, and verified hospital fulfillments.
         </p>
       </div>
@@ -39,7 +39,7 @@ const DonationHistory = () => {
         <Loader text="Loading your donation activity..." />
       ) : history.length === 0 ? (
         <Card hover={false} className="text-center py-12">
-          <p className="text-slate-400 text-sm">You haven't pledged or completed any donations yet.</p>
+          <p className="text-black text-sm">You haven't pledged or completed any donations yet.</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -53,7 +53,7 @@ const DonationHistory = () => {
                   </span>
                   <Badge status={item.status} />
                 </div>
-                <div className="text-xs text-slate-400 space-y-1">
+                <div className="text-xs text-black space-y-1">
                   <div className="flex items-center">
                     <MapPin className="w-3.5 h-3.5 mr-1 text-rose-400" />
                     <span>{item.request?.address || 'Medical Facility'}</span>
@@ -67,7 +67,7 @@ const DonationHistory = () => {
 
               <div className="text-right">
                 <span className="text-sm font-extrabold text-rose-400 block">{item.unitsDonated} Unit(s)</span>
-                <span className="text-[11px] text-slate-500 block">ID: {item._id.slice(-6)}</span>
+                <span className="text-[11px] text-black block">ID: {item._id.slice(-6)}</span>
               </div>
             </Card>
           ))}

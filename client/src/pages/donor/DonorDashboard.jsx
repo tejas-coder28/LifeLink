@@ -78,23 +78,23 @@ const DonorDashboard = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Header Banner */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-rose-950/60 via-[#151c2e] to-[#151c2e] border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-rose-950/60 via-[#151c2e] to-[#151c2e] border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center space-x-3">
             <h1 className="text-3xl font-black text-white">Donor Command Center</h1>
             {profile?.bloodGroup && <Badge bloodGroup={profile.bloodGroup} />}
           </div>
-          <p className="text-slate-300 text-sm">
+          <p className="text-black text-sm">
             Welcome back, <span className="font-semibold text-white">{user?.name}</span>! Ready to answer emergency blood requests.
           </p>
         </div>
 
         {/* Availability Toggle Box */}
         {profile && (
-          <div className="flex items-center space-x-4 bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+          <div className="flex items-center space-x-4 bg-lightbg/90 p-4 rounded-2xl border border-slate-200">
             <div>
-              <span className="text-xs text-slate-400 font-medium block">Standby Availability</span>
-              <span className={`text-sm font-bold ${profile.isAvailable ? 'text-emerald-400' : 'text-slate-400'}`}>
+              <span className="text-xs text-black font-medium block">Standby Availability</span>
+              <span className={`text-sm font-bold ${profile.isAvailable ? 'text-emerald-400' : 'text-black'}`}>
                 {profile.isAvailable ? 'ONLINE (ACTIVE STANDBY)' : 'OFFLINE (INACTIVE)'}
               </span>
             </div>
@@ -103,7 +103,7 @@ const DonorDashboard = () => {
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
                 profile.isAvailable
                   ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                  : 'bg-white hover:bg-slate-700 text-black'
               }`}
             >
               Toggle Status
@@ -122,27 +122,27 @@ const DonorDashboard = () => {
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card hover={false}>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Registered Blood Group</span>
+          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Registered Blood Group</span>
           <span className="text-2xl font-black text-rose-500 block mt-2">{profile?.bloodGroup || 'Not Set'}</span>
         </Card>
 
         <Card hover={false}>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Total Lifesaving Pledges</span>
+          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Total Lifesaving Pledges</span>
           <span className="text-2xl font-black text-white block mt-2">{profile?.totalDonations || 0}</span>
         </Card>
 
         <Card hover={false}>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Last Donation Date</span>
-          <span className="text-base font-bold text-slate-200 block mt-2">
+          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Last Donation Date</span>
+          <span className="text-base font-bold text-black block mt-2">
             {profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None Recorded'}
           </span>
         </Card>
 
         <Card hover={false}>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Quick Links</span>
+          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Quick Links</span>
           <div className="flex space-x-2 mt-2">
             <Link to="/donor/profile" className="text-xs text-rose-400 hover:underline font-semibold">Edit Profile</Link>
-            <span className="text-slate-600">•</span>
+            <span className="text-black">•</span>
             <Link to="/donor/history" className="text-xs text-rose-400 hover:underline font-semibold">Pledge History</Link>
           </div>
         </Card>
@@ -155,14 +155,14 @@ const DonorDashboard = () => {
             <Activity className="w-5 h-5 mr-2 text-rose-500 animate-pulse" />
             Live Emergency Requests
           </h2>
-          <span className="text-xs text-slate-400">Matching nearby hospital & recipient needs</span>
+          <span className="text-xs text-black">Matching nearby hospital & recipient needs</span>
         </div>
 
         {loadingRequests ? (
           <Loader text="Fetching open emergency blood requests..." />
         ) : requests.length === 0 ? (
           <Card hover={false} className="text-center py-12">
-            <p className="text-slate-400 text-sm">No open blood requests currently broadcast.</p>
+            <p className="text-black text-sm">No open blood requests currently broadcast.</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -174,7 +174,7 @@ const DonorDashboard = () => {
                       <Badge bloodGroup={req.bloodGroup} />
                       <div>
                         <h3 className="text-base font-bold text-white">{req.patientName}</h3>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-black">
                           {req.unitsNeeded} unit(s) needed
                         </span>
                       </div>
@@ -182,25 +182,25 @@ const DonorDashboard = () => {
                     <Badge status={req.urgency} />
                   </div>
 
-                  <div className="space-y-2 text-xs text-slate-300 mt-4 border-t border-slate-800 pt-3">
-                    <div className="flex items-center text-slate-400">
+                  <div className="space-y-2 text-xs text-black mt-4 border-t border-slate-200 pt-3">
+                    <div className="flex items-center text-black">
                       <MapPin className="w-4 h-4 mr-2 text-rose-400 shrink-0" />
                       <span>{req.address}</span>
                     </div>
-                    <div className="flex items-center text-slate-400">
+                    <div className="flex items-center text-black">
                       <User className="w-4 h-4 mr-2 text-sky-400 shrink-0" />
                       <span>Requester: {req.requester?.name || 'Emergency Recipient'}</span>
                     </div>
                     {req.notes && (
-                      <p className="text-[11px] text-slate-400 italic bg-slate-900/60 p-2 rounded-lg mt-2">
+                      <p className="text-[11px] text-black italic bg-lightbg/60 p-2 rounded-lg mt-2">
                         "{req.notes}"
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">
+                <div className="mt-5 pt-3 border-t border-slate-200 flex items-center justify-between">
+                  <span className="text-[11px] text-black">
                     Required by: {new Date(req.requiredByDate).toLocaleDateString()}
                   </span>
                   <button

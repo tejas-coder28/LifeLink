@@ -28,7 +28,7 @@ const CreateRequest = () => {
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white">Create Emergency Request</h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-black text-sm">
           Specify patient requirements and address to trigger immediate rule-based donor ranking.
         </p>
       </div>

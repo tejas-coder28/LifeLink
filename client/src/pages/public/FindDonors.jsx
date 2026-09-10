@@ -46,23 +46,23 @@ const FindDonors = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-extrabold text-white">Standby Donor Directory</h1>
-        <p className="text-slate-400 text-sm max-w-xl mx-auto">
+        <h1 className="text-3xl font-extrabold text-black">Standby Donor Directory</h1>
+        <p className="text-black text-sm max-w-xl mx-auto">
           Search registered donors by blood type or filter compatible donors for your recipient blood group.
         </p>
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-[#151c2e]/80 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="glass-panel p-6 rounded-2xl border border-slate-200 bg-white/80 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-2">Filter by Exact Donor Blood Group</label>
+          <label className="block text-xs font-semibold text-black mb-2">Filter by Exact Donor Blood Group</label>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setSelectedBloodGroup('All')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 selectedBloodGroup === 'All'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                  : 'bg-lightbg text-black border border-slate-200 hover:bg-white'
               }`}
             >
               All Types
@@ -74,7 +74,7 @@ const FindDonors = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   selectedBloodGroup === bg
                     ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                    : 'bg-lightbg text-black border border-slate-200 hover:bg-white'
                 }`}
               >
                 {bg}
@@ -84,13 +84,13 @@ const FindDonors = () => {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-2">
+          <label className="block text-xs font-semibold text-black mb-2">
             Find Compatible Donors for Recipient Type:
           </label>
           <select
             value={recipientFilter}
             onChange={(e) => setRecipientFilter(e.target.value)}
-            className="w-full bg-slate-900 text-slate-100 text-sm px-4 py-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"
+            className="w-full bg-lightbg text-black text-sm px-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
           >
             <option value="">No Recipient Filter (Show All Selected)</option>
             {ALL_BLOOD_GROUPS.map((bg) => (
@@ -106,13 +106,13 @@ const FindDonors = () => {
       {loading ? (
         <Loader text="Searching regional donor registry..." />
       ) : error ? (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-center">
+        <div className="p-4 bg-rose-50/80 border border-rose-200 rounded-xl text-rose-600 text-sm flex items-center justify-center">
           <AlertCircle className="w-5 h-5 mr-2" />
           {error}
         </div>
       ) : filteredDonors.length === 0 ? (
-        <div className="text-center py-12 glass-panel rounded-2xl">
-          <p className="text-slate-400 text-sm">No donors found matching the specified filters.</p>
+        <div className="text-center py-12 glass-panel rounded-2xl bg-white shadow-sm border border-slate-200">
+          <p className="text-black text-sm">No donors found matching the specified filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -121,14 +121,14 @@ const FindDonors = () => {
               <div>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-extrabold text-sm">
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 font-extrabold text-sm">
                       {donor.bloodGroup}
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white leading-tight">
+                      <h3 className="text-base font-bold text-black leading-tight">
                         {donor.user?.name || 'Registered Donor'}
                       </h3>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-black">
                         Age {donor.age || 'N/A'} • {donor.gender || 'N/A'}
                       </span>
                     </div>
@@ -136,12 +136,12 @@ const FindDonors = () => {
                   <Badge status={donor.isAvailable ? 'completed' : 'cancelled'} text={donor.isAvailable ? 'AVAILABLE' : 'OFFLINE'} />
                 </div>
 
-                <div className="space-y-2 text-xs text-slate-300 mt-4 border-t border-slate-800/80 pt-3">
-                  <div className="flex items-center text-slate-400">
+                <div className="space-y-2 text-xs text-black mt-4 border-t border-slate-200/80 pt-3">
+                  <div className="flex items-center text-black">
                     <MapPin className="w-4 h-4 mr-2 text-rose-400 shrink-0" />
                     <span>{donor.address || 'Delhi NCR Region'}</span>
                   </div>
-                  <div className="flex items-center text-slate-400">
+                  <div className="flex items-center text-black">
                     <Calendar className="w-4 h-4 mr-2 text-sky-400 shrink-0" />
                     <span>
                       Last Donation:{' '}
@@ -151,7 +151,7 @@ const FindDonors = () => {
                     </span>
                   </div>
                   {donor.contactNumber && (
-                    <div className="flex items-center text-slate-400">
+                    <div className="flex items-center text-black">
                       <Phone className="w-4 h-4 mr-2 text-emerald-400 shrink-0" />
                       <span>{donor.contactNumber}</span>
                     </div>
@@ -159,8 +159,8 @@ const FindDonors = () => {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <span className="text-slate-500">Total Pledges: {donor.totalDonations || 0}</span>
+              <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                <span className="text-black">Total Pledges: {donor.totalDonations || 0}</span>
                 <span className="text-emerald-400 font-semibold flex items-center">
                   <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Verified Donor
                 </span>

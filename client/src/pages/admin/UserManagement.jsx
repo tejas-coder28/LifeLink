@@ -32,15 +32,15 @@ const UserManagement = () => {
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white">Registered User Directory</h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-black text-sm">
           Overview of registered system users across all roles (donors, recipients, hospitals, and admins).
         </p>
       </div>
 
       <Card hover={false}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900/90 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-xs text-black">
+            <thead className="bg-lightbg/90 text-black uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Blood Group</th>
@@ -51,16 +51,16 @@ const UserManagement = () => {
             </thead>
             <tbody className="divide-y divide-slate-800/80">
               {donors.map((item) => (
-                <tr key={item._id} className="hover:bg-slate-800/50 transition-colors">
+                <tr key={item._id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 font-semibold text-white">
                     {item.user?.name || 'Registered User'}
-                    <span className="block text-[10px] text-slate-500">{item.user?.email}</span>
+                    <span className="block text-[10px] text-black">{item.user?.email}</span>
                   </td>
                   <td className="px-4 py-3">
                     <Badge bloodGroup={item.bloodGroup} />
                   </td>
-                  <td className="px-4 py-3 text-slate-400">{item.contactNumber || item.user?.phone || 'N/A'}</td>
-                  <td className="px-4 py-3 text-slate-400">{item.address || 'Delhi NCR Region'}</td>
+                  <td className="px-4 py-3 text-black">{item.contactNumber || item.user?.phone || 'N/A'}</td>
+                  <td className="px-4 py-3 text-black">{item.address || 'Delhi NCR Region'}</td>
                   <td className="px-4 py-3">
                     <Badge status={item.isAvailable ? 'completed' : 'cancelled'} text={item.isAvailable ? 'ACTIVE' : 'INACTIVE'} />
                   </td>

@@ -30,7 +30,7 @@ const DonorProfilePage = () => {
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white">Donor Profile Management</h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-black text-sm">
           Keep your medical blood group, availability status & contact coordinates up to date for emergency matching algorithms.
         </p>
       </div>

@@ -56,7 +56,7 @@ const InventoryManager = () => {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white">Blood Bank Inventory Control</h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-black text-sm">
           Update real-time available blood unit stocks for regional emergency supply queries.
         </p>
       </div>
@@ -73,7 +73,7 @@ const InventoryManager = () => {
           {inventory.map((item) => (
             <div
               key={item.bloodGroup}
-              className="flex items-center justify-between p-3 bg-slate-900/80 rounded-xl border border-slate-800"
+              className="flex items-center justify-between p-3 bg-lightbg/80 rounded-xl border border-slate-200"
             >
               <span className="font-extrabold text-rose-400 text-base">{item.bloodGroup}</span>
               <div className="flex items-center space-x-2">
@@ -82,9 +82,9 @@ const InventoryManager = () => {
                   min="0"
                   value={item.units}
                   onChange={(e) => handleUnitsChange(item.bloodGroup, e.target.value)}
-                  className="w-20 bg-slate-950 text-white text-center font-bold px-3 py-1.5 rounded-lg border border-slate-700 focus:border-sky-500 focus:outline-none"
+                  className="w-20 bg-slate-950 text-white text-center font-bold px-3 py-1.5 rounded-lg border border-slate-200 focus:border-sky-500 focus:outline-none"
                 />
-                <span className="text-xs text-slate-400">units</span>
+                <span className="text-xs text-black">units</span>
               </div>
             </div>
           ))}

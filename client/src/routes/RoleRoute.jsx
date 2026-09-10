@@ -8,7 +8,7 @@ const RoleRoute = ({ allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0b0f19]">
+      <div className="min-h-screen flex items-center justify-center bg-lightbg">
         <Loader text="Verifying permissions..." />
       </div>
     );
