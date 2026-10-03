@@ -65,7 +65,7 @@ const hospitalSchema = new mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: true,
+      default: false, // Admin must approve before hospital can post requests
     },
   },
   {

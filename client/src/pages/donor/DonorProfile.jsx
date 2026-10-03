@@ -1,46 +1,44 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { donorApi } from '../../api/donorApi';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import Card from '../../components/common/Card';
-import { User, CheckCircle2 } from 'lucide-react';
+import { User } from 'lucide-react';
 
 const DonorProfilePage = () => {
   const { profile, setProfile } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
 
   const handleSubmit = async (formData) => {
     setLoading(true);
-    setMsg('');
     try {
       const res = await donorApi.updateProfile(formData);
       if (res.data && res.data.success) {
         setProfile(res.data.data);
-        setMsg('Donor profile updated successfully!');
+        showSuccess('Donor profile updated successfully!');
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update profile');
+      const errMsg = err.response?.data?.errors?.map((e) => e.message).filter(Boolean).join('. ')
+        || err.response?.data?.message
+        || 'Failed to update profile';
+      showError(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6 page-enter">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-extrabold text-white">Donor Profile Management</h1>
-        <p className="text-black text-sm">
+        <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
+          Donor <span className="gradient-text-brand">Profile Management</span>
+        </h1>
+        <p className="text-xs sm:text-sm max-w-md mx-auto text-secondary">
           Keep your medical blood group, availability status & contact coordinates up to date for emergency matching algorithms.
         </p>
       </div>
-
-      {msg && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-400 text-sm font-semibold flex items-center">
-          <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
-          {msg}
-        </div>
-      )}
 
       <Card title="Blood & Location Credentials" icon={User} hover={false}>
         <DonorProfileForm initialData={profile || {}} onSubmit={handleSubmit} loading={loading} />

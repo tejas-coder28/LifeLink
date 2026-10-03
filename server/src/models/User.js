@@ -21,10 +21,15 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
       select: false,
     },
-    role: {
+    accountType: {
       type: String,
-      enum: ['donor', 'recipient', 'hospital', 'admin'],
-      default: 'donor',
+      enum: ['user', 'hospital', 'admin'],
+      default: 'user',
+    },
+    hospitalId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hospital',
+      default: null,
     },
     phone: {
       type: String,

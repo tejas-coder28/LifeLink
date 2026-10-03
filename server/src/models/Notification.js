@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['request_match', 'status_update', 'general'],
+      enum: ['request_match', 'status_update', 'ping_received', 'ping_response', 'general'],
       default: 'general',
     },
     isRead: {

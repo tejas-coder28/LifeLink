@@ -8,7 +8,7 @@ const ProtectedRoute = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-lightbg">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--surface-950)' }}>
         <Loader text="Authenticating session..." />
       </div>
     );

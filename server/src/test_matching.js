@@ -36,7 +36,7 @@ const candidateDonors = [
     healthFlags: ['none'],
   },
   {
-    user: { name: 'Donor 4 (A+, In 56-day Cooldown)' },
+    user: { name: 'Donor 4 (A+, In 90-day Cooldown)' },
     bloodGroup: 'A+',
     location: { coordinates: [77.2100, 28.6150] },
     isAvailable: true,
@@ -55,8 +55,13 @@ ranked.forEach((res, i) => {
   console.log(`   Rationale:`, res.rationale.join('; '));
 });
 
-if (ranked.length === 3 && ranked[0].donor.user.name.includes('Donor 1')) {
-  console.log('✅ Matching Engine Assertion Passed!');
+// Incompatible (B+) and in-cooldown (A+ 20 days ago) donors must be strictly filtered out.
+if (
+  ranked.length === 2 &&
+  ranked[0].donor.user.name.includes('Donor 1') &&
+  ranked[1].donor.user.name.includes('Donor 2')
+) {
+  console.log('✅ Matching Engine Assertion Passed! (Incompatible and in-cooldown donors successfully excluded)');
 } else {
   console.error('❌ Matching Engine Test Failed');
   process.exit(1);

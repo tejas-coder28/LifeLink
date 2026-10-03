@@ -1,8 +1,11 @@
 const { z } = require('zod');
+const { BLOOD_GROUPS } = require('../utils/bloodCompatibility');
 
 const createRequestSchema = z.object({
   patientName: z.string().min(2, 'Patient name is required'),
-  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+  bloodGroup: z.enum(BLOOD_GROUPS, {
+    errorMap: () => ({ message: 'Please select a valid blood group' }),
+  }),
   unitsNeeded: z.number().min(1, 'Units needed must be at least 1'),
   urgency: z.enum(['low', 'medium', 'high', 'critical']).default('high'),
   address: z.string().min(5, 'Delivery address/hospital location is required'),

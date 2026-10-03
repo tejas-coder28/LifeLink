@@ -58,6 +58,10 @@ const donorProfileSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    bloodGroupConfirmed: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

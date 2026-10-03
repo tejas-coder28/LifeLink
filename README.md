@@ -1,102 +1,174 @@
-# LifeLink — Smart Blood Donation & Emergency Donor Management
+# LifeLink: Emergency Blood Donation & Medical Reserve Network 🩸
 
-**LifeLink** is a role-based, full-stack MERN application designed for smart blood donation and emergency donor management. It combines a 2dsphere spatial proximity query engine, red blood cell compatibility matrices, 56-day donor cooldown rules, and a dedicated AI Service Layer for predictive medical logistics telemetry.
+LifeLink is an emergency response web application built with the **MERN stack** (MongoDB, Express, React, Node.js). It bridges standby blood donors, individuals in critical need, and medical facilities through automated 2dsphere geospatial donor matching, real-time inventory management, and role-based workflows.
 
----
-
-## 🔁 The Core Loop
-
-Every feature across auth, dashboards, and hospital management feeds or consumes this single closed loop:
-
-```
-Emergency Request → Smart Donor Matching → Donor Response → Donation Tracking → Analytics → AI Insight
-```
+> ⚠️ **Security note:** The real `server/.env` is never committed. Copy `server/.env.example` to `server/.env` and fill in your own credentials before running locally.
 
 ---
 
-## 🏛️ High-Level Architecture (3-Tier + AI Service Layer)
+## 🚀 Key Features
 
-```
-CLIENT LAYER (React 18 + Vite + Tailwind CSS + Recharts)
-  │
-  ├── REST (JSON, HTTPS)
-  v
-API GATEWAY & DOMAIN SERVICES (Express.js + Node.js)
-  ├── Auth Service (JWT + RBAC)
-  ├── Donor Service (Profile & GeoJSON 2dsphere)
-  ├── Hospital Service (Inventory Management)
-  ├── Request Service (Emergency Lifecycle)
-  ├── Pure Matching Engine (Compatibility + Cooldown + Proximity + Health Scores)
-  ├── Notification Stub (In-App & Console Alerts)
-  ├── Analytics Aggregation (Recharts Data Feed)
-  └── AI Service Layer (/api/ai/* with strict rate limiting & LLM fallback)
-  │
-  v
-DATA LAYER (MongoDB Atlas / In-Memory Mongo Fallback via Mongoose ODM)
-```
+- 📍 **Smart Donor Matching Engine**: Geospatial `2dsphere` query scoring candidate donors based on ABO/Rh RBC compatibility matrix, 90-day donation cooldown eligibility, proximity distance, and health safety flags.
+- ⚡ **Emergency Request Broadcast**: Instant creation of emergency blood requests with live matched donor rankings and automated notification dispatch.
+- 🏥 **Hospital Command Hub**: Medical facilities manage reserve stock, process blood requests, view matched candidate pings, and track donor fulfillments.
+- 👤 **Donor Portal**: Active standby donors manage profile availability, view nearby emergencies, track lifesaving pledge history, and receive notifications.
+- 🛡️ **Role-Based Governance**: Strict JWT authentication with distinct access controls for standard `user` (donor/recipient), verified `hospital`, and system `admin`.
+- 📊 **AI Insights & Analytics**: Administrative dashboard with platform health metrics, emergency response time indicators, and donor conversion insights.
+- 🧪 **Automated Backend Tests**: 148 Jest + Supertest tests using an in-memory MongoDB (MongoMemoryServer) — never touches the real database.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🛠️ Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 18, Vite, TailwindCSS, Lucide Icons, Axios |
+| **Backend** | Node.js, Express.js, JWT, bcryptjs, Zod validation |
+| **Database** | MongoDB Atlas with Mongoose (Geospatial `2dsphere` indexing) |
+| **Testing** | Jest, Supertest, mongodb-memory-server |
+
+---
+
+## 👥 Role Architecture & Account Types
+
+| Role | Registration | Key Privileges |
+|---|---|---|
+| **`user`** (Donor & Recipient) | Public sign-up | Post emergency requests, pledge donations, manage donor profile |
+| **`hospital`** | Public sign-up | Broadcast requests (after admin approval), manage blood inventory |
+| **`admin`** | Seed script only | Approve hospitals, manage users, view AI insights & analytics |
+
+> Admin accounts **cannot** be created via the API — only through `npm run seed`.
+
+---
+
+## 💻 Setup — Getting Started on a New Machine
 
 ### Prerequisites
-- Node.js (v18 or higher recommended)
-- npm or yarn
+- Node.js v18+ and npm
+- A MongoDB Atlas cluster (or leave `MONGODB_URI=memory` to use in-memory dev DB)
 
-### 1. Backend Setup & Demo Seeding
+### 1. Clone the repository
 
 ```bash
+git clone https://github.com/tejas-coder28/LifeLink.git
+cd LifeLink
+```
+
+### 2. Install dependencies
+
+```bash
+# Server
 cd server
 npm install
 
-# Run demo database seeding (uses MongoDB Memory Server if MONGODB_URI is not set)
-npm run seed
-
-# Start API server in dev mode (runs on port 5000)
-npm run dev
+# Client
+cd ../client
+npm install
 ```
 
-### 2. Frontend Setup
+### 3. Configure environment
 
 ```bash
-cd client
-npm install
-
-# Start Vite client dev server (runs on port 5173 with proxy to 5000)
-npm run dev
+# Copy the example file and fill in your values
+cp server/.env.example server/.env
 ```
 
-Access the application in your browser at `http://localhost:5173`.
-
----
-
-## 🔑 Demo Account Credentials
-
-After running `npm run seed` in `server/`, you can log in using any of the following pre-configured demo credentials:
-
-| Role | Email | Password | Description |
-| :--- | :--- | :--- | :--- |
-| **Donor** | `donor1@lifelink.com` | `donor123` | Universal O- Negative standby donor |
-| **Recipient** | `recipient@lifelink.com` | `recipient123` | Emergency request requester |
-| **Hospital** | `hospital@lifelink.com` | `hospital123` | City General Emergency Hospital inventory manager |
-| **Admin** | `admin@lifelink.com` | `admin123` | Superadmin command & AI Insights Panel |
-
----
-
-## ⚙️ Environment Variables
-
-Create `.env` in `server/` (optional for local testing; sensible fallbacks are provided out-of-the-box):
+Edit `server/.env`:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://127.0.0.1:27017/lifelink
-JWT_SECRET=lifelink_secret_jwt_key_2026
-OPENAI_API_KEY=your_openai_api_key_here
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/<dbname>?retryWrites=true&w=majority
+JWT_SECRET=<generate-a-strong-random-secret>
+NODE_ENV=development
 ```
+
+> **Tip:** To run without Atlas during local development, set `MONGODB_URI=memory` — the server will start an in-memory MongoDB automatically.
+
+### 4. Seed demo data & start servers
+
+```bash
+# Terminal 1 — Start the API server (with auto-seed on empty DB)
+cd server
+npm run dev
+
+# Terminal 2 — Start the React frontend
+cd client
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🎯 Verification & Testing
+## 📜 NPM Scripts
 
-- **Pure Matching Engine Unit Test**: Run `node src/test_matching.js` inside `server/` to assert scoring rules.
-- **Frontend Production Build**: Run `npm run build` inside `client/`.
+### Server (`cd server`)
+
+| Command | Description |
+|---|---|
+| `npm start` | Start production server |
+| `npm run dev` | Start dev server with file watching |
+| `npm run seed` | Seed demo users, hospitals, requests |
+| `npm run seed:reset` | Wipe DB and re-seed from scratch |
+| `npm test` | Run all 148 automated tests (uses in-memory DB, safe) |
+
+### Client (`cd client`)
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Build production bundle |
+| `npm run preview` | Preview the production build |
+
+---
+
+## 🔑 Demo Login Credentials
+
+> These credentials are seeded by `npm run seed`. They are for local demo only.
+
+| Role | Email | Password | Access & Privileges |
+|---|---|---|---|
+| **User** | `user@lifelink.com` | `user123` | Standby donor dashboard, pledge donations, update availability & location |
+| **Hospital** | `hospital@lifelink.com` | `hospital123` | Broadcast requests, manage RBC inventory stock, confirm pledges |
+| **Admin** | `admin@lifelink.com` | `admin123` | Approve hospital registrations, view system AI insights & analytics |
+
+---
+
+## 🔐 Security & Environment Variables
+
+- `server/.env` is listed in `.gitignore` and is **never committed to this repository**.
+- Copy `server/.env.example` to `server/.env` and supply your own Atlas URI and JWT secret.
+- The `npm test` command uses `MONGODB_URI=memory` (MongoMemoryServer) — it will **never read your real Atlas URI**.
+
+---
+
+## 🗂️ Project Structure
+
+```
+LifeLink/
+├── client/                  # React + Vite frontend
+│   ├── src/
+│   │   ├── api/             # Axios service modules
+│   │   ├── components/      # Reusable UI components
+│   │   ├── context/         # Auth, Theme, Toast contexts
+│   │   ├── pages/           # Route-level page components
+│   │   └── routes/          # Protected & Role-based route wrappers
+│   └── .env.example
+├── server/                  # Express API backend
+│   ├── src/
+│   │   ├── config/          # MongoDB connection
+│   │   ├── controllers/     # Route handlers
+│   │   ├── middleware/       # Auth, Role, Validate, RateLimit
+│   │   ├── models/          # Mongoose schemas
+│   │   ├── routes/          # Express routers
+│   │   ├── services/        # Business logic layer
+│   │   ├── utils/           # Blood compatibility, geo helpers
+│   │   ├── validations/     # Zod schemas
+│   │   ├── app.js           # Express app factory (no listen — for testing)
+│   │   └── index.js         # Server entry point
+│   ├── tests/               # Jest + Supertest test suites (148 tests)
+│   ├── docs/                # Postman collection
+│   ├── .env.example         # ← Copy this to .env
+│   └── .env                 # ← NOT committed (gitignored)
+└── .gitignore
+```

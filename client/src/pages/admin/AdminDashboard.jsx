@@ -1,129 +1,255 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { analyticsApi } from '../../api/analyticsApi';
+import { donorApi } from '../../api/donorApi';
+import { hospitalApi } from '../../api/hospitalApi';
+import { requestApi } from '../../api/requestApi';
+import { aiApi } from '../../api/aiApi';
+
 import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
-import BloodGroupBarChart from '../../components/charts/BloodGroupBarChart';
-import TrendLineChart from '../../components/charts/TrendLineChart';
-import StatusPie from '../../components/charts/StatusPie';
-import { ShieldCheck, Users, Activity, Heart, Sparkles, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import EmptyState from '../../components/common/EmptyState';
+import StatCard from '../../components/cards/StatCard';
+import UserManagement from './UserManagement';
+import RequestManagement from './RequestManagement';
+import AnalyticsPanel from './AnalyticsPanel';
+import AIInsightsPanel from './AIInsightsPanel';
+
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+  Activity,
+  CheckCircle2,
+  Cpu,
+  BarChart3,
+  FileText,
+  AlertTriangle,
+  Sparkles
+} from 'lucide-react';
 
 const AdminDashboard = () => {
-  const [data, setData] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'overview';
+
+  const [summary, setSummary] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [aiInsights, setAiInsights] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchAdminData = async () => {
+      setLoading(true);
       try {
-        const res = await analyticsApi.getSummary();
-        if (res.data && res.data.success) {
-          setData(res.data.data);
+        const [analyticsRes, aiRes] = await Promise.all([
+          analyticsApi.getSummary(),
+          aiApi.getInsights(),
+        ]);
+
+        if (analyticsRes.data && analyticsRes.data.success) {
+          setSummary(analyticsRes.data.data.summary);
+          setAnalyticsData(analyticsRes.data.data);
+        }
+        if (aiRes.data && aiRes.data.success) {
+          setAiInsights(aiRes.data.data);
         }
       } catch (err) {
-        console.error('Failed to fetch analytics:', err);
+        console.error('Failed to load admin dashboard:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAnalytics();
+    fetchAdminData();
   }, []);
 
-  if (loading) return <Loader text="Compiling network analytics & telemetry..." />;
-
-  const { summary, bloodGroupDistribution, urgencyDistribution, monthlyTrends } = data || {};
+  const setTab = (tabName) => {
+    setSearchParams({ tab: tabName });
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 page-enter">
       {/* Header Banner */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-amber-950/60 via-[#151c2e] to-[#151c2e] border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center space-x-2 text-amber-400 mb-1">
-            <ShieldCheck className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Superadmin Intelligence Command</span>
+      <div className="hero-glass-card relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-rose-600/10 blur-3xl pointer-events-none" />
+        <div className="space-y-2 relative z-10">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
+              Admin <span className="gradient-text-brand">Command Center</span>
+            </h1>
+            <Badge accountType="admin" />
           </div>
-          <h1 className="text-3xl font-black text-white">System Analytics & Executive Overview</h1>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <Link
-            to="/admin/users"
-            className="px-4 py-2.5 rounded-xl glass-panel text-black hover:text-rose-500 border border-slate-200 text-xs font-bold transition-all flex items-center space-x-1"
-          >
-            <Users className="w-4 h-4 mr-1 text-sky-400" />
-            <span>User Management</span>
-          </Link>
-          <Link
-            to="/admin/ai-insights"
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold shadow-lg shadow-rose-600/30 transition-all flex items-center space-x-1"
-          >
-            <Sparkles className="w-4 h-4 mr-1" />
-            <span>AI Insights Panel</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card hover={false} className="bg-lightbg/60">
-          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Registered Donors</span>
-          <span className="text-3xl font-black text-white block mt-1">{summary?.totalDonors || 0}</span>
-          <span className="text-[11px] text-emerald-400 font-semibold block mt-1">
-            {summary?.availableDonors || 0} Active Standby
-          </span>
-        </Card>
-
-        <Card hover={false} className="bg-lightbg/60">
-          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Emergency Requests</span>
-          <span className="text-3xl font-black text-rose-500 block mt-1">{summary?.totalRequests || 0}</span>
-          <span className="text-[11px] text-amber-400 font-semibold block mt-1">
-            {summary?.openRequests || 0} Active Broadcasts
-          </span>
-        </Card>
-
-        <Card hover={false} className="bg-lightbg/60">
-          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Fulfillment Rate</span>
-          <span className="text-3xl font-black text-emerald-400 block mt-1">{summary?.fulfillmentRate || 0}%</span>
-          <span className="text-[11px] text-black block mt-1">Target &gt; 80%</span>
-        </Card>
-
-        <Card hover={false} className="bg-lightbg/60">
-          <span className="text-xs font-semibold text-black uppercase tracking-wider block">Completed Donations</span>
-          <span className="text-3xl font-black text-sky-400 block mt-1">{summary?.totalDonations || 0}</span>
-          <span className="text-[11px] text-black block mt-1">Verified In-Hospital</span>
-        </Card>
-      </div>
-
-      {/* Recharts Analytics Visualization Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card title="Donor Pool vs Demand by Blood Group" icon={Activity} hover={false}>
-          <BloodGroupBarChart data={bloodGroupDistribution} />
-        </Card>
-
-        <Card title="Monthly Donation & Request Trends" icon={TrendingUp} hover={false}>
-          <TrendLineChart data={monthlyTrends} />
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card title="Emergency Request Urgency Distribution" icon={Heart} hover={false} className="lg:col-span-1">
-          <StatusPie data={urgencyDistribution} />
-        </Card>
-
-        {/* Live System Activity Feed */}
-        <Card title="AI Intelligence Summary" icon={Sparkles} hover={false} className="lg:col-span-2">
-          <p className="text-black text-sm leading-relaxed mb-4">
-            LifeLink's dedicated AI Service continuously analyzes regional demand spikes, rare blood group shortages, and fulfillment rates to generate actionable recommendations for network administrators.
+          <p className="text-xs sm:text-sm font-medium text-secondary">
+            Platform governance, hospital verification, emergency blood request oversight, and AI-powered analytics.
           </p>
-          <Link
-            to="/admin/ai-insights"
-            className="inline-flex items-center text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 border border-rose-500/30 px-4 py-2 rounded-xl transition-colors"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Open Full AI Insights Panel
-          </Link>
-        </Card>
+        </div>
       </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex items-center space-x-2 border-b border-theme pb-3 overflow-x-auto">
+        <button
+          onClick={() => setTab('overview')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'overview'
+              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          <span>Overview</span>
+        </button>
+
+        <button
+          onClick={() => setTab('users')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'users'
+              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Donors & Hospitals</span>
+        </button>
+
+        <button
+          onClick={() => setTab('requests')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'requests'
+              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Blood Request Master</span>
+        </button>
+
+        <button
+          onClick={() => setTab('analytics')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'analytics'
+              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Platform Analytics</span>
+        </button>
+
+        <button
+          onClick={() => setTab('ai-insights')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'ai-insights'
+              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>AI Insights ({aiInsights.length})</span>
+        </button>
+      </div>
+
+      {/* TAB 1: OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-8">
+          {/* Summary Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+              title="Total Donors"
+              value={summary?.totalDonors || 0}
+              icon={Users}
+              description={`${summary?.availableDonors || 0} active on standby`}
+              color="rose"
+            />
+            <StatCard
+              title="Total Requests"
+              value={summary?.totalRequests || 0}
+              icon={Activity}
+              description={`${summary?.openRequests || 0} open demands`}
+              color="sky"
+            />
+            <StatCard
+              title="Fulfillment Rate"
+              value={`${summary?.fulfillmentRate || 0}%`}
+              icon={CheckCircle2}
+              description={`${summary?.fulfilledRequests || 0} fulfilled requests`}
+              color="emerald"
+            />
+            <StatCard
+              title="Completed Donations"
+              value={summary?.totalDonations || 0}
+              icon={ShieldCheck}
+              description="Verified hospital records"
+              color="amber"
+            />
+          </div>
+
+          {/* AI Insights Preview Widget */}
+          {aiInsights.length > 0 && (
+            <Card title="Latest Regional AI Insight" icon={Sparkles} hover={false}>
+              <div className="space-y-3">
+                <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">{aiInsights[0].title}</h3>
+                <p className="text-xs leading-relaxed text-secondary">
+                  {aiInsights[0].summary}
+                </p>
+                {aiInsights[0].recommendations && (
+                  <div className="pt-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider block mb-1 text-muted">
+                      System Recommendations:
+                    </span>
+                    <ul className="space-y-1 text-xs font-medium text-secondary">
+                      {aiInsights[0].recommendations.map((rec, i) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-rose-500 mr-2">•</span> {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* User & Request Shortcuts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card title="User & Hospital Operations" icon={Users} hover={false}>
+              <p className="text-xs mb-4 text-secondary">
+                Verify medical facility credentials, suspend accounts, or manage standby donor profiles.
+              </p>
+              <button
+                onClick={() => setTab('users')}
+                className="btn-secondary text-xs px-4 py-2 rounded-xl cursor-pointer"
+              >
+                Open User Management →
+              </button>
+            </Card>
+
+            <Card title="Blood Request Oversight" icon={FileText} hover={false}>
+              <p className="text-xs mb-4 text-secondary">
+                Inspect active, matching, and fulfilled blood requests across all regional medical centers.
+              </p>
+              <button
+                onClick={() => setTab('requests')}
+                className="btn-primary text-xs px-4 py-2 rounded-xl cursor-pointer"
+              >
+                Open Request Master →
+              </button>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: DONORS & HOSPITALS */}
+      {activeTab === 'users' && <UserManagement />}
+
+      {/* TAB 3: BLOOD REQUEST MASTER */}
+      {activeTab === 'requests' && <RequestManagement />}
+
+      {/* TAB 4: PLATFORM ANALYTICS */}
+      {activeTab === 'analytics' && <AnalyticsPanel data={analyticsData} />}
+
+      {/* TAB 5: AI INSIGHTS */}
+      {activeTab === 'ai-insights' && <AIInsightsPanel insights={aiInsights} setInsights={setAiInsights} />}
     </div>
   );
 };

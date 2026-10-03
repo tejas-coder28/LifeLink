@@ -11,20 +11,49 @@ const AIInsight = require('./models/AIInsight');
 
 dotenv.config();
 
-const seedData = async (shouldExit = true) => {
+const seedData = async (options = true) => {
+  let shouldExit = true;
+  let forceReset = false;
+
+  if (typeof options === 'boolean') {
+    shouldExit = options;
+  } else if (typeof options === 'object' && options !== null) {
+    shouldExit = options.shouldExit !== undefined ? options.shouldExit : true;
+    forceReset = Boolean(options.reset);
+  }
+
+  if (process.argv.includes('--reset')) {
+    forceReset = true;
+  }
+
   try {
     if (mongoose.connection.readyState === 0) {
       await connectDB();
     }
 
-    console.log('Clearing existing database collections...');
-    await User.deleteMany({});
-    await DonorProfile.deleteMany({});
-    await Hospital.deleteMany({});
-    await BloodRequest.deleteMany({});
-    await Donation.deleteMany({});
-    await Notification.deleteMany({});
-    await AIInsight.deleteMany({});
+    const existingUsersCount = await User.countDocuments();
+
+    if (existingUsersCount > 0 && !forceReset) {
+      console.log(`Database already has data (${existingUsersCount} user(s) found).`);
+      console.log('Skipping seed to prevent accidental data loss. To wipe and re-seed, run with: npm run seed -- --reset');
+      if (shouldExit) {
+        process.exit(0);
+      }
+      return;
+    }
+
+    if (forceReset) {
+      console.log('Reset flag detected. Clearing existing database collections...');
+      await User.deleteMany({});
+      await DonorProfile.deleteMany({});
+      await Hospital.deleteMany({});
+      await BloodRequest.deleteMany({});
+      await Donation.deleteMany({});
+      await Notification.deleteMany({});
+      await AIInsight.deleteMany({});
+    } else {
+      console.log('Database is empty. Populating initial seed data...');
+    }
 
     console.log('Creating demo users...');
 
@@ -33,7 +62,7 @@ const seedData = async (shouldExit = true) => {
       name: 'System Admin',
       email: 'admin@lifelink.com',
       password: 'admin123',
-      role: 'admin',
+      accountType: 'admin',
       phone: '+91 9876543210',
     });
 
@@ -42,7 +71,7 @@ const seedData = async (shouldExit = true) => {
       name: 'City General Hospital',
       email: 'hospital@lifelink.com',
       password: 'hospital123',
-      role: 'hospital',
+      accountType: 'hospital',
       phone: '+91 1123456789',
     });
 
@@ -69,20 +98,37 @@ const seedData = async (shouldExit = true) => {
       isVerified: true,
     });
 
-    // 3. Create Recipient User
+    hospitalUser.hospitalId = hospital._id;
+    await hospitalUser.save();
+
+    // 3. Create Individual User (Former Recipient)
     const recipientUser = await User.create({
-      name: 'Sarah Connor (Recipient)',
+      name: 'Sarah Connor',
       email: 'recipient@lifelink.com',
       password: 'recipient123',
-      role: 'recipient',
+      accountType: 'user',
       phone: '+91 9988776655',
     });
 
-    // 4. Create Multiple Donors with Geo Coordinates around NCR
+    // Create DonorProfile for Sarah Connor (so she has a profile as an individual)
+    await DonorProfile.create({
+      user: recipientUser._id,
+      bloodGroup: 'O-',
+      location: {
+        type: 'Point',
+        coordinates: [77.2090, 28.6139],
+      },
+      address: 'Delhi NCR Region',
+      isAvailable: true,
+      contactNumber: recipientUser.phone,
+    });
+
+    // 4. Create Multiple Individual Donors with Geo Coordinates around NCR
     const donorUsersData = [
       {
         name: 'Alex Rivera (Universal Donor)',
-        email: 'donor1@lifelink.com',
+        email: 'user@lifelink.com',
+        password: 'user123',
         bloodGroup: 'O-',
         coords: [77.2090, 28.6139], // Connaught Place (1.5 km)
         age: 29,
@@ -93,6 +139,7 @@ const seedData = async (shouldExit = true) => {
       {
         name: 'Priya Sharma',
         email: 'donor2@lifelink.com',
+        password: 'donor123',
         bloodGroup: 'A+',
         coords: [77.2300, 28.6250], // Mandi House (3 km)
         age: 26,
@@ -103,6 +150,7 @@ const seedData = async (shouldExit = true) => {
       {
         name: 'Marcus Vance',
         email: 'donor3@lifelink.com',
+        password: 'donor123',
         bloodGroup: 'B+',
         coords: [77.2500, 28.5500], // Kalkaji (8 km)
         age: 34,
@@ -113,11 +161,12 @@ const seedData = async (shouldExit = true) => {
       {
         name: 'Elena Rostova',
         email: 'donor4@lifelink.com',
+        password: 'donor123',
         bloodGroup: 'O+',
         coords: [77.3000, 28.5800], // Noida sector 15 (14 km)
         age: 31,
         gender: 'female',
-        lastDonation: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // In 56-day cooldown
+        lastDonation: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // In 90-day cooldown
         healthFlags: ['none'],
       },
     ];
@@ -127,8 +176,8 @@ const seedData = async (shouldExit = true) => {
       const u = await User.create({
         name: dData.name,
         email: dData.email,
-        password: 'donor123',
-        role: 'donor',
+        password: dData.password || 'user123',
+        accountType: 'user',
         phone: '+91 9123456780',
       });
 
@@ -234,10 +283,9 @@ const seedData = async (shouldExit = true) => {
     console.log('=======================================================');
     console.log('  ✅ Seed Script Execution Completed Successfully!');
     console.log('  Demo Login Credentials:');
-    console.log('   - Admin:      admin@lifelink.com / admin123');
+    console.log('   - User:       user@lifelink.com / user123');
     console.log('   - Hospital:   hospital@lifelink.com / hospital123');
-    console.log('   - Recipient:  recipient@lifelink.com / recipient123');
-    console.log('   - Donor:      donor1@lifelink.com / donor123');
+    console.log('   - Admin:      admin@lifelink.com / admin123');
     console.log('=======================================================');
 
     if (shouldExit) {

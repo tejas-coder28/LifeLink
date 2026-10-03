@@ -1,15 +1,52 @@
+const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
 const Donation = require('../models/Donation');
 const DonorProfile = require('../models/DonorProfile');
 const BloodRequest = require('../models/BloodRequest');
 const Hospital = require('../models/Hospital');
 const Notification = require('../models/Notification');
 
+const COOLDOWN_DAYS = DONATION_COOLDOWN_DAYS;
+
 const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
   const request = await BloodRequest.findById(requestId);
-  if (!request) throw new Error('Blood request not found');
+  if (!request) {
+    const err = new Error('Blood request not found');
+    err.statusCode = 404;
+    throw err;
+  }
 
   const donorProfile = await DonorProfile.findOne({ user: donorUserId });
+  if (!donorProfile) {
+    const err = new Error('Donor profile not found. Please complete your donor profile first.');
+    err.statusCode = 404;
+    throw err;
+  }
 
+  // 1. Compatibility check: reject with 403 if medically incompatible
+  if (!canDonate(donorProfile.bloodGroup, request.bloodGroup)) {
+    const err = new Error(
+      `Medically incompatible: Blood group ${donorProfile.bloodGroup} cannot donate to a patient needing ${request.bloodGroup}.`
+    );
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // 2. Cooldown check: reject with 403 if inside the 90-day window
+  if (donorProfile.lastDonationDate) {
+    const lastDate = new Date(donorProfile.lastDonationDate);
+    const diffMs = Date.now() - lastDate.getTime();
+    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (daysSince < COOLDOWN_DAYS) {
+      const daysRemaining = COOLDOWN_DAYS - daysSince;
+      const err = new Error(
+        `Donation cooldown active: You must wait 90 days between donations (${daysRemaining} day(s) remaining).`
+      );
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
+  // 3. Duplicate check: reject if duplicate pledge on the same request
   const existingPledge = await Donation.findOne({
     donor: donorUserId,
     request: requestId,
@@ -17,7 +54,9 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
   });
 
   if (existingPledge) {
-    throw new Error('You have already pledged or completed a donation for this request');
+    const err = new Error('You have already pledged or completed a donation for this request');
+    err.statusCode = 400;
+    throw err;
   }
 
   const donation = await Donation.create({
@@ -49,6 +88,9 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
 const completeDonation = async (donationId) => {
   const donation = await Donation.findById(donationId);
   if (!donation) throw new Error('Donation record not found');
+  if (donation.status === 'completed') {
+    throw new Error('Donation has already been completed');
+  }
 
   donation.status = 'completed';
   donation.donationDate = new Date();
@@ -86,6 +128,12 @@ const completeDonation = async (donationId) => {
   return await donation.populate(['donor', 'request']);
 };
 
+const getDonationsByRequest = async (requestId) => {
+  return await Donation.find({ request: requestId })
+    .populate('donor', 'name email phone')
+    .sort({ createdAt: -1 });
+};
+
 const getUserDonationHistory = async (userId) => {
   return await Donation.find({ donor: userId })
     .populate({
@@ -105,6 +153,7 @@ const getAllDonations = async () => {
 module.exports = {
   pledgeDonation,
   completeDonation,
+  getDonationsByRequest,
   getUserDonationHistory,
   getAllDonations,
 };

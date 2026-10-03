@@ -10,8 +10,9 @@ const validate = (schema) => {
         field: err.path.join('.'),
         message: err.message
       })) : [{ message: error.message }];
-      
-      return sendError(res, 'Validation failed', 400, formattedErrors);
+
+      const summaryMsg = formattedErrors.map(e => e.message).filter(Boolean).join('. ') || 'Validation failed';
+      return sendError(res, summaryMsg, 400, formattedErrors);
     }
   };
 };

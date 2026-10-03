@@ -7,7 +7,7 @@ const pledge = async (req, res) => {
     const donation = await donationService.pledgeDonation(req.user._id, requestId, unitsDonated);
     return sendSuccess(res, 'Donation pledged successfully! Thank you.', donation, 201);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
@@ -15,6 +15,15 @@ const complete = async (req, res) => {
   try {
     const donation = await donationService.completeDonation(req.params.id);
     return sendSuccess(res, 'Donation marked as completed', donation);
+  } catch (error) {
+    return sendError(res, error.message, 400);
+  }
+};
+
+const getByRequest = async (req, res) => {
+  try {
+    const donations = await donationService.getDonationsByRequest(req.params.requestId);
+    return sendSuccess(res, 'Donations for request retrieved', donations);
   } catch (error) {
     return sendError(res, error.message, 400);
   }
@@ -41,6 +50,7 @@ const getAll = async (req, res) => {
 module.exports = {
   pledge,
   complete,
+  getByRequest,
   getMyHistory,
   getAll,
 };

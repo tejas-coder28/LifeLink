@@ -57,6 +57,19 @@ const updateStatus = async (req, res) => {
   }
 };
 
+// Admin: delete a blood request (fake/spam removal)
+// DELETE /api/requests/:id
+const deleteRequest = async (req, res) => {
+  try {
+    const BloodRequest = require('../models/BloodRequest');
+    const deleted = await BloodRequest.findByIdAndDelete(req.params.id);
+    if (!deleted) return sendError(res, 'Blood request not found', 404);
+    return sendSuccess(res, 'Blood request deleted successfully');
+  } catch (error) {
+    return sendError(res, error.message, 400);
+  }
+};
+
 module.exports = {
   createRequest,
   getRequests,
@@ -64,5 +77,5 @@ module.exports = {
   getRequestById,
   getMatches,
   updateStatus,
+  deleteRequest,
 };
-

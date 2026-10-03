@@ -28,8 +28,37 @@ const getAllHospitals = async (req, res) => {
   }
 };
 
+// Admin: approve or reject a hospital
+// PATCH /api/hospitals/:id/verify   body: { isVerified: true|false }
+const verifyHospital = async (req, res) => {
+  try {
+    const { isVerified } = req.body;
+    if (typeof isVerified !== 'boolean') {
+      return sendError(res, 'isVerified must be a boolean', 400);
+    }
+    const hospital = await hospitalService.setHospitalVerification(req.params.id, isVerified);
+    const msg = isVerified ? 'Hospital approved and verified' : 'Hospital verification revoked';
+    return sendSuccess(res, msg, hospital);
+  } catch (error) {
+    return sendError(res, error.message, 404);
+  }
+};
+
+// Admin: delete a hospital record
+// DELETE /api/hospitals/:id
+const deleteHospitalAdmin = async (req, res) => {
+  try {
+    await hospitalService.deleteHospital(req.params.id);
+    return sendSuccess(res, 'Hospital record deleted');
+  } catch (error) {
+    return sendError(res, error.message, 404);
+  }
+};
+
 module.exports = {
   getProfile,
   updateInventory,
   getAllHospitals,
+  verifyHospital,
+  deleteHospitalAdmin,
 };

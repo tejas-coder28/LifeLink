@@ -1,14 +1,31 @@
 import React from 'react';
-import { Heart } from 'lucide-react';
 
-const Loader = ({ text = 'Processing...' }) => {
+const Loader = ({ text = 'Loading...' }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-8 space-y-4">
-      <div className="relative flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-rose-500/20 border-t-rose-500 animate-spin"></div>
-        <Heart className="w-5 h-5 text-rose-500 absolute animate-pulse" />
+    <div className="py-16 flex flex-col items-center justify-center space-y-4">
+      {/* Spinning ring with brand glow */}
+      <div className="relative w-12 h-12">
+        <div
+          className="absolute inset-0 rounded-full animate-spin"
+          style={{
+            border: '2px solid rgba(220,38,38,0.15)',
+            borderTop: '2px solid #DC2626',
+            boxShadow: '0 0 16px rgba(220,38,38,0.35)',
+          }}
+        />
+        <div
+          className="absolute inset-2 rounded-full"
+          style={{ background: 'rgba(220,38,38,0.08)' }}
+        />
       </div>
-      {text && <p className="text-sm font-medium text-black animate-pulse">{text}</p>}
+      {text && (
+        <p
+          className="text-xs font-semibold animate-pulse"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {text}
+        </p>
+      )}
     </div>
   );
 };

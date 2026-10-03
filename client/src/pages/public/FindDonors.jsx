@@ -1,171 +1,223 @@
 import React, { useState, useEffect } from 'react';
 import { donorApi } from '../../api/donorApi';
-import { ALL_BLOOD_GROUPS, getCompatibleDonorGroups } from '../../utils/bloodCompatibility';
-import { Search, MapPin, User, CheckCircle2, AlertCircle, Phone, Calendar } from 'lucide-react';
-import Card from '../../components/common/Card';
+import { hospitalApi } from '../../api/hospitalApi';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import EmptyState from '../../components/common/EmptyState';
+import DonorCard from '../../components/cards/DonorCard';
+import { Search, MapPin, Phone, Building2, User, ShieldCheck } from 'lucide-react';
+
+const BLOOD_GROUPS = ['ALL', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const FindDonors = () => {
-  const [selectedBloodGroup, setSelectedBloodGroup] = useState('All');
-  const [recipientFilter, setRecipientFilter] = useState('');
-  const [donors, setDonors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchDonors = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = {};
-      if (selectedBloodGroup !== 'All') {
-        params.bloodGroup = selectedBloodGroup;
-      }
-      const res = await donorApi.searchDonors(params);
-      if (res.data && res.data.success) {
-        setDonors(res.data.data);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to search donors');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [tab, setTab]               = useState('donors');
+  const [bloodGroup, setBloodGroup] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [donors, setDonors]         = useState([]);
+  const [hospitals, setHospitals]   = useState([]);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
-    fetchDonors();
-  }, [selectedBloodGroup]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        if (tab === 'donors') {
+          const res = await donorApi.searchDonors({ bloodGroup: bloodGroup === 'ALL' ? undefined : bloodGroup, availableOnly: true });
+          if (res.data?.success) setDonors(res.data.data);
+        } else {
+          const res = await hospitalApi.getAllHospitals();
+          if (res.data?.success) setHospitals(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch search data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [tab, bloodGroup]);
 
-  // Filter based on recipient compatibility filter if selected
   const filteredDonors = donors.filter((d) => {
-    if (!recipientFilter) return true;
-    const compatibleGroups = getCompatibleDonorGroups(recipientFilter);
-    return compatibleGroups.includes(d.bloodGroup);
+    const q = searchQuery.toLowerCase();
+    return (d.user?.name || '').toLowerCase().includes(q) || (d.address || '').toLowerCase().includes(q);
+  });
+
+  const filteredHospitals = hospitals.filter((h) => {
+    const q = searchQuery.toLowerCase();
+    return (h.name || '').toLowerCase().includes(q) || (h.address || '').toLowerCase().includes(q);
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-extrabold text-black">Standby Donor Directory</h1>
-        <p className="text-black text-sm max-w-xl mx-auto">
-          Search registered donors by blood type or filter compatible donors for your recipient blood group.
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 page-enter">
+      {/* Header */}
+      <div className="text-center space-y-3 max-w-2xl mx-auto">
+        <div className="section-label mx-auto w-fit">
+          <Search className="w-3.5 h-3.5" />
+          <span>Verified Regional Directory</span>
+        </div>
+        <h1 className="text-3xl font-black text-primary tracking-tight font-heading">
+          Find Donors &amp; Hospitals
+        </h1>
+        <p className="text-sm text-secondary">
+          Search standby registered blood donors, blood bank inventory levels, and verified medical facilities.
         </p>
       </div>
 
-      {/* Filter Bar */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 bg-white/80 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-xs font-semibold text-black mb-2">Filter by Exact Donor Blood Group</label>
-          <div className="flex flex-wrap gap-2">
+      {/* Filter & Search Bar */}
+      <div className="glass-card p-5 space-y-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Tab Switch */}
+          <div className="tab-list w-full md:w-auto">
             <button
-              onClick={() => setSelectedBloodGroup('All')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                selectedBloodGroup === 'All'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                  : 'bg-lightbg text-black border border-slate-200 hover:bg-white'
-              }`}
+              onClick={() => setTab('donors')}
+              className={`tab-item flex-1 md:flex-initial ${tab === 'donors' ? 'active' : ''}`}
             >
-              All Types
+              <User className="w-3.5 h-3.5" />
+              Standby Donors ({donors.length})
             </button>
-            {ALL_BLOOD_GROUPS.map((bg) => (
+            <button
+              onClick={() => setTab('hospitals')}
+              className={`tab-item flex-1 md:flex-initial ${tab === 'hospitals' ? 'active' : ''}`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Hospitals &amp; Camps ({hospitals.length})
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 absolute left-3.5 top-3 pointer-events-none text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={tab === 'donors' ? 'Search donor name or city...' : 'Search hospital name or address...'}
+              className="glass-input w-full pl-10 text-xs px-3.5 py-2.5 text-primary"
+            />
+          </div>
+        </div>
+
+        {/* Blood Group Filter */}
+        {tab === 'donors' && (
+          <div className="flex items-center space-x-2 overflow-x-auto pt-3 border-t border-theme">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider shrink-0 mr-1 text-muted">
+              Blood Group:
+            </span>
+            {BLOOD_GROUPS.map((bg) => (
               <button
                 key={bg}
-                onClick={() => setSelectedBloodGroup(bg)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  selectedBloodGroup === bg
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                    : 'bg-lightbg text-black border border-slate-200 hover:bg-white'
+                onClick={() => setBloodGroup(bg)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all border cursor-pointer ${
+                  bloodGroup === bg
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
+                    : 'glass-card text-secondary border-theme hover:border-slate-400'
                 }`}
               >
                 {bg}
               </button>
             ))}
           </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-black mb-2">
-            Find Compatible Donors for Recipient Type:
-          </label>
-          <select
-            value={recipientFilter}
-            onChange={(e) => setRecipientFilter(e.target.value)}
-            className="w-full bg-lightbg text-black text-sm px-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none"
-          >
-            <option value="">No Recipient Filter (Show All Selected)</option>
-            {ALL_BLOOD_GROUPS.map((bg) => (
-              <option key={bg} value={bg}>
-                Recipient {bg} (Compatible Donors Only)
-              </option>
-            ))}
-          </select>
-        </div>
+        )}
       </div>
 
-      {/* Donors List */}
+      {/* Results */}
       {loading ? (
-        <Loader text="Searching regional donor registry..." />
-      ) : error ? (
-        <div className="p-4 bg-rose-50/80 border border-rose-200 rounded-xl text-rose-600 text-sm flex items-center justify-center">
-          <AlertCircle className="w-5 h-5 mr-2" />
-          {error}
-        </div>
-      ) : filteredDonors.length === 0 ? (
-        <div className="text-center py-12 glass-panel rounded-2xl bg-white shadow-sm border border-slate-200">
-          <p className="text-black text-sm">No donors found matching the specified filters.</p>
-        </div>
+        <Loader text={`Loading ${tab === 'donors' ? 'standby donors' : 'medical facilities'}...`} />
+      ) : tab === 'donors' ? (
+        filteredDonors.length === 0 ? (
+          <EmptyState icon={User} title="No Standby Donors Found"
+            description="No active donors match your filter criteria. Try selecting another blood group or clearing your search." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDonors.map((item) => (
+              <DonorCard key={item._id} donor={item} searchedBloodGroup={bloodGroup} />
+            ))}
+          </div>
+        )
+      ) : filteredHospitals.length === 0 ? (
+        <EmptyState icon={Building2} title="No Hospitals Found"
+          description="No registered medical centers match your search criteria." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDonors.map((donor) => (
-            <Card key={donor._id} className="flex flex-col justify-between">
-              <div>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 font-extrabold text-sm">
-                      {donor.bloodGroup}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredHospitals.map((hosp) => (
+            <div
+              key={hosp._id}
+              className="glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border border-theme transition-all duration-200"
+            >
+              {/* Header with p-5 sm:p-6 */}
+              <div className="p-5 sm:p-6 pb-4 sm:pb-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25"
+                    >
+                      <Building2 className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h3 className="text-base font-bold text-black leading-tight">
-                        {donor.user?.name || 'Registered Donor'}
+                    <div className="min-w-0">
+                      <h3 className="text-base font-extrabold text-primary font-heading truncate">
+                        {hosp.name}
                       </h3>
-                      <span className="text-xs text-black">
-                        Age {donor.age || 'N/A'} • {donor.gender || 'N/A'}
+                      <span className="text-xs text-muted block truncate">
+                        {hosp.licenseNumber || 'Verified Medical Facility'}
                       </span>
                     </div>
                   </div>
-                  <Badge status={donor.isAvailable ? 'completed' : 'cancelled'} text={donor.isAvailable ? 'AVAILABLE' : 'OFFLINE'} />
+                  <Badge status={hosp.isVerified ? 'verified' : 'pending'} text={hosp.isVerified ? 'VERIFIED' : 'PENDING'} />
                 </div>
+              </div>
 
-                <div className="space-y-2 text-xs text-black mt-4 border-t border-slate-200/80 pt-3">
-                  <div className="flex items-center text-black">
-                    <MapPin className="w-4 h-4 mr-2 text-rose-400 shrink-0" />
-                    <span>{donor.address || 'Delhi NCR Region'}</span>
+              {/* Full Width Divider */}
+              <div className="w-full border-t border-theme" />
+
+              {/* Details with p-5 sm:p-6 */}
+              <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-2.5 text-xs text-secondary">
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span className="truncate">{hosp.address || 'Medical Facility Address'}</span>
+                </div>
+                {hosp.phone && (
+                  <div className="flex items-center gap-2.5 font-bold text-teal-600 dark:text-teal-400">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span>{hosp.phone}</span>
                   </div>
-                  <div className="flex items-center text-black">
-                    <Calendar className="w-4 h-4 mr-2 text-sky-400 shrink-0" />
-                    <span>
-                      Last Donation:{' '}
-                      {donor.lastDonationDate
-                        ? new Date(donor.lastDonationDate).toLocaleDateString()
-                        : 'No prior recorded donation'}
+                )}
+
+                {/* Inventory pills */}
+                {hosp.inventory?.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider block mb-2 text-muted">
+                      Reserve Inventory Stock:
                     </span>
-                  </div>
-                  {donor.contactNumber && (
-                    <div className="flex items-center text-black">
-                      <Phone className="w-4 h-4 mr-2 text-emerald-400 shrink-0" />
-                      <span>{donor.contactNumber}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hosp.inventory.map((inv) => (
+                        <span
+                          key={inv.bloodGroup}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-surface border border-theme text-secondary"
+                        >
+                          {inv.bloodGroup}: <span className="text-rose-600 dark:text-rose-400 font-black">{inv.units}</span>u
+                        </span>
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
-                <span className="text-black">Total Pledges: {donor.totalDonations || 0}</span>
-                <span className="text-emerald-400 font-semibold flex items-center">
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Verified Donor
-                </span>
-              </div>
-            </Card>
+              {/* Full Width Divider and Footer */}
+              {hosp.phone && (
+                <>
+                  <div className="w-full border-t border-theme" />
+                  <div className="p-5 sm:p-6 pt-4 sm:pt-5">
+                    <a
+                      href={`tel:${hosp.phone}`}
+                      className="btn-secondary w-full py-2 text-xs rounded-xl justify-center font-bold flex items-center gap-1.5"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                      <span>Contact Facility Desk</span>
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
           ))}
         </div>
       )}

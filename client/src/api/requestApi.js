@@ -9,5 +9,6 @@ export const requestApi = {
   updateStatus: (id, status) => axiosClient.patch(`/requests/${id}/status`, { status }),
   pledgeDonation: (data) => axiosClient.post('/donations/pledge', data),
   completeDonation: (id) => axiosClient.patch(`/donations/${id}/complete`, {}),
+  getDonationsByRequest: (id) => axiosClient.get(`/donations/request/${id}`),
   getDonationHistory: () => axiosClient.get('/donations/history'),
 };

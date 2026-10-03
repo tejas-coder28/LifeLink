@@ -1,15 +1,18 @@
 const { sendError } = require('../utils/responseHandler');
 
-const authorize = (...roles) => {
+const authorize = (...allowedTypes) => {
   return (req, res, next) => {
     if (!req.user) {
       return sendError(res, 'Not authenticated', 401);
     }
 
-    if (!roles.includes(req.user.role)) {
+    const type = req.user.accountType || req.user.role;
+    const normalizedType = (type === 'donor' || type === 'recipient' || type === 'individual') ? 'user' : type;
+
+    if (!allowedTypes.includes(normalizedType) && !allowedTypes.includes(type)) {
       return sendError(
         res,
-        `User role '${req.user.role}' is not authorized to access this route`,
+        `Account type '${normalizedType}' is not authorized to access this route`,
         403
       );
     }
@@ -18,4 +21,21 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authorize };
+const verifyHospitalOwnership = (req, res, next) => {
+  if (!req.user) {
+    return sendError(res, 'Not authenticated', 401);
+  }
+
+  const accountType = req.user.accountType || req.user.role;
+  if (accountType === 'admin') {
+    return next();
+  }
+
+  if (req.params.hospitalId && req.user.hospitalId && req.user.hospitalId.toString() !== req.params.hospitalId) {
+    return sendError(res, 'Not authorized for this hospital resource', 403);
+  }
+
+  next();
+};
+
+module.exports = { authorize, verifyHospitalOwnership };

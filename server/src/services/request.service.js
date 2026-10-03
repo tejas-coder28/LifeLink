@@ -1,4 +1,6 @@
 const BloodRequest = require('../models/BloodRequest');
+const Hospital = require('../models/Hospital');
+const User = require('../models/User');
 const { notifyMatchedDonorsForRequest } = require('./notification.service');
 
 const createRequest = async (userId, requestData) => {
@@ -13,6 +15,18 @@ const createRequest = async (userId, requestData) => {
     requiredByDate,
     notes,
   } = requestData;
+
+  // Verification gate: if the requester is a hospital account, they must be verified
+  // Individual users are allowed to post requests without this check
+  const requester = await User.findById(userId).select('accountType');
+  if (requester && requester.accountType === 'hospital') {
+    const hospitalProfile = await Hospital.findOne({ user: userId }).select('isVerified name');
+    if (!hospitalProfile || !hospitalProfile.isVerified) {
+      throw new Error(
+        'Your hospital account is pending admin approval. You cannot post blood requests until verified.'
+      );
+    }
+  }
 
   const bloodRequest = await BloodRequest.create({
     requester: userId,

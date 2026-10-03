@@ -1,0 +1,610 @@
+{
+  "info": {
+    "_postman_id": "lifelink-api-collection-2026",
+    "name": "LifeLink API",
+    "description": "Complete Postman collection for the LifeLink Smart Blood Donation API.\n\nBase URL: http://localhost:5000\n\nAuthentication:\n- Register or login to obtain a JWT token.\n- Add it to requests as: Authorization: Bearer <token>\n\nThe collection covers all main endpoints grouped by domain.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token obtained from /api/auth/register or /api/auth/login. Set automatically by the Login request's test script."
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Returns 200 if the API Gateway is running."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (User / Donor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.token) {",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    console.log('Token saved from register');",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Donor\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret99\",\n  \"accountType\": \"user\",\n  \"bloodGroup\": \"O+\",\n  \"phone\": \"+91 9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a new donor/user account. accountType must be 'user' or 'hospital'. Admin accounts cannot be created via the API."
+          },
+          "response": []
+        },
+        {
+          "name": "Register (Hospital)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"City General Hospital\",\n  \"email\": \"city@hospital.com\",\n  \"password\": \"hospital123\",\n  \"accountType\": \"hospital\",\n  \"phone\": \"+91 1122334455\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a hospital account. The hospital is unverified by default and cannot post blood requests until an admin approves it."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.token) {",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    console.log('Token saved from login');",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret99\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login and obtain a JWT token. The test script automatically saves the token to the {{token}} collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User (/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the authenticated user's profile and linked donor/hospital entity. Requires a valid JWT token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Donors",
+      "item": [
+        {
+          "name": "Get All Donors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donors"]
+            },
+            "description": "Returns a list of all donor profiles."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Donor Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donors/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donors", "me"]
+            },
+            "description": "Returns the authenticated user's donor profile."
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Donor Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodGroup\": \"A+\",\n  \"age\": 28,\n  \"gender\": \"male\",\n  \"address\": \"12 Main Street, Delhi\",\n  \"isAvailable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donors/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donors", "me"]
+            },
+            "description": "Update the authenticated user's donor profile."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blood Requests",
+      "item": [
+        {
+          "name": "Get All Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests"],
+              "query": [
+                { "key": "status", "value": "open", "disabled": true },
+                { "key": "bloodGroup", "value": "A+", "disabled": true },
+                { "key": "urgency", "value": "critical", "disabled": true }
+              ]
+            },
+            "description": "Returns all blood requests. Supports optional query filters: status, bloodGroup, urgency."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "my"]
+            },
+            "description": "Returns blood requests created by the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Blood Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientName\": \"John Doe\",\n  \"bloodGroup\": \"A+\",\n  \"unitsNeeded\": 2,\n  \"urgency\": \"critical\",\n  \"address\": \"AIIMS, New Delhi\",\n  \"coordinates\": [77.2090, 28.6139],\n  \"notes\": \"Emergency surgery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests"]
+            },
+            "description": "Create a new blood request. Hospital accounts must be admin-verified first."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":id"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Get a single blood request by its MongoDB ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Donor Matches for Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:id/matches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":id", "matches"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Runs the smart matching engine and returns ranked compatible donors for the given blood request."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"fulfilled\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":id", "status"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Update the status of a blood request. Valid values: open, matching, fulfilled, cancelled, expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Request (Admin Only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":id"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Admin-only: Delete a fake or spam blood request."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Donations",
+      "item": [
+        {
+          "name": "Pledge Donation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestId\": \"REPLACE_WITH_REQUEST_ID\",\n  \"unitsDonated\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/pledge",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "pledge"]
+            },
+            "description": "Pledge to donate blood for a specific request. Returns 403 if blood groups are incompatible or donor is in 90-day cooldown. Returns 400 if already pledged."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Donation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/:id/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", ":id", "complete"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_DONATION_ID" }]
+            },
+            "description": "Mark a pledged donation as completed. Updates lastDonationDate on the donor's profile and marks the blood request as fulfilled."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Donations for Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/request/:requestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "request", ":requestId"],
+              "variable": [{ "key": "requestId", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Get all donations made for a specific blood request."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Donation History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "history"]
+            },
+            "description": "Returns the donation history of the authenticated donor."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Donations (Hospital / Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "all"]
+            },
+            "description": "Hospital or Admin only: Returns all donations in the system."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "item": [
+        {
+          "name": "Get All Hospitals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hospitals/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hospitals", "all"]
+            },
+            "description": "Returns all registered hospital profiles."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Hospital Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hospitals/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hospitals", "profile"]
+            },
+            "description": "Hospital/Admin only: Returns the authenticated hospital's profile and blood inventory."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Hospital Inventory",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory\": [\n    { \"bloodGroup\": \"A+\", \"units\": 20 },\n    { \"bloodGroup\": \"O-\", \"units\": 10 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hospitals/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hospitals", "inventory"]
+            },
+            "description": "Hospital/Admin only: Update the hospital's blood inventory."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Hospital (Admin Only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isVerified\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hospitals/:id/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hospitals", ":id", "verify"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_HOSPITAL_ID" }]
+            },
+            "description": "Admin only: Approve or reject a hospital account so it can post blood requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Hospital (Admin Only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/hospitals/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hospitals", ":id"],
+              "variable": [{ "key": "id", "value": "REPLACE_WITH_HOSPITAL_ID" }]
+            },
+            "description": "Admin only: Delete a hospital record."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications"]
+            },
+            "description": "Returns notifications for the authenticated user."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Platform Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics"]
+            },
+            "description": "Returns aggregate platform stats (total users, donors, requests, donations)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pings",
+      "item": [
+        {
+          "name": "Get Pings for Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:requestId/pings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":requestId", "pings"],
+              "variable": [{ "key": "requestId", "value": "REPLACE_WITH_REQUEST_ID" }]
+            },
+            "description": "Returns the list of donors who were pinged/notified for a blood request."
+          },
+          "response": []
+        },
+        {
+          "name": "Notify Donor (Ping)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/:requestId/notify/:donorId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", ":requestId", "notify", ":donorId"],
+              "variable": [
+                { "key": "requestId", "value": "REPLACE_WITH_REQUEST_ID" },
+                { "key": "donorId", "value": "REPLACE_WITH_DONOR_USER_ID" }
+              ]
+            },
+            "description": "Send a notification ping to a specific donor for a blood request."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

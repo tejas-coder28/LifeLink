@@ -1,8 +1,9 @@
 const DonorProfile = require('../models/DonorProfile');
 const User = require('../models/User');
+const { compatibleDonorGroups } = require('../utils/bloodCompatibility');
 
 const getProfileByUserId = async (userId) => {
-  let profile = await DonorProfile.findOne({ user: userId }).populate('user', 'name email phone role');
+  let profile = await DonorProfile.findOne({ user: userId }).populate('user', 'name email phone accountType hospitalId');
   if (!profile) {
     // If not existing yet, create default
     const user = await User.findById(userId);
@@ -16,7 +17,7 @@ const getProfileByUserId = async (userId) => {
         coordinates: [77.2090, 28.6139],
       },
     });
-    profile = await profile.populate('user', 'name email phone role');
+    profile = await profile.populate('user', 'name email phone accountType hospitalId');
   }
   return profile;
 };
@@ -29,7 +30,10 @@ const updateProfileByUserId = async (userId, updateData) => {
     profile = new DonorProfile({ user: userId, bloodGroup: bloodGroup || 'O+' });
   }
 
-  if (bloodGroup) profile.bloodGroup = bloodGroup;
+  if (bloodGroup) {
+    profile.bloodGroup = bloodGroup;
+    profile.bloodGroupConfirmed = true;
+  }
   if (coordinates && Array.isArray(coordinates) && coordinates.length === 2) {
     profile.location = {
       type: 'Point',
@@ -42,10 +46,13 @@ const updateProfileByUserId = async (userId, updateData) => {
   if (age !== undefined) profile.age = age;
   if (gender !== undefined) profile.gender = gender;
   if (healthFlags !== undefined) profile.healthFlags = healthFlags;
-  if (contactNumber !== undefined) profile.contactNumber = contactNumber;
+  if (contactNumber !== undefined) {
+    profile.contactNumber = contactNumber;
+    await User.findByIdAndUpdate(userId, { phone: contactNumber });
+  }
 
   await profile.save();
-  return await profile.populate('user', 'name email phone role');
+  return await profile.populate('user', 'name email phone accountType hospitalId');
 };
 
 const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly = true }) => {
@@ -55,8 +62,9 @@ const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly
     query.isAvailable = true;
   }
 
-  if (bloodGroup) {
-    query.bloodGroup = bloodGroup;
+  if (bloodGroup && bloodGroup !== 'ALL') {
+    const compatibleGroups = compatibleDonorGroups(bloodGroup);
+    query.bloodGroup = { $in: compatibleGroups };
   }
 
   if (lat && lng) {
@@ -73,14 +81,14 @@ const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly
   }
 
   const donors = await DonorProfile.find(query)
-    .populate('user', 'name email phone role')
+    .populate('user', 'name email phone accountType hospitalId')
     .limit(50);
 
   return donors;
 };
 
 const getAllDonors = async () => {
-  return await DonorProfile.find().populate('user', 'name email phone role');
+  return await DonorProfile.find().populate('user', 'name email phone accountType hospitalId');
 };
 
 module.exports = {

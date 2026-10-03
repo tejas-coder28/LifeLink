@@ -1,16 +1,34 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LifeLink — Smart Blood Donation & Emergency Donor Management</title>
-    <meta name="description" content="AI-powered role-based emergency blood donation platform connecting donors, recipients, and hospitals with real-time smart donor matching." />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>LifeLink — Emergency Blood Donation Network</title>
+    <meta name="description" content="LifeLink connects blood donors, hospitals, and patients in real time. Find nearby donors, broadcast emergency requests, and save lives with smart matching." />
+    <meta name="theme-color" content="#080D18" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('lifelink_theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = saved ? saved : (prefersDark ? 'dark' : 'light');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#0b0f19] text-slate-100 font-sans antialiased selection:bg-rose-500 selection:text-white min-h-screen">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,21 +1,37 @@
 import React from 'react';
 
-const Card = ({ children, className = '', hover = true, title = '', icon: Icon = null, action = null }) => {
+const Card = ({ children, title, subtitle, icon: Icon, action, className = '', hover = true }) => {
+  const hasPadding = /\bp(?:[xytb]|\b)-\d+/.test(className);
+  const paddingClass = hasPadding ? '' : 'p-5 sm:p-6';
+
   return (
     <div
-      className={`glass-panel rounded-2xl p-6 border border-slate-200/80 shadow-xl ${
-        hover ? 'glass-panel-hover' : ''
-      } ${className}`}
+      className={`glass-card ${
+        hover ? 'glass-card-hover' : ''
+      } ${paddingClass} ${className}`}
     >
       {(title || Icon || action) && (
-        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200/60">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-theme">
           <div className="flex items-center space-x-3">
             {Icon && (
-              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400"
+              >
                 <Icon className="w-5 h-5" />
               </div>
             )}
-            {title && <h3 className="text-lg font-bold text-black tracking-tight">{title}</h3>}
+            <div>
+              {title && (
+                <h3 className="text-base font-bold text-primary leading-tight font-heading">
+                  {title}
+                </h3>
+              )}
+              {subtitle && (
+                <p className="text-xs mt-0.5 text-secondary">
+                  {subtitle}
+                </p>
+              )}
+            </div>
           </div>
           {action && <div>{action}</div>}
         </div>

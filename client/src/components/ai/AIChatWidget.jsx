@@ -40,7 +40,7 @@ const AIChatWidget = () => {
         ...prev,
         {
           role: 'assistant',
-          text: 'I am currently synthesizing network telemetry. ' + (err.response?.data?.message || 'Please try again in a moment.'),
+          text: 'I am currently synthesizing network analytics. ' + (err.response?.data?.message || 'Please try again in a moment.'),
         },
       ]);
     } finally {
@@ -54,39 +54,39 @@ const AIChatWidget = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-full shadow-lg transform hover:-translate-y-1 transition-all duration-300 border border-slate-700"
+          className="flex items-center space-x-2 glass-card text-primary px-5 py-3 rounded-full shadow-lg hover:-translate-y-0.5 transition-all duration-300 border border-theme cursor-pointer"
         >
-          <Sparkles className="w-5 h-5 text-amber-300" />
-          <span className="font-semibold text-sm">Ask LifeLink AI</span>
+          <Sparkles className="w-5 h-5 text-amber-500" />
+          <span className="font-bold text-sm">Ask LifeLink AI</span>
         </button>
       )}
 
       {/* Chat Drawer Window */}
       {isOpen && (
-        <div className="w-[calc(100vw-3rem)] sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[480px] max-h-[80vh] animate-slideUp origin-bottom-right">
+        <div className="w-[calc(100vw-3rem)] sm:w-96 glass-modal border border-theme rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[480px] max-h-[80vh] animate-slideUp origin-bottom-right">
           {/* Header */}
-          <div className="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+          <div className="bg-slate-100 dark:bg-slate-900 px-4 py-3 border-b border-theme flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-1.5 rounded-lg bg-slate-800 text-rose-400">
+              <div className="p-1.5 rounded-lg bg-rose-500/10 dark:bg-slate-800 text-rose-600 dark:text-rose-400">
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white leading-none">LifeLink AI Assistant</h4>
-                <span className="text-[10px] text-emerald-400 font-medium flex items-center mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-ping"></span> Online
+                <h4 className="text-sm font-bold text-primary leading-none">LifeLink AI Assistant</h4>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-ping"></span> Online
                 </span>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              className="text-muted hover:text-primary p-1 rounded-lg hover:bg-surface transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 p-4 bg-slate-50 overflow-y-auto space-y-4 text-sm">
+          <div className="flex-1 p-4 bg-slate-50/50 dark:bg-slate-950/40 overflow-y-auto space-y-4 text-sm">
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -96,12 +96,12 @@ const AIChatWidget = () => {
                   className={`max-w-[85%] rounded-2xl p-3 leading-relaxed shadow-sm ${
                     msg.role === 'user'
                       ? 'bg-rose-600 text-white rounded-br-none'
-                      : 'bg-white text-slate-700 border border-slate-200 rounded-bl-none'
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-theme rounded-bl-none'
                   }`}
                 >
                   <p>{msg.text}</p>
                   {msg.recommendations && (
-                    <ul className="mt-3 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-600">
+                    <ul className="mt-3 pt-3 border-t border-theme space-y-1 text-xs text-secondary">
                       {msg.recommendations.map((rec, i) => (
                         <li key={i} className="flex items-start">
                           <span className="text-rose-500 mr-1.5">•</span>
@@ -115,7 +115,7 @@ const AIChatWidget = () => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white text-slate-600 p-3 rounded-2xl rounded-bl-none border border-slate-200 shadow-sm flex items-center space-x-2 text-sm">
+                <div className="bg-white dark:bg-slate-800 text-secondary p-3 rounded-2xl rounded-bl-none border border-theme shadow-sm flex items-center space-x-2 text-sm">
                   <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
                   <span>Synthesizing insight...</span>
                 </div>
@@ -124,18 +124,18 @@ const AIChatWidget = () => {
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2">
+          <form onSubmit={handleSend} className="p-3 bg-surface border-t border-theme flex items-center space-x-2">
             <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ask AI about donor supply..."
-              className="flex-1 bg-slate-50 text-slate-900 text-sm px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 placeholder-slate-400 transition-all"
+              className="flex-1 glass-input text-xs px-3.5 py-2.5 rounded-xl border border-theme text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
             />
             <button
               type="submit"
               disabled={loading || !prompt.trim()}
-              className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors shadow-sm"
+              className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors shadow-sm cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>

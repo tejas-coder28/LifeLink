@@ -4,60 +4,120 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 border-t border-slate-800 pt-16 pb-8 mt-20">
+    <footer
+      className="pt-16 pb-8 mt-20 bg-surface border-t border-theme backdrop-blur-xl transition-colors"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-12">
-          
-          {/* LIFELINK COLUMN */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+
+          {/* BRAND COLUMN */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center text-white">
+            <div className="flex items-center space-x-3">
+              <div
+                className="w-9 h-9 rounded-2xl flex items-center justify-center text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #DC2626, #b91c1c)',
+                  boxShadow: '0 0 20px rgba(220,38,38,0.35)',
+                }}
+              >
                 <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="text-xl font-extrabold text-white tracking-tight">LifeLink</span>
+              <span className="text-xl font-black text-primary tracking-tight font-heading">
+                Life<span className="gradient-text-brand">Link</span>
+              </span>
             </div>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Smart blood donation & emergency donor matching engine powered by AI narrative intelligence and location-based proximity scoring.
+            <p className="text-xs leading-relaxed text-secondary">
+              Connecting blood donors, hospitals, and patients through real-time smart matching and intelligent donor coordination.
             </p>
           </div>
 
-          {/* PLATFORM COLUMN */}
+          {/* QUICK LINKS */}
           <div>
-            <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">Platform</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/find-donors" className="text-slate-400 hover:text-white transition-colors">Find Donors</Link></li>
-              <li><Link to="/emergency-request" className="text-slate-400 hover:text-rose-400 transition-colors">Emergency Request</Link></li>
-              <li><a href="/#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a></li>
+            <h4
+              className="font-extrabold mb-4 text-xs uppercase tracking-wider text-primary"
+            >
+              Quick Links
+            </h4>
+            <ul className="space-y-2.5 text-xs font-medium">
+              <li>
+                <Link to="/" className="transition-colors text-secondary hover:text-primary">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/find-donors" className="transition-colors text-secondary hover:text-primary">
+                  Find Donors & Hospitals
+                </Link>
+              </li>
+              <li>
+                <Link to="/emergency-request" className="font-bold transition-colors text-rose-600 dark:text-rose-400 hover:underline">
+                  Emergency Blood Request
+                </Link>
+              </li>
+              <li>
+                <Link to="/about" className="transition-colors text-secondary hover:text-primary">
+                  About LifeLink
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* ROLES & ACCESS COLUMN */}
+          {/* PORTALS */}
           <div>
-            <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">Roles & Access</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/login" className="text-slate-400 hover:text-white transition-colors">Donor Portal</Link></li>
-              <li><Link to="/login" className="text-slate-400 hover:text-white transition-colors">Recipient Hub</Link></li>
-              <li><Link to="/login" className="text-slate-400 hover:text-white transition-colors">Hospital Verification</Link></li>
-              <li><Link to="/login" className="text-slate-400 hover:text-white transition-colors">Admin Dashboard</Link></li>
+            <h4 className="font-extrabold mb-4 text-xs uppercase tracking-wider text-primary">
+              Role Portals
+            </h4>
+            <ul className="space-y-2.5 text-xs font-medium">
+              <li>
+                <Link to="/login" className="transition-colors text-secondary hover:text-primary">
+                  Donor Portal
+                </Link>
+              </li>
+              <li>
+                <Link to="/login" className="transition-colors text-secondary hover:text-primary">
+                  Hospital Hub
+                </Link>
+              </li>
+              <li>
+                <Link to="/login" className="transition-colors text-secondary hover:text-primary">
+                  Admin Control
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="transition-colors text-secondary hover:text-primary">
+                  Create Account
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* SUPPORT COLUMN */}
+          {/* EMERGENCY SUPPORT */}
           <div>
-            <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider">Support</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/emergency-request" className="text-rose-400 font-semibold hover:text-rose-300 transition-colors">Emergency Help</Link></li>
-              <li><Link to="#" className="text-slate-400 hover:text-white transition-colors">Contact</Link></li>
-              <li><Link to="#" className="text-slate-400 hover:text-white transition-colors">Privacy</Link></li>
-              <li><Link to="#" className="text-slate-400 hover:text-white transition-colors">Terms</Link></li>
-            </ul>
+            <h4 className="font-extrabold mb-4 text-xs uppercase tracking-wider text-primary">
+              24/7 Emergency Support
+            </h4>
+            <p className="text-xs mb-4 text-secondary">
+              Need blood urgently for a surgical or trauma case? Broadcast a request now and nearby donors will be alerted immediately.
+            </p>
+            <Link
+              to="/emergency-request"
+              className="btn-primary inline-flex text-xs px-4 py-2.5"
+            >
+              <Activity className="w-4 h-4 animate-pulse" />
+              <span>Request Blood Now</span>
+            </Link>
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} LifeLink Inc. All rights reserved.</p>
-          <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <span className="flex items-center"><ShieldCheck className="w-4 h-4 mr-1.5 text-slate-400" /> Secure Platform</span>
+        <div
+          className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs border-t border-theme text-muted"
+        >
+          <p>© {new Date().getFullYear()} LifeLink Emergency Blood Platform. All rights reserved.</p>
+          <div className="flex items-center space-x-4 mt-4 md:mt-0 text-muted">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" />
+              Secure &amp; Private
+            </span>
           </div>
         </div>
       </div>
