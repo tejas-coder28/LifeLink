@@ -14,10 +14,26 @@ connectDB().then(async () => {
         await seedData(false);
       }
     }
+
+    // Safe migration: ensure any existing requests lacking targetHospital are handled
+    const BloodRequest = require('./models/BloodRequest');
+    const legacyRequests = await BloodRequest.find({ targetHospital: null });
+    if (legacyRequests.length > 0) {
+      for (const req of legacyRequests) {
+        if (req.hospital) {
+          req.targetHospital = req.hospital;
+        } else {
+          req.status = 'legacy';
+        }
+        await req.save();
+      }
+      console.log(`[Safe Migration] Updated ${legacyRequests.length} legacy requests with targetHospital / legacy status`);
+    }
   } catch (err) {
-    console.error('Auto-seed check error:', err.message);
+    console.error('Startup check error:', err.message);
   }
 });
+
 
 const PORT = process.env.PORT || 5000;
 

@@ -32,7 +32,19 @@ function isDonorCandidate(request, donor) {
     };
   }
 
-  // 3. 90-day cooldown rule
+  // 3. Exclude requester (cannot match or donate to own request)
+  if (donor.user && request.requester) {
+    const donorUserId = donor.user._id ? donor.user._id.toString() : donor.user.toString();
+    const requesterId = request.requester._id ? request.requester._id.toString() : request.requester.toString();
+    if (donorUserId === requesterId) {
+      return {
+        isCandidate: false,
+        reason: 'Requester cannot donate to their own blood request',
+      };
+    }
+  }
+
+  // 4. 90-day cooldown rule
   let daysSinceLastDonation = null;
   if (donor.lastDonationDate) {
     const lastDate = new Date(donor.lastDonationDate);
@@ -92,7 +104,9 @@ function scoreDonorForRequest(request, donor) {
     compatibilityScore = 32;
   }
 
-  const reqCoords = request.location?.coordinates || [77.2090, 28.6139];
+  // Center distance on target hospital if available, otherwise request location
+  const hospitalCoords = request.targetHospital?.location?.coordinates || request.hospital?.location?.coordinates;
+  const reqCoords = hospitalCoords || request.location?.coordinates || [77.2090, 28.6139];
   const donorCoords = donor.location?.coordinates || [77.2090, 28.6139];
   const distanceKm = calculateHaversineDistance(reqCoords, donorCoords);
 
@@ -165,7 +179,9 @@ function rankDonorsForRequest(request, candidateDonors) {
  * Service function: Fetches request and potential candidate donors from DB, scores and returns ranking.
  */
 const findMatchesForRequestId = async (requestId, maxResults = 10) => {
-  const request = await BloodRequest.findById(requestId);
+  const request = await BloodRequest.findById(requestId)
+    .populate('targetHospital', 'name location address phone')
+    .populate('hospital', 'name location address phone');
   if (!request) {
     throw new Error('Blood request not found');
   }
@@ -182,6 +198,7 @@ const findMatchesForRequestId = async (requestId, maxResults = 10) => {
     matches: rankedMatches.slice(0, maxResults),
   };
 };
+
 
 module.exports = {
   COOLDOWN_DAYS,

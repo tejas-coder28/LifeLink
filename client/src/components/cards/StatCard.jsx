@@ -80,28 +80,30 @@ const StatCard = ({ title, value, icon: Icon, description, trend, color = 'rose'
 
   return (
     <div
-      className={`glass-card glass-card-hover p-5 sm:p-6 flex items-start justify-between ${accentClass}`}
+      className={`glass-card glass-card-hover p-5 sm:p-6 flex items-start justify-between min-h-[105px] ${accentClass}`}
     >
-      <div className="space-y-1.5">
-        <span
-          className="text-[11px] font-extrabold uppercase tracking-wider block"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          {title}
-        </span>
-        <span
-          className="text-2xl sm:text-3xl font-black block tracking-tight font-heading"
-          style={{ color: valueColor }}
-        >
-          {value}
-        </span>
+      <div className="space-y-1 flex flex-col justify-between h-full">
+        <div>
+          <span
+            className="text-[11px] font-extrabold uppercase tracking-wider block"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {title}
+          </span>
+          <span
+            className="text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1"
+            style={{ color: valueColor }}
+          >
+            {value}
+          </span>
+        </div>
         {description && (
-          <p className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[11px] font-medium mt-1" style={{ color: 'var(--text-secondary)' }}>
             {description}
           </p>
         )}
         {trend && (
-          <p className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-[10px] font-bold mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {trend}
           </p>
         )}

@@ -12,6 +12,11 @@ const bloodRequestSchema = new mongoose.Schema(
       ref: 'Hospital',
       default: null,
     },
+    targetHospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hospital',
+      default: null,
+    },
     patientName: {
       type: String,
       required: [true, 'Patient name is required'],
@@ -25,6 +30,29 @@ const bloodRequestSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Units needed is required'],
       min: 1,
+    },
+    unitsFromStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    unitsFromDonors: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    unitsFulfilled: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectionReason: {
+      type: String,
+      default: '',
     },
     urgency: {
       type: String,
@@ -49,8 +77,19 @@ const bloodRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['open', 'matching', 'fulfilled', 'cancelled', 'expired'],
-      default: 'open',
+      enum: [
+        'pending_hospital_review',
+        'open',
+        'matching',
+        'partially_fulfilled',
+        'fulfilled',
+        'rejected',
+        'hospital_no_response',
+        'cancelled',
+        'expired',
+        'legacy',
+      ],
+      default: 'pending_hospital_review',
     },
     requiredByDate: {
       type: Date,

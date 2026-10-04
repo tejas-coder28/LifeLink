@@ -28,6 +28,25 @@ const getAllHospitals = async (req, res) => {
   }
 };
 
+const getVerifiedHospitals = async (req, res) => {
+  try {
+    const hospitals = await hospitalService.getVerifiedHospitals();
+    return sendSuccess(res, 'Verified hospitals fetched', hospitals);
+  } catch (error) {
+    return sendError(res, error.message, 400);
+  }
+};
+
+const getInventoryTransactions = async (req, res) => {
+  try {
+    const hospital = await hospitalService.getHospitalByUserId(req.user._id);
+    const transactions = await hospitalService.getInventoryTransactions(hospital._id);
+    return sendSuccess(res, 'Inventory transactions fetched', transactions);
+  } catch (error) {
+    return sendError(res, error.message, 400);
+  }
+};
+
 // Admin: approve or reject a hospital
 // PATCH /api/hospitals/:id/verify   body: { isVerified: true|false }
 const verifyHospital = async (req, res) => {
@@ -59,6 +78,9 @@ module.exports = {
   getProfile,
   updateInventory,
   getAllHospitals,
+  getVerifiedHospitals,
+  getInventoryTransactions,
   verifyHospital,
   deleteHospitalAdmin,
 };
+

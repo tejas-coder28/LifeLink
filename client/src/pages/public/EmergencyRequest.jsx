@@ -24,10 +24,10 @@ const EmergencyRequest = () => {
       const res = await requestApi.createRequest(formData);
       if (res.data && res.data.success) {
         const newReq = res.data.data;
-        setSuccessMsg('Emergency blood request broadcast successfully! Standby donors matching your criteria have been alerted.');
+        setSuccessMsg('Request submitted to selected hospital! Redirecting to live status tracker...');
         setTimeout(() => {
-          navigate('/donor/dashboard?tab=my-requests');
-        }, 1500);
+          navigate(`/individual/track/${newReq._id}`);
+        }, 1200);
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to submit blood request');

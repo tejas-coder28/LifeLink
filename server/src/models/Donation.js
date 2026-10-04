@@ -24,6 +24,12 @@ const donationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    completedAt: {
+      type: Date,
+    },
+    cancelledAt: {
+      type: Date,
+    },
     status: {
       type: String,
       enum: ['pledged', 'completed', 'cancelled'],

@@ -41,55 +41,56 @@ LifeLink is an emergency response web application built with the **MERN stack** 
 
 ---
 
-## 💻 Setup — Getting Started on a New Machine
+## 💻 Setup — Getting Started on a New Machine / Second Laptop
+
+Follow these steps when cloning or moving to a second laptop:
 
 ### Prerequisites
 - Node.js v18+ and npm
-- A MongoDB Atlas cluster (or leave `MONGODB_URI=memory` to use in-memory dev DB)
+- A MongoDB Atlas cluster (or leave `MONGODB_URI=memory` to use an in-memory dev DB)
 
 ### 1. Clone the repository
-
 ```bash
 git clone https://github.com/tejas-coder28/LifeLink.git
 cd LifeLink
 ```
 
-### 2. Install dependencies
-
+### 2. Install dependencies (Client & Server)
 ```bash
-# Server
+# Server dependencies
 cd server
 npm install
 
-# Client
+# Client dependencies
 cd ../client
 npm install
 ```
 
-### 3. Configure environment
+### 3. Copy `.env` manually (Never committed to GitHub)
+> ⚠️ **Important:** The real `server/.env` file is excluded in `.gitignore` and is **never committed**. You must provide it manually on the second laptop:
 
-```bash
-# Copy the example file and fill in your values
-cp server/.env.example server/.env
-```
-
-Edit `server/.env`:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/<dbname>?retryWrites=true&w=majority
-JWT_SECRET=<generate-a-strong-random-secret>
-NODE_ENV=development
-```
-
-> **Tip:** To run without Atlas during local development, set `MONGODB_URI=memory` — the server will start an in-memory MongoDB automatically.
+- **Option A (Direct Copy):** Transfer the `server/.env` file from your primary laptop (via secure flash drive or private vault) directly into `server/.env`.
+- **Option B (Create from Example):**
+  ```bash
+  # From project root
+  cp server/.env.example server/.env
+  ```
+  Then edit `server/.env` with your preferred values:
+  ```env
+  PORT=5000
+  MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/<dbname>?retryWrites=true&w=majority
+  JWT_SECRET=<generate-a-strong-random-secret>
+  NODE_ENV=development
+  ```
+  *(Tip: Set `MONGODB_URI=memory` if you want to develop without configuring MongoDB Atlas).*
 
 ### 4. Seed demo data & start servers
 
 ```bash
-# Terminal 1 — Start the API server (with auto-seed on empty DB)
+# Terminal 1 — Start the API server
 cd server
 npm run dev
+# (or use 'npm start' for standard production start)
 
 # Terminal 2 — Start the React frontend
 cd client

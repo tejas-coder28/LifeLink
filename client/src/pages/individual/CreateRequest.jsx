@@ -17,7 +17,7 @@ const CreateRequest = () => {
       const res = await requestApi.createRequest(formData);
       if (res.data && res.data.success) {
         const newReq = res.data.data;
-        showSuccess('Emergency request created! Matching donors are being notified.');
+        showSuccess('Emergency request submitted to hospital! Tracking live review.');
         navigate(`/individual/track/${newReq._id}`);
       }
     } catch (err) {

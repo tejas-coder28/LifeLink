@@ -42,4 +42,22 @@ const registerHospital = async (app, overrides = {}) => {
   return { res, token: res.body?.data?.token, user: res.body?.data };
 };
 
-module.exports = { registerUser, registerHospital };
+/**
+ * Create an admin user directly and generate an admin JWT token.
+ */
+const registerAdmin = async (app, overrides = {}) => {
+  const User = require('../../src/models/User');
+  const jwt = require('jsonwebtoken');
+  const { JWT_SECRET } = require('../../src/middleware/auth.middleware');
+  const adminUser = await User.create({
+    name: 'Test Admin',
+    email: `admin_${Date.now()}_${Math.random().toString(36).slice(2)}@test.com`,
+    password: 'password123',
+    accountType: 'admin',
+    ...overrides,
+  });
+  const token = jwt.sign({ id: adminUser._id, accountType: 'admin' }, JWT_SECRET, { expiresIn: '1d' });
+  return { token, user: adminUser };
+};
+
+module.exports = { registerUser, registerHospital, registerAdmin };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatStatusLabel, getStatusBadgeClass } from '../../utils/statusHelper';
 
 /**
  * Badge — renders role, status, blood group, or plain text pills.
@@ -34,27 +35,11 @@ const Badge = ({ role, accountType, status, bloodGroup, text, size = 'normal' })
 
   /* ── Status badges ── */
   if (status) {
-    const statusClass = {
-      open:      'badge-open',
-      matching:  'badge-matching',
-      fulfilled: 'badge-fulfilled',
-      completed: 'badge-completed',
-      pledged:   'badge-pledged',
-      cancelled: 'badge-cancelled',
-      expired:   'badge-expired',
-      suspended: 'badge-suspended',
-      critical:  'badge-critical',
-      high:      'badge-high',
-      medium:    'badge-medium',
-      low:       'badge-low',
-      normal:    'badge-medium',
-      verified:  'badge-verified',
-      pending:   'badge-pending',
-    }[status] || 'badge-low';
+    const statusClass = getStatusBadgeClass(status);
 
     return (
       <span className={`badge-base ${statusClass}`}>
-        {text || status.charAt(0).toUpperCase() + status.slice(1)}
+        {text || formatStatusLabel(status)}
       </span>
     );
   }

@@ -115,9 +115,16 @@ const DonorDashboard = () => {
   const fetchLiveRequests = async () => {
     setLoadingLive(true);
     try {
-      const res = await requestApi.getRequests({ status: 'open' });
+      const res = await requestApi.getRequests();
       if (res.data && res.data.success) {
-        setLiveRequests(res.data.data);
+        const active = (res.data.data || []).filter((r) => {
+          if (!['open', 'matching', 'partially_fulfilled'].includes(r.status)) return false;
+          const z = r.unitsFromDonors !== undefined && r.unitsFromDonors !== null && r.unitsFromDonors > 0
+            ? r.unitsFromDonors
+            : Math.max(0, (r.unitsNeeded || 0) - (r.unitsFromStock || 0));
+          return z > 0;
+        });
+        setLiveRequests(active);
       }
     } catch (err) {
       console.error('Failed to fetch requests:', err);
@@ -125,6 +132,7 @@ const DonorDashboard = () => {
       setLoadingLive(false);
     }
   };
+
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -237,8 +245,16 @@ const DonorDashboard = () => {
     }
   };
 
+  // Set of request IDs the donor has already pledged to or completed
+  const pledgedRequestIds = new Set(
+    (donationHistory || [])
+      .filter((d) => ['pledged', 'completed'].includes(d.status))
+      .map((d) => (d.request?._id || d.request)?.toString())
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+
       {/* Banner Header */}
       <div className="hero-glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
@@ -366,28 +382,24 @@ const DonorDashboard = () => {
               title="Registered Blood Group"
               value={profile?.bloodGroup || 'Not Set'}
               icon={Heart}
-              description="Medical RBC Matrix"
               color="rose"
             />
             <StatCard
               title="Standby Status"
               value={profile?.isAvailable ? 'ONLINE' : 'OFFLINE'}
               icon={ShieldCheck}
-              description={profile?.isAvailable ? 'Active Standby Donor' : 'In-Active / Paused'}
               color={profile?.isAvailable ? 'emerald' : 'slate'}
             />
             <StatCard
               title="Last Donation"
               value={profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None'}
               icon={Calendar}
-              description={`${DONATION_COOLDOWN_DAYS}-day cooldown rule`}
               color="sky"
             />
             <StatCard
-              title="Total Lifesaving Pledges"
-              value={profile?.totalDonations || donationHistory.length || 0}
+              title="Completed donations"
+              value={donationHistory.filter((d) => d.status === 'completed').length}
               icon={CheckCircle2}
-              description="Verified hospital donations"
               color="amber"
             />
           </div>
@@ -414,17 +426,22 @@ const DonorDashboard = () => {
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {liveRequests.slice(0, 4).map((req) => (
-                  <RequestCard
-                    key={req._id}
-                    request={req}
-                    donorBloodGroup={profile?.bloodGroup}
-                    onSelect={setSelectedRequest}
-                    onPledge={handlePledge}
-                    isPledging={pledgingId === req._id}
-                    pledgeText="Respond / Pledge"
-                  />
-                ))}
+                {liveRequests.slice(0, 4).map((req) => {
+                  const hasPledged = pledgedRequestIds.has(req._id?.toString());
+                  return (
+                    <RequestCard
+                      key={req._id}
+                      request={req}
+                      isDonorCard={true}
+                      donorBloodGroup={profile?.bloodGroup}
+                      onSelect={setSelectedRequest}
+                      onPledge={handlePledge}
+                      isPledging={pledgingId === req._id}
+                      isPledged={hasPledged}
+                      pledgeText={hasPledged ? 'Pledged ✓' : 'Respond / Pledge'}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -447,17 +464,22 @@ const DonorDashboard = () => {
             <EmptyState icon={Activity} title="No Blood Requests Broadcast" description="There are currently no active emergency blood requests in your region." />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {liveRequests.map((req) => (
-                <RequestCard
-                  key={req._id}
-                  request={req}
-                  donorBloodGroup={profile?.bloodGroup}
-                  onSelect={setSelectedRequest}
-                  onPledge={handlePledge}
-                  isPledging={pledgingId === req._id}
-                  pledgeText="Respond / Pledge"
-                />
-              ))}
+              {liveRequests.map((req) => {
+                const hasPledged = pledgedRequestIds.has(req._id?.toString());
+                return (
+                  <RequestCard
+                    key={req._id}
+                    request={req}
+                    isDonorCard={true}
+                    donorBloodGroup={profile?.bloodGroup}
+                    onSelect={setSelectedRequest}
+                    onPledge={handlePledge}
+                    isPledging={pledgingId === req._id}
+                    isPledged={hasPledged}
+                    pledgeText={hasPledged ? 'Pledged ✓' : 'Respond / Pledge'}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

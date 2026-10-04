@@ -104,9 +104,12 @@ const IndividualDashboard = () => {
   const fetchLiveRequests = async () => {
     setLoadingLive(true);
     try {
-      const res = await requestApi.getRequests({ status: 'open' });
+      const res = await requestApi.getRequests();
       if (res.data && res.data.success) {
-        setLiveRequests(res.data.data);
+        const active = (res.data.data || []).filter((r) =>
+          ['open', 'matching', 'partially_fulfilled'].includes(r.status)
+        );
+        setLiveRequests(active);
       }
     } catch (err) {
       console.error('Failed to fetch live requests:', err);
@@ -374,8 +377,10 @@ const IndividualDashboard = () => {
             </Card>
 
             <Card hover={false}>
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Total Pledges</span>
-              <span className="text-2xl font-black text-primary block mt-2">{profile?.totalDonations || donationHistory.length || 0}</span>
+              <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Completed donations</span>
+              <span className="text-2xl font-black text-primary block mt-2">
+                {donationHistory.filter((d) => d.status === 'completed').length}
+              </span>
             </Card>
 
             <Card hover={false}>
@@ -409,15 +414,22 @@ const IndividualDashboard = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {liveRequests.map((req) => (
-                  <RequestCard
-                    key={req._id}
-                    request={req}
-                    onPledge={handlePledge}
-                    isPledging={pledgingId === req._id}
-                    pledgeText="Pledge Donation"
-                  />
-                ))}
+                {liveRequests.map((req) => {
+                  const isPledged = donationHistory.some(
+                    (h) => (h.request?._id || h.request) === req._id && h.status === 'pledged'
+                  );
+                  return (
+                    <RequestCard
+                      key={req._id}
+                      request={req}
+                      isDonorCard={true}
+                      onPledge={handlePledge}
+                      isPledging={pledgingId === req._id}
+                      isPledged={isPledged}
+                      pledgeText={isPledged ? 'Pledged ✓' : 'Pledge Donation'}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
