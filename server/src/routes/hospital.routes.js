@@ -6,7 +6,7 @@ const { authorize } = require('../middleware/role.middleware');
 const { validate } = require('../middleware/validate.middleware');
 const { updateInventorySchema } = require('../validations/hospital.validation');
 
-router.get('/all', hospitalController.getAllHospitals);
+router.get('/all', protect, authorize('admin'), hospitalController.getAllHospitals);
 router.get('/verified', hospitalController.getVerifiedHospitals);
 router.get('/profile', protect, authorize('hospital', 'admin'), hospitalController.getProfile);
 router.put('/inventory', protect, authorize('hospital', 'admin'), validate(updateInventorySchema), hospitalController.updateInventory);

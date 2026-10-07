@@ -4,8 +4,12 @@ const User = require('../models/User');
 const Donation = require('../models/Donation');
 const InventoryTransaction = require('../models/InventoryTransaction');
 const Notification = require('../models/Notification');
+const DonorProfile = require('../models/DonorProfile');
 const { notifyMatchedDonorsForRequest } = require('./notification.service');
 const { canDonate } = require('../utils/bloodCompatibility');
+const { rankDonorsForRequest } = require('./matching.service');
+const { canSeekDonors } = require('../utils/requestRules');
+const pingService = require('./ping.service');
 
 /**
  * Checks if a critical request has passed the 15-minute threshold without hospital response.
@@ -158,16 +162,37 @@ const getRequests = async (filters = {}, callerUser = null) => {
     }
   }
 
+  // If a donor / regular user (or role === 'donor') is querying without an explicit status filter,
+  // exclude fulfilled, cancelled, and rejected requests from the active donor list
+  const isDonorCaller = callerUser && (callerUser.accountType === 'user' || callerUser.accountType === 'donor' || callerUser.role === 'donor');
+  if (isDonorCaller && !filters.status) {
+    query.status = { $nin: ['legacy', 'fulfilled', 'cancelled', 'rejected'] };
+  }
+
   const requests = await BloodRequest.find(query)
     .populate('requester', 'name email phone')
     .populate('targetHospital', 'name phone address location isVerified')
     .populate('hospital', 'name phone address location isVerified')
     .sort({ createdAt: -1 });
 
-  // Apply timeout checks on read
+  const candidateDonors = await DonorProfile.find()
+    .populate('user', 'name email phone accountType hospitalId');
+
+  // Apply timeout checks on read and synchronize matchedDonorsCount
   const updatedRequests = [];
   for (const req of requests) {
-    updatedRequests.push(await checkHospitalTimeout(req));
+    const timedReq = await checkHospitalTimeout(req);
+    const matches = rankDonorsForRequest(timedReq, candidateDonors);
+    timedReq.matchedDonorsCount = matches.length;
+    if (req.matchedDonorsCount !== matches.length) {
+      await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+    }
+    updatedRequests.push(timedReq);
+  }
+
+  // Enforce donor list visibility: only requests where canSeekDonors is true should appear
+  if ((isDonorCaller || filters.forDonor) && !filters.status) {
+    return updatedRequests.filter((req) => canSeekDonors(req));
   }
 
   return updatedRequests;
@@ -179,6 +204,9 @@ const getRequests = async (filters = {}, callerUser = null) => {
  * - For individual users: returns all requests created by this user.
  */
 const getMyRequests = async (callerUser) => {
+  const candidateDonors = await DonorProfile.find()
+    .populate('user', 'name email phone accountType hospitalId');
+
   if (callerUser.accountType === 'hospital') {
     const callerHospital = await Hospital.findOne({ user: callerUser._id });
     if (!callerHospital) {
@@ -197,7 +225,13 @@ const getMyRequests = async (callerUser) => {
 
     const updatedRequests = [];
     for (const req of requests) {
-      updatedRequests.push(await checkHospitalTimeout(req));
+      const timedReq = await checkHospitalTimeout(req);
+      const matches = rankDonorsForRequest(timedReq, candidateDonors);
+      timedReq.matchedDonorsCount = matches.length;
+      if (req.matchedDonorsCount !== matches.length) {
+        await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+      }
+      updatedRequests.push(timedReq);
     }
     return updatedRequests;
   }
@@ -212,7 +246,13 @@ const getMyRequests = async (callerUser) => {
 
   const updatedRequests = [];
   for (const req of requests) {
-    updatedRequests.push(await checkHospitalTimeout(req));
+    const timedReq = await checkHospitalTimeout(req);
+    const matches = rankDonorsForRequest(timedReq, candidateDonors);
+    timedReq.matchedDonorsCount = matches.length;
+    if (req.matchedDonorsCount !== matches.length) {
+      await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+    }
+    updatedRequests.push(timedReq);
   }
   return updatedRequests;
 };
@@ -247,6 +287,14 @@ const getRequestById = async (id, callerUser = null) => {
     }
   }
 
+  const candidateDonors = await DonorProfile.find()
+    .populate('user', 'name email phone accountType hospitalId');
+  const matches = rankDonorsForRequest(request, candidateDonors);
+  request.matchedDonorsCount = matches.length;
+  if (request.matchedDonorsCount !== matches.length) {
+    await BloodRequest.updateOne({ _id: request._id }, { $set: { matchedDonorsCount: matches.length } });
+  }
+
   await checkHospitalTimeout(request);
   return request;
 };
@@ -257,6 +305,10 @@ const updateRequestStatus = async (id, status) => {
 
   request.status = status;
   await request.save();
+
+  if (status === 'fulfilled') {
+    await pingService.cancelPendingPingsForRequest(request._id);
+  }
 
   return await request.populate('requester', 'name email phone');
 };
@@ -280,10 +332,19 @@ const getIncomingHospitalRequests = async (userId) => {
     .populate('targetHospital', 'name phone address location inventory isVerified')
     .sort({ createdAt: -1 });
 
-  // Apply timeout checks on read
+  const candidateDonors = await DonorProfile.find()
+    .populate('user', 'name email phone accountType hospitalId');
+
+  // Apply timeout checks on read and synchronize matchedDonorsCount
   const updatedRequests = [];
   for (const r of requests) {
-    updatedRequests.push(await checkHospitalTimeout(r));
+    const timedReq = await checkHospitalTimeout(r);
+    const matches = rankDonorsForRequest(timedReq, candidateDonors);
+    timedReq.matchedDonorsCount = matches.length;
+    if (r.matchedDonorsCount !== matches.length) {
+      await BloodRequest.updateOne({ _id: r._id }, { $set: { matchedDonorsCount: matches.length } });
+    }
+    updatedRequests.push(timedReq);
   }
 
   // Fetch all pledges for these requests to display live in dashboard
@@ -402,6 +463,7 @@ const acceptRequest = async (requestId, userId, callerRole) => {
     request.status = 'fulfilled';
     request.reviewedAt = new Date();
     await request.save();
+    await pingService.cancelPendingPingsForRequest(request._id);
 
     await Notification.create({
       recipient: request.requester,
@@ -619,6 +681,10 @@ const issueCompatibleUnits = async (requestId, userId, callerRole, compatibleBlo
   }
   await request.save();
 
+  if (request.status === 'fulfilled') {
+    await pingService.cancelPendingPingsForRequest(request._id);
+  }
+
   await Notification.create({
     recipient: request.requester,
     title: '💉 Compatible Blood Units Issued',
@@ -695,6 +761,10 @@ const issuePatientUnits = async (requestId, userId, callerRole, units = 1) => {
     request.status = 'fulfilled';
   }
   await request.save();
+
+  if (request.status === 'fulfilled') {
+    await pingService.cancelPendingPingsForRequest(request._id);
+  }
 
   await Notification.create({
     recipient: request.requester,

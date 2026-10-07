@@ -70,3 +70,5 @@ export const getStatusBadgeClass = (status) => {
   };
   return map[normalized] || 'badge-low';
 };
+
+export { canSeekDonors } from './requestRules';

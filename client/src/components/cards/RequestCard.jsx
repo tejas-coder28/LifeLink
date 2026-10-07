@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { canDonate } from '../../utils/bloodCompatibility';
+import { canSeekDonors } from '../../utils/requestRules';
 
 const RequestCard = ({
   request,
@@ -70,6 +71,12 @@ const RequestCard = ({
   const patientName = request.patientName || request.recipientName || 'Emergency Blood Patient';
   const urgency = request.urgencyLevel || request.urgency || 'medium';
   const status = request.status || 'open';
+  const seekingDonors = canSeekDonors(request);
+  const isFulfilled = status === 'fulfilled';
+  const donorUnitsFulfilled = Math.max(
+    0,
+    (request.unitsFulfilled !== undefined ? request.unitsFulfilled : totalNeeded) - fromStock
+  );
   // hospital may be a populated object {_id, name, address, phone} or a plain string id or missing
   const targetHosp = request.targetHospital || (request.hospital && typeof request.hospital === 'object' ? request.hospital : null);
   const hospitalRaw = request.hospital;
@@ -253,11 +260,20 @@ const RequestCard = ({
           </div>
         )}
 
-        {matchedCount !== undefined && matchedCount !== null && (
+        {seekingDonors && matchedCount !== undefined && matchedCount !== null && (
           <div className="flex items-center gap-2.5">
             <Cpu className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
             <span>
               Matched Donors: <strong className="text-primary">{matchedCount} candidate(s)</strong>
+            </span>
+          </div>
+        )}
+
+        {isFulfilled && (
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold text-xs flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>
+              Fulfilled: {fromStock} units from hospital stock, {donorUnitsFulfilled} units from donors
             </span>
           </div>
         )}

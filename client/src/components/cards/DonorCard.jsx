@@ -15,10 +15,8 @@ const DonorCard = ({ donor, searchedBloodGroup, onContact, className = '' }) => 
   if (searchedBloodGroup && searchedBloodGroup !== 'ALL') {
     if (donor.bloodGroup === searchedBloodGroup) {
       matchBadge = { label: 'Exact match', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
-    } else if (donor.bloodGroup === 'O-') {
-      matchBadge = { label: 'Compatible (O- universal)', color: 'bg-teal-500/15 text-teal-300 border-teal-500/30' };
     } else {
-      matchBadge = { label: `Compatible (${donor.bloodGroup})`, color: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
+      matchBadge = { label: 'Compatible', color: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
     }
   }
 

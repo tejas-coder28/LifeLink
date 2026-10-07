@@ -2,6 +2,7 @@ const DonorRequestPing = require('../models/DonorRequestPing');
 const BloodRequest = require('../models/BloodRequest');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const { canSeekDonors } = require('../utils/requestRules');
 
 /**
  * Creates or updates a ping from a hospital to a matched candidate donor
@@ -9,7 +10,15 @@ const User = require('../models/User');
 const notifyDonor = async (requestId, donorId, hospitalUserId) => {
   const request = await BloodRequest.findById(requestId);
   if (!request) {
-    throw new Error('Blood request not found');
+    const error = new Error('Blood request not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!canSeekDonors(request)) {
+    const error = new Error('Request is already fulfilled');
+    error.statusCode = 409;
+    throw error;
   }
 
   const hospitalUser = await User.findById(hospitalUserId);
@@ -105,9 +114,42 @@ const getPendingPingsForDonor = async (donorUserId) => {
     .sort({ sentAt: -1 });
 };
 
+/**
+ * Cancels all pending pings for a request that has been fulfilled.
+ * Sends short notification ("Request fulfilled, thank you") to each donor.
+ */
+const cancelPendingPingsForRequest = async (requestId) => {
+  const pendingPings = await DonorRequestPing.find({
+    requestId,
+    status: 'pending',
+  });
+
+  if (!pendingPings || pendingPings.length === 0) {
+    return [];
+  }
+
+  await DonorRequestPing.updateMany(
+    { requestId, status: 'pending' },
+    { $set: { status: 'cancelled', respondedAt: new Date() } }
+  );
+
+  for (const ping of pendingPings) {
+    await Notification.create({
+      recipient: ping.donorId,
+      title: 'Request fulfilled, thank you',
+      message: 'Request fulfilled, thank you',
+      type: 'status_update',
+      link: '/donor/dashboard',
+    });
+  }
+
+  return pendingPings;
+};
+
 module.exports = {
   notifyDonor,
   respondToPing,
   getRequestPings,
   getPendingPingsForDonor,
+  cancelPendingPingsForRequest,
 };

@@ -2,6 +2,7 @@ const { canDonate, isBloodCompatible, DONATION_COOLDOWN_DAYS } = require('../uti
 const { calculateHaversineDistance } = require('../utils/geo');
 const DonorProfile = require('../models/DonorProfile');
 const BloodRequest = require('../models/BloodRequest');
+const { canSeekDonors } = require('../utils/requestRules');
 
 const COOLDOWN_DAYS = DONATION_COOLDOWN_DAYS; // 90-day cooldown between donations (business rule)
 
@@ -94,13 +95,11 @@ function scoreDonorForRequest(request, donor) {
   }
 
   const tier = getMatchTier(donorGroup, reqGroup);
-  let tierLabel = 'Compatible Donor';
+  let tierLabel = donorGroup === reqGroup ? 'Exact match' : 'Compatible';
   let compatibilityScore = 25;
   if (tier === 1) {
-    tierLabel = 'Exact match';
     compatibilityScore = 40;
   } else if (tier === 2) {
-    tierLabel = 'Compatible (O- universal)';
     compatibilityScore = 32;
   }
 
@@ -183,7 +182,15 @@ const findMatchesForRequestId = async (requestId, maxResults = 10) => {
     .populate('targetHospital', 'name location address phone')
     .populate('hospital', 'name location address phone');
   if (!request) {
-    throw new Error('Blood request not found');
+    const error = new Error('Blood request not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!canSeekDonors(request)) {
+    const error = new Error('Request is already fulfilled');
+    error.statusCode = 409;
+    throw error;
   }
 
   // Fetch candidate donors

@@ -65,7 +65,7 @@ const getAllHospitals = async () => {
 
 const getVerifiedHospitals = async () => {
   return await Hospital.find({ isVerified: true })
-    .select('_id name address location phone isVerified')
+    .populate('user', 'name email phone accountType hospitalId')
     .sort({ name: 1 });
 };
 

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { donorApi } from '../../api/donorApi';
 import { hospitalApi } from '../../api/hospitalApi';
 import Badge from '../../components/common/Badge';
-import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import DonorCard from '../../components/cards/DonorCard';
-import { Search, MapPin, Phone, Building2, User, ShieldCheck } from 'lucide-react';
+import { Search, MapPin, Phone, Building2, User } from 'lucide-react';
 
 const BLOOD_GROUPS = ['ALL', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -17,16 +16,24 @@ const FindDonors = () => {
   const [hospitals, setHospitals]   = useState([]);
   const [loading, setLoading]       = useState(true);
 
+  // Fetch both donors and verified hospitals on page load with Promise.all
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        if (tab === 'donors') {
-          const res = await donorApi.searchDonors({ bloodGroup: bloodGroup === 'ALL' ? undefined : bloodGroup, availableOnly: true });
-          if (res.data?.success) setDonors(res.data.data);
-        } else {
-          const res = await hospitalApi.getAllHospitals();
-          if (res.data?.success) setHospitals(res.data.data);
+        const [donorsRes, hospRes] = await Promise.all([
+          donorApi.searchDonors({
+            bloodGroup: bloodGroup === 'ALL' ? undefined : bloodGroup,
+            availableOnly: true,
+          }),
+          hospitalApi.getVerifiedHospitals(),
+        ]);
+
+        if (donorsRes.data?.success) {
+          setDonors(donorsRes.data.data || []);
+        }
+        if (hospRes.data?.success) {
+          setHospitals(hospRes.data.data || []);
         }
       } catch (err) {
         console.error('Failed to fetch search data:', err);
@@ -34,17 +41,38 @@ const FindDonors = () => {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [tab, bloodGroup]);
 
+    fetchData();
+  }, [bloodGroup]);
+
+  // Counts and lists follow search box and blood group filter
   const filteredDonors = donors.filter((d) => {
-    const q = searchQuery.toLowerCase();
-    return (d.user?.name || '').toLowerCase().includes(q) || (d.address || '').toLowerCase().includes(q);
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      (d.user?.name || '').toLowerCase().includes(q) ||
+      (d.address || '').toLowerCase().includes(q);
+    const matchesBlood = bloodGroup === 'ALL' || d.bloodGroup === bloodGroup;
+    return matchesSearch && matchesBlood;
   });
 
   const filteredHospitals = hospitals.filter((h) => {
-    const q = searchQuery.toLowerCase();
-    return (h.name || '').toLowerCase().includes(q) || (h.address || '').toLowerCase().includes(q);
+    // Only verified hospitals on public pages
+    if (h.isVerified === false) return false;
+
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      (h.name || '').toLowerCase().includes(q) ||
+      (h.address || '').toLowerCase().includes(q);
+
+    // If bloodGroup is specified, check if hospital has inventory > 0 for that group
+    const matchesBlood =
+      bloodGroup === 'ALL' ||
+      (Array.isArray(h.inventory) &&
+        h.inventory.some((inv) => inv.bloodGroup === bloodGroup && inv.units > 0));
+
+    return matchesSearch && matchesBlood;
   });
 
   return (
@@ -66,21 +94,23 @@ const FindDonors = () => {
       {/* Filter & Search Bar */}
       <div className="glass-card p-5 space-y-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Tab Switch */}
+          {/* Tab Switch with immediate, dynamic counts */}
           <div className="tab-list w-full md:w-auto">
             <button
+              type="button"
               onClick={() => setTab('donors')}
-              className={`tab-item flex-1 md:flex-initial ${tab === 'donors' ? 'active' : ''}`}
+              className={`tab-item flex-1 md:flex-initial cursor-pointer ${tab === 'donors' ? 'active' : ''}`}
             >
               <User className="w-3.5 h-3.5" />
-              Standby Donors ({donors.length})
+              <span>Standby Donors ({filteredDonors.length})</span>
             </button>
             <button
+              type="button"
               onClick={() => setTab('hospitals')}
-              className={`tab-item flex-1 md:flex-initial ${tab === 'hospitals' ? 'active' : ''}`}
+              className={`tab-item flex-1 md:flex-initial cursor-pointer ${tab === 'hospitals' ? 'active' : ''}`}
             >
               <Building2 className="w-3.5 h-3.5" />
-              Hospitals &amp; Camps ({hospitals.length})
+              <span>Hospitals &amp; Camps ({filteredHospitals.length})</span>
             </button>
           </div>
 
@@ -97,36 +127,99 @@ const FindDonors = () => {
           </div>
         </div>
 
-        {/* Blood Group Filter */}
-        {tab === 'donors' && (
-          <div className="flex items-center space-x-2 overflow-x-auto pt-3 border-t border-theme">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider shrink-0 mr-1 text-muted">
-              Blood Group:
-            </span>
-            {BLOOD_GROUPS.map((bg) => (
-              <button
-                key={bg}
-                onClick={() => setBloodGroup(bg)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all border cursor-pointer ${
-                  bloodGroup === bg
-                    ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
-                    : 'glass-card text-secondary border-theme hover:border-slate-400'
-                }`}
-              >
-                {bg}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Blood Group Filter - available for both Donors and Hospitals */}
+        <div className="flex items-center space-x-2 overflow-x-auto pt-3 border-t border-theme">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider shrink-0 mr-1 text-muted">
+            Blood Group:
+          </span>
+          {BLOOD_GROUPS.map((bg) => (
+            <button
+              key={bg}
+              type="button"
+              onClick={() => setBloodGroup(bg)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all border cursor-pointer ${
+                bloodGroup === bg
+                  ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
+                  : 'glass-card text-secondary border-theme hover:border-slate-400'
+              }`}
+            >
+              {bg}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Results */}
+      {/* Results or Skeleton Loader */}
       {loading ? (
-        <Loader text={`Loading ${tab === 'donors' ? 'standby donors' : 'medical facilities'}...`} />
+        tab === 'donors' ? (
+          /* Donor Card Skeletons */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div
+                key={idx}
+                className="glass-card rounded-2xl p-5 sm:p-6 border border-theme space-y-4 animate-pulse"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-white/10 shrink-0 skeleton" />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="h-4 w-3/4 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                      <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                    </div>
+                  </div>
+                  <div className="w-10 h-6 rounded-lg bg-slate-200 dark:bg-white/10 shrink-0 skeleton" />
+                </div>
+                <div className="w-full border-t border-theme" />
+                <div className="space-y-2.5 py-1">
+                  <div className="h-3 w-4/5 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                  <div className="h-3 w-2/5 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                </div>
+                <div className="w-full border-t border-theme" />
+                <div className="h-9 w-full rounded-xl bg-slate-200 dark:bg-white/10 skeleton" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Hospital Card Skeletons */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((idx) => (
+              <div
+                key={idx}
+                className="glass-card rounded-2xl p-5 sm:p-6 border border-theme space-y-4 animate-pulse"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-white/10 shrink-0 skeleton" />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                      <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                    </div>
+                  </div>
+                  <div className="w-16 h-6 rounded-lg bg-slate-200 dark:bg-white/10 shrink-0 skeleton" />
+                </div>
+                <div className="w-full border-t border-theme" />
+                <div className="space-y-2.5 py-1">
+                  <div className="h-3 w-3/4 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                  <div className="h-3 w-1/2 rounded bg-slate-200 dark:bg-white/10 skeleton" />
+                  <div className="flex gap-2 pt-2">
+                    <div className="h-5 w-14 rounded-lg bg-slate-200 dark:bg-white/10 skeleton" />
+                    <div className="h-5 w-14 rounded-lg bg-slate-200 dark:bg-white/10 skeleton" />
+                    <div className="h-5 w-14 rounded-lg bg-slate-200 dark:bg-white/10 skeleton" />
+                  </div>
+                </div>
+                <div className="w-full border-t border-theme" />
+                <div className="h-9 w-full rounded-xl bg-slate-200 dark:bg-white/10 skeleton" />
+              </div>
+            ))}
+          </div>
+        )
       ) : tab === 'donors' ? (
         filteredDonors.length === 0 ? (
-          <EmptyState icon={User} title="No Standby Donors Found"
-            description="No active donors match your filter criteria. Try selecting another blood group or clearing your search." />
+          <EmptyState
+            icon={User}
+            title="No Standby Donors Found"
+            description="No active donors match your filter criteria. Try selecting another blood group or clearing your search."
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDonors.map((item) => (
@@ -135,8 +228,11 @@ const FindDonors = () => {
           </div>
         )
       ) : filteredHospitals.length === 0 ? (
-        <EmptyState icon={Building2} title="No Hospitals Found"
-          description="No registered medical centers match your search criteria." />
+        <EmptyState
+          icon={Building2}
+          title="No Hospitals Found"
+          description="No registered medical centers match your search criteria."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredHospitals.map((hosp) => (
@@ -144,7 +240,7 @@ const FindDonors = () => {
               key={hosp._id}
               className="glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border border-theme transition-all duration-200"
             >
-              {/* Header with p-5 sm:p-6 */}
+              {/* Header */}
               <div className="p-5 sm:p-6 pb-4 sm:pb-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center space-x-3 min-w-0">
@@ -157,19 +253,27 @@ const FindDonors = () => {
                       <h3 className="text-base font-extrabold text-primary font-heading truncate">
                         {hosp.name}
                       </h3>
+                      {/* Subtitle: Never displays "Verified Medical Facility" if not verified */}
                       <span className="text-xs text-muted block truncate">
-                        {hosp.licenseNumber || 'Verified Medical Facility'}
+                        {hosp.licenseNumber
+                          ? hosp.licenseNumber
+                          : hosp.isVerified
+                          ? 'Verified Medical Facility'
+                          : 'Medical Facility'}
                       </span>
                     </div>
                   </div>
-                  <Badge status={hosp.isVerified ? 'verified' : 'pending'} text={hosp.isVerified ? 'VERIFIED' : 'PENDING'} />
+                  <Badge
+                    status={hosp.isVerified ? 'verified' : 'pending'}
+                    text={hosp.isVerified ? 'VERIFIED' : 'PENDING'}
+                  />
                 </div>
               </div>
 
               {/* Full Width Divider */}
               <div className="w-full border-t border-theme" />
 
-              {/* Details with p-5 sm:p-6 */}
+              {/* Details */}
               <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-2.5 text-xs text-secondary">
                 <div className="flex items-center gap-2.5">
                   <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
@@ -194,7 +298,8 @@ const FindDonors = () => {
                           key={inv.bloodGroup}
                           className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-surface border border-theme text-secondary"
                         >
-                          {inv.bloodGroup}: <span className="text-rose-600 dark:text-rose-400 font-black">{inv.units}</span>u
+                          {inv.bloodGroup}:{' '}
+                          <span className="text-rose-600 dark:text-rose-400 font-black">{inv.units}</span>u
                         </span>
                       ))}
                     </div>

@@ -205,6 +205,10 @@ const completeDonation = async (donationId, callerUser = null) => {
         request.status = 'fulfilled';
       }
       await request.save();
+      if (request.status === 'fulfilled') {
+        const pingService = require('./ping.service');
+        await pingService.cancelPendingPingsForRequest(request._id);
+      }
     }
   }
 

@@ -17,6 +17,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
 
   const [selectedHospital, setSelectedHospital] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, hospital: null, loading: false });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,16 +64,25 @@ const UserManagement = () => {
     }
   };
 
-  // Admin: delete hospital record — hits DELETE /api/hospitals/:id
-  const handleDeleteHospital = async (hospId) => {
-    if (!window.confirm('Delete this hospital record permanently?')) return;
+  // Admin: open delete confirmation dialog
+  const handleRequestDelete = (hospital) => {
+    setDeleteConfirm({ isOpen: true, hospital, loading: false });
+  };
+
+  // Admin: confirm delete hospital record — hits DELETE /api/hospitals/:id
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.hospital) return;
+    const hospId = deleteConfirm.hospital._id;
+    setDeleteConfirm((prev) => ({ ...prev, loading: true }));
     setActionLoadingId(hospId);
     try {
       await hospitalApi.deleteHospital(hospId);
-      setHospitals(prev => prev.filter(h => h._id !== hospId));
+      setHospitals((prev) => prev.filter((h) => h._id !== hospId));
       showSuccess('Hospital record deleted.');
+      setDeleteConfirm({ isOpen: false, hospital: null, loading: false });
     } catch (err) {
       showError(err.response?.data?.message || 'Failed to delete hospital');
+      setDeleteConfirm((prev) => ({ ...prev, loading: false }));
     } finally {
       setActionLoadingId(null);
     }
@@ -201,7 +211,7 @@ const UserManagement = () => {
                         {hosp.isVerified ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                       </button>
                       <button
-                        onClick={() => handleDeleteHospital(hosp._id)}
+                        onClick={() => handleRequestDelete(hosp)}
                         disabled={actionLoadingId === hosp._id}
                         title="Delete Hospital Record"
                         className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-40 cursor-pointer"
@@ -273,6 +283,38 @@ const UserManagement = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, hospital: null, loading: false })}
+        title="Delete Medical Facility Record"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-secondary leading-relaxed">
+            Are you sure you want to permanently delete{' '}
+            <strong className="text-primary">{deleteConfirm.hospital?.name}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex items-center justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm({ isOpen: false, hospital: null, loading: false })}
+              className="btn-secondary text-xs px-4 py-2 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={deleteConfirm.loading}
+              className="btn-primary bg-rose-600 hover:bg-rose-500 text-xs px-4 py-2 rounded-xl cursor-pointer shadow-md shadow-rose-600/30"
+            >
+              {deleteConfirm.loading ? 'Deleting...' : 'Confirm Delete'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

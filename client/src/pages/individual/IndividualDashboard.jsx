@@ -11,6 +11,7 @@ import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
+import { canSeekDonors } from '../../utils/requestRules';
 import {
   Heart,
   Activity,
@@ -106,9 +107,7 @@ const IndividualDashboard = () => {
     try {
       const res = await requestApi.getRequests();
       if (res.data && res.data.success) {
-        const active = (res.data.data || []).filter((r) =>
-          ['open', 'matching', 'partially_fulfilled'].includes(r.status)
-        );
+        const active = (res.data.data || []).filter(canSeekDonors);
         setLiveRequests(active);
       }
     } catch (err) {

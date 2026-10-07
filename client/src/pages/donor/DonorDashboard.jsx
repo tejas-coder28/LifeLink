@@ -17,6 +17,7 @@ import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
+import { canSeekDonors } from '../../utils/requestRules';
 
 import {
   Heart,
@@ -117,13 +118,7 @@ const DonorDashboard = () => {
     try {
       const res = await requestApi.getRequests();
       if (res.data && res.data.success) {
-        const active = (res.data.data || []).filter((r) => {
-          if (!['open', 'matching', 'partially_fulfilled'].includes(r.status)) return false;
-          const z = r.unitsFromDonors !== undefined && r.unitsFromDonors !== null && r.unitsFromDonors > 0
-            ? r.unitsFromDonors
-            : Math.max(0, (r.unitsNeeded || 0) - (r.unitsFromStock || 0));
-          return z > 0;
-        });
+        const active = (res.data.data || []).filter(canSeekDonors);
         setLiveRequests(active);
       }
     } catch (err) {
@@ -164,7 +159,7 @@ const DonorDashboard = () => {
 
   const fetchHospitals = async () => {
     try {
-      const res = await hospitalApi.getAllHospitals();
+      const res = await hospitalApi.getVerifiedHospitals();
       if (res.data && res.data.success) {
         setHospitals(res.data.data);
       }

@@ -19,7 +19,7 @@ const donorRequestPingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'rejected', 'expired'],
+      enum: ['pending', 'accepted', 'rejected', 'expired', 'cancelled'],
       default: 'pending',
     },
     sentAt: {

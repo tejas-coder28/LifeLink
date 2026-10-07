@@ -16,6 +16,7 @@ import RequestCard from '../../components/cards/RequestCard';
 import RequestForm from '../../components/forms/RequestForm';
 import InventoryForm from '../../components/forms/InventoryForm';
 import { compatibleDonorGroups } from '../../utils/bloodCompatibility';
+import { canSeekDonors } from '../../utils/requestRules';
 
 import {
   Building2,
@@ -391,9 +392,28 @@ const HospitalDashboard = () => {
       ]);
       if (matchesRes.data && matchesRes.data.success) {
         setMatchingData(matchesRes.data.data);
+        const count = matchesRes.data.data.matchesCount ?? matchesRes.data.data.matches?.length;
+        if (count !== undefined) {
+          setMyRequests((prev) =>
+            prev.map((r) => (r._id === requestId ? { ...r, matchedDonorsCount: count } : r))
+          );
+        }
       }
     } catch (err) {
-      showError('Failed to fetch matching donors');
+      if (err.response?.status === 409) {
+        const reqObj =
+          myRequests.find((r) => r._id === requestId) ||
+          incomingRequests.find((r) => r._id === requestId) ||
+          { _id: requestId, status: 'fulfilled' };
+        setMatchingData({
+          isFulfilled: true,
+          message: err.response?.data?.message || 'Request is already fulfilled',
+          request: reqObj,
+          matches: [],
+        });
+      } else {
+        showError('Failed to fetch matching donors');
+      }
     } finally {
       setLoadingMatches(false);
     }
@@ -745,14 +765,16 @@ const HospitalDashboard = () => {
                             <span>Compatible Stock</span>
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => handleViewMatches(req._id)}
-                          className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
-                        >
-                          <Cpu className="w-3.5 h-3.5 mr-1" />
-                          <span>View Matches</span>
-                        </button>
+                        {canSeekDonors(req) && (
+                          <button
+                            type="button"
+                            onClick={() => handleViewMatches(req._id)}
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
+                          >
+                            <Cpu className="w-3.5 h-3.5 mr-1" />
+                            <span>View Matches</span>
+                          </button>
+                        )}
                       </div>
                     }
                   />
@@ -1051,14 +1073,16 @@ const HospitalDashboard = () => {
                         )}
 
                         {/* View Matches */}
-                        <button
-                          type="button"
-                          onClick={() => handleViewMatches(req._id)}
-                          className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
-                        >
-                          <Cpu className="w-3.5 h-3.5 mr-1" />
-                          <span>View Matches</span>
-                        </button>
+                        {canSeekDonors(req) && (
+                          <button
+                            type="button"
+                            onClick={() => handleViewMatches(req._id)}
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
+                          >
+                            <Cpu className="w-3.5 h-3.5 mr-1" />
+                            <span>View Matches</span>
+                          </button>
+                        )}
 
                         {/* Mark Fulfilled */}
                         {req.status !== 'fulfilled' && (
@@ -1378,68 +1402,91 @@ const HospitalDashboard = () => {
         ) : (
           <div className="space-y-6">
             {/* Request Summary Bar */}
-            <div className="p-4 rounded-2xl bg-surface border border-theme flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Badge bloodGroup={matchingData.request.bloodGroup} />
-                <div>
-                  <h3 className="text-sm font-bold text-primary">{matchingData.request.patientName}</h3>
-                  <span className="text-xs text-muted">
-                    {matchingData.request.unitsNeeded} unit(s) • {matchingData.request.address}
-                  </span>
+            {matchingData.request && (
+              <div className="p-4 rounded-2xl bg-surface border border-theme flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {matchingData.request.bloodGroup && <Badge bloodGroup={matchingData.request.bloodGroup} />}
+                  <div>
+                    <h3 className="text-sm font-bold text-primary">{matchingData.request.patientName || 'Blood Request'}</h3>
+                    <span className="text-xs text-muted">
+                      {matchingData.request.unitsNeeded || 1} unit(s) • {matchingData.request.address || ''}
+                    </span>
+                  </div>
+                </div>
+                <Badge status={matchingData.request.status || (matchingData.isFulfilled ? 'fulfilled' : 'open')} />
+              </div>
+            )}
+
+            {/* Fulfilled Notice & Disabled Contact Action */}
+            {(matchingData.isFulfilled || !canSeekDonors(matchingData.request)) ? (
+              <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-center space-y-3">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+                <h4 className="text-base font-extrabold text-primary font-heading">Blood Request is Fulfilled</h4>
+                <p className="text-xs text-secondary max-w-md mx-auto">
+                  {matchingData.message || 'This emergency blood request is already fulfilled. Donor seeking is closed and candidate contact pings are disabled.'}
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Contact Donor (Disabled - Request Fulfilled)</span>
+                  </button>
                 </div>
               </div>
-              <Badge status={matchingData.request.status} />
-            </div>
+            ) : (
+              <>
+                {/* Compatible Blood Inventory Reserves */}
+                {(() => {
+                  const compGroups = compatibleDonorGroups(matchingData.request?.bloodGroup || 'O+');
+                  return (
+                    <div className="p-4 rounded-2xl bg-surface border border-theme space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-secondary">
+                          Compatible Hospital Blood Reserves ({compGroups.join(', ')})
+                        </span>
+                        <span className="text-[11px] text-muted">
+                          Patient Requirement: <strong className="text-rose-600 dark:text-rose-400">{matchingData.request?.bloodGroup}</strong>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                        {compGroups.map((grp) => {
+                          const invItem = hospitalProfile?.inventory?.find((i) => i.bloodGroup === grp);
+                          const units = invItem ? invItem.units : 0;
+                          const isExact = grp === matchingData.request?.bloodGroup;
+                          return (
+                            <div
+                              key={grp}
+                              className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                                units > 0
+                                  ? isExact
+                                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400'
+                                    : 'bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-300'
+                                  : 'bg-slate-200/50 dark:bg-white/5 border-slate-200 dark:border-white/5 text-muted'
+                              }`}
+                            >
+                              <span className="font-extrabold text-xs">{grp} {isExact && '★'}</span>
+                              <span className="font-black text-xs">{units} unit(s)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-            {/* Compatible Blood Inventory Reserves */}
-            {(() => {
-              const compGroups = compatibleDonorGroups(matchingData.request.bloodGroup);
-              return (
-                <div className="p-4 rounded-2xl bg-surface border border-theme space-y-2.5">
+                {/* Candidate Donors Ranked List */}
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-secondary">
-                      Compatible Hospital Blood Reserves ({compGroups.join(', ')})
-                    </span>
-                    <span className="text-[11px] text-muted">
-                      Patient Requirement: <strong className="text-rose-600 dark:text-rose-400">{matchingData.request.bloodGroup}</strong>
+                    <h4 className="text-sm font-bold text-primary font-heading">
+                      {matchingData.matchesCount} Candidate Donors Ranked
+                    </h4>
+                    <span className="text-[11px] font-semibold text-secondary">
+                      Total Pool Evaluated: {matchingData.totalCandidateDonors}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                    {compGroups.map((grp) => {
-                      const invItem = hospitalProfile?.inventory?.find((i) => i.bloodGroup === grp);
-                      const units = invItem ? invItem.units : 0;
-                      const isExact = grp === matchingData.request.bloodGroup;
-                      return (
-                        <div
-                          key={grp}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between ${
-                            units > 0
-                              ? isExact
-                                ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-300'
-                              : 'bg-slate-200/50 dark:bg-white/5 border-slate-200 dark:border-white/5 text-muted'
-                          }`}
-                        >
-                          <span className="font-extrabold text-xs">{grp} {isExact && '★'}</span>
-                          <span className="font-black text-xs">{units} unit(s)</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Candidate Donors Ranked List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-primary font-heading">
-                  {matchingData.matchesCount} Candidate Donors Ranked
-                </h4>
-                <span className="text-[11px] font-semibold text-secondary">
-                  Total Pool Evaluated: {matchingData.totalCandidateDonors}
-                </span>
-              </div>
 
               {matchingData.matches.length === 0 ? (
                 <EmptyState title="No Compatible Donors Available" description="No donors currently fit compatibility & cooldown criteria." />
@@ -1559,8 +1606,10 @@ const HospitalDashboard = () => {
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
+      </div>
+    )}
       </Modal>
     </div>
   );

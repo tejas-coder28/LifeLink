@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react';
+import { canSeekDonors } from '../../utils/requestRules';
 
 const MatchingDonorsPage = () => {
   const { id } = useParams();
@@ -26,6 +27,8 @@ const MatchingDonorsPage = () => {
   const [loading, setLoading] = useState(true);
   const [pingsMap, setPingsMap] = useState({});
   const [notifyingDonorId, setNotifyingDonorId] = useState(null);
+  const [isFulfilled, setIsFulfilled] = useState(false);
+  const [fulfilledMessage, setFulfilledMessage] = useState('');
 
   const fetchMatchesAndPings = async () => {
     try {
@@ -46,7 +49,18 @@ const MatchingDonorsPage = () => {
         setPingsMap(map);
       }
     } catch (err) {
-      console.error('Failed to load donor matches:', err);
+      if (err.response?.status === 409) {
+        setIsFulfilled(true);
+        setFulfilledMessage(err.response?.data?.message || 'Request is already fulfilled');
+        try {
+          const reqRes = await requestApi.getRequestById(id);
+          if (reqRes.data && reqRes.data.success) {
+            setData({ request: reqRes.data.data, matches: [], matchesCount: 0 });
+          }
+        } catch (_) {}
+      } else {
+        console.error('Failed to load donor matches:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -137,7 +151,25 @@ const MatchingDonorsPage = () => {
           </span>
         </div>
 
-        {data.matches.length === 0 ? (
+        {(isFulfilled || !canSeekDonors(data?.request)) ? (
+          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-center space-y-3">
+            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+            <h3 className="text-base font-extrabold text-primary font-heading">Blood Request is Fulfilled</h3>
+            <p className="text-xs text-secondary max-w-md mx-auto">
+              {fulfilledMessage || 'This emergency blood request is already fulfilled. Donor seeking is closed and contact actions are disabled.'}
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                disabled
+                className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Contact Donor (Disabled - Request Fulfilled)</span>
+              </button>
+            </div>
+          </div>
+        ) : data.matches.length === 0 ? (
           <EmptyState title="No Compatible Standby Donors" description="No candidate donors met compatibility and cooldown criteria." />
         ) : (
           <div className="space-y-3">
