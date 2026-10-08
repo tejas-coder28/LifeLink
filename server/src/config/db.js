@@ -90,7 +90,7 @@ function initFirebase() {
   let app;
   if (!existingApps.length) {
     app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.cert(serviceAccount),
     });
   } else {
     app = existingApps[0];
