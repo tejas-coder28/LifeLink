@@ -25,6 +25,10 @@ server/.env.*
 client/.env
 client/.env.*
 !client/.env.example
+*serviceAccount*.json
+*firebase-adminsdk*.json
+service-account*.json
+serviceAccountKey.json
 
 # ── Test Coverage ─────────────────────────────────────────────────────────────
 coverage/

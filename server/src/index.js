@@ -1,10 +1,10 @@
 require('dotenv').config();
 const connectDB = require('./config/db');
-const User = require('./models/User');
+const User = require('./repositories/user.repository');
 const seedData = require('./seed');
 const app = require('./app');
 
-// Connect to MongoDB Database and auto-seed if empty in non-production local development
+// Connect to Firestore Database and auto-seed if empty in non-production local development
 connectDB().then(async () => {
   try {
     if (process.env.NODE_ENV !== 'production') {
@@ -16,7 +16,7 @@ connectDB().then(async () => {
     }
 
     // Safe migration: ensure any existing requests lacking targetHospital are handled
-    const BloodRequest = require('./models/BloodRequest');
+    const BloodRequest = require('./repositories/bloodRequest.repository');
     const legacyRequests = await BloodRequest.find({ targetHospital: null });
     if (legacyRequests.length > 0) {
       for (const req of legacyRequests) {
@@ -32,8 +32,9 @@ connectDB().then(async () => {
   } catch (err) {
     console.error('Startup check error:', err.message);
   }
+}).catch((err) => {
+  console.error('Failed to initialize database:', err.message);
 });
-
 
 const PORT = process.env.PORT || 5000;
 

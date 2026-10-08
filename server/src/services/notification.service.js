@@ -1,5 +1,5 @@
-const Notification = require('../models/Notification');
-const DonorProfile = require('../models/DonorProfile');
+const Notification = require('../repositories/notification.repository');
+const DonorProfile = require('../repositories/donorProfile.repository');
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
 
 /**
@@ -18,7 +18,8 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
   const compatibleDonors = donors.filter(donor => {
     if (!donor.user) return false;
     // Exclude requester from their own request
-    if (requesterId && donor.user._id.toString() === requesterId) return false;
+    const donorUserId = donor.user._id ? donor.user._id.toString() : donor.user.toString();
+    if (requesterId && donorUserId === requesterId) return false;
     // Compatibility check
     if (!canDonate(donor.bloodGroup, bloodRequest.bloodGroup)) return false;
     // Cooldown check (90 days)
@@ -32,7 +33,7 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
 
   const units = bloodRequest.unitsFromDonors || bloodRequest.unitsNeeded;
   const notificationsToInsert = compatibleDonors.map(donor => ({
-    recipient: donor.user._id,
+    recipient: donor.user._id || donor.user,
     title: `🚨 Emergency Blood Request: ${bloodRequest.bloodGroup} Needed`,
     message: `Urgent request for ${bloodRequest.patientName} (${units} unit(s) needed, ${bloodRequest.urgency.toUpperCase()} urgency) at ${bloodRequest.address}.`,
     type: 'request_match',
@@ -47,20 +48,13 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
   return { count: notificationsToInsert.length };
 };
 
-
 const getUserNotifications = async (userId) => {
-  return await Notification.find({ recipient: userId })
-    .sort({ createdAt: -1 })
-    .limit(20);
+  const uId = userId && userId._id ? userId._id.toString() : userId.toString();
+  return await Notification.findByRecipient(uId, 20);
 };
 
 const markAsRead = async (notificationId, userId) => {
-  const notification = await Notification.findOne({ _id: notificationId, recipient: userId });
-  if (!notification) throw new Error('Notification not found');
-
-  notification.isRead = true;
-  await notification.save();
-  return notification;
+  return await Notification.markAsRead(notificationId, userId);
 };
 
 module.exports = {

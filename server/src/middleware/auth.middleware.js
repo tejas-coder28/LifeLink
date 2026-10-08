@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../repositories/user.repository');
 const { sendError } = require('../utils/responseHandler');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'lifelink_secret_jwt_key_2026';

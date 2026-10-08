@@ -1,11 +1,11 @@
-const DonorProfile = require('../models/DonorProfile');
-const User = require('../models/User');
+const DonorProfile = require('../repositories/donorProfile.repository');
+const User = require('../repositories/user.repository');
 const { compatibleDonorGroups } = require('../utils/bloodCompatibility');
+const { calculateHaversineDistance } = require('../utils/geo');
 
 const getProfileByUserId = async (userId) => {
   let profile = await DonorProfile.findOne({ user: userId }).populate('user', 'name email phone accountType hospitalId');
   if (!profile) {
-    // If not existing yet, create default
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
     profile = await DonorProfile.create({
@@ -27,7 +27,11 @@ const updateProfileByUserId = async (userId, updateData) => {
 
   let profile = await DonorProfile.findOne({ user: userId });
   if (!profile) {
-    profile = new DonorProfile({ user: userId, bloodGroup: bloodGroup || 'O+' });
+    profile = await DonorProfile.create({
+      user: userId,
+      bloodGroup: bloodGroup || 'O+',
+      contactNumber: contactNumber || '',
+    });
   }
 
   if (bloodGroup) {
@@ -41,7 +45,7 @@ const updateProfileByUserId = async (userId, updateData) => {
     };
   }
   if (address !== undefined) profile.address = address;
-  if (lastDonationDate !== undefined) profile.lastDonationDate = lastDonationDate;
+  if (lastDonationDate !== undefined) profile.lastDonationDate = lastDonationDate ? new Date(lastDonationDate) : null;
   if (isAvailable !== undefined) profile.isAvailable = isAvailable;
   if (age !== undefined) profile.age = age;
   if (gender !== undefined) profile.gender = gender;
@@ -56,35 +60,32 @@ const updateProfileByUserId = async (userId, updateData) => {
 };
 
 const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly = true }) => {
-  const query = {};
-
-  if (availableOnly) {
-    query.isAvailable = true;
-  }
-
+  let compatibleGroups = null;
   if (bloodGroup && bloodGroup !== 'ALL') {
-    const compatibleGroups = compatibleDonorGroups(bloodGroup);
-    query.bloodGroup = { $in: compatibleGroups };
+    compatibleGroups = compatibleDonorGroups(bloodGroup);
   }
 
+  // Filter by availability and blood group in Firestore
+  let donors = await DonorProfile.findCandidates(compatibleGroups, availableOnly);
+  donors = await DonorProfile.populateDocs(donors, [
+    { path: 'user', select: 'name email phone accountType hospitalId' },
+  ]);
+
+  // Compute Haversine distance in code to avoid complex geo queries and keep reads low
   if (lat && lng) {
-    const radiusInMeters = radiusKm * 1000;
-    query.location = {
-      $near: {
-        $geometry: {
-          type: 'Point',
-          coordinates: [parseFloat(lng), parseFloat(lat)],
-        },
-        $maxDistance: radiusInMeters,
-      },
-    };
+    const originCoords = [parseFloat(lng), parseFloat(lat)];
+    donors = donors
+      .map(d => {
+        const dCoords = d.location?.coordinates || [77.2090, 28.6139];
+        const distanceKm = calculateHaversineDistance(originCoords, dCoords);
+        return { donor: d, distanceKm };
+      })
+      .filter(item => item.distanceKm <= radiusKm)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .map(item => item.donor);
   }
 
-  const donors = await DonorProfile.find(query)
-    .populate('user', 'name email phone accountType hospitalId')
-    .limit(50);
-
-  return donors;
+  return donors.slice(0, 50);
 };
 
 const getAllDonors = async () => {

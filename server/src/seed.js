@@ -1,59 +1,38 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const User = require('./models/User');
-const DonorProfile = require('./models/DonorProfile');
-const Hospital = require('./models/Hospital');
-const BloodRequest = require('./models/BloodRequest');
-const Donation = require('./models/Donation');
-const Notification = require('./models/Notification');
-const AIInsight = require('./models/AIInsight');
+const User = require('./repositories/user.repository');
+const DonorProfile = require('./repositories/donorProfile.repository');
+const Hospital = require('./repositories/hospital.repository');
+const BloodRequest = require('./repositories/bloodRequest.repository');
+const Donation = require('./repositories/donation.repository');
+const Notification = require('./repositories/notification.repository');
+const AIInsight = require('./repositories/aiInsight.repository');
 
 dotenv.config();
 
 const seedData = async (options = true) => {
   let shouldExit = true;
-  let forceReset = false;
-
   if (typeof options === 'boolean') {
     shouldExit = options;
   } else if (typeof options === 'object' && options !== null) {
     shouldExit = options.shouldExit !== undefined ? options.shouldExit : true;
-    forceReset = Boolean(options.reset);
-  }
-
-  if (process.argv.includes('--reset')) {
-    forceReset = true;
   }
 
   try {
-    if (mongoose.connection.readyState === 0) {
-      await connectDB();
-    }
+    await connectDB();
 
     const existingUsersCount = await User.countDocuments();
 
-    if (existingUsersCount > 0 && !forceReset) {
+    if (existingUsersCount > 0) {
       console.log(`Database already has data (${existingUsersCount} user(s) found).`);
-      console.log('Skipping seed to prevent accidental data loss. To wipe and re-seed, run with: npm run seed -- --reset');
+      console.log('Skipping seed to prevent overwriting existing data.');
       if (shouldExit) {
         process.exit(0);
       }
       return;
     }
 
-    if (forceReset) {
-      console.log('Reset flag detected. Clearing existing database collections...');
-      await User.deleteMany({});
-      await DonorProfile.deleteMany({});
-      await Hospital.deleteMany({});
-      await BloodRequest.deleteMany({});
-      await Donation.deleteMany({});
-      await Notification.deleteMany({});
-      await AIInsight.deleteMany({});
-    } else {
-      console.log('Database is empty. Populating initial seed data...');
-    }
+    console.log('Database is empty. Populating initial seed data...');
 
     console.log('Creating demo users...');
 

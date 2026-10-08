@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const DonorProfile = require('../models/DonorProfile');
-const Hospital = require('../models/Hospital');
+const User = require('../repositories/user.repository');
+const DonorProfile = require('../repositories/donorProfile.repository');
+const Hospital = require('../repositories/hospital.repository');
 const { JWT_SECRET } = require('../middleware/auth.middleware');
 
 const generateToken = (id, accountType) => {
@@ -13,7 +13,8 @@ const generateToken = (id, accountType) => {
 const registerUser = async (userData) => {
   const { name, email, password, accountType: reqAccountType, role, phone, bloodGroup } = userData;
 
-  const userExists = await User.findOne({ email });
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  const userExists = await User.findByEmail(normalizedEmail);
   if (userExists) {
     throw new Error('User already exists with this email address');
   }
@@ -31,9 +32,10 @@ const registerUser = async (userData) => {
     throw new Error("Admin accounts cannot be created via public registration.");
   }
 
+  // Atomically create user with unique email transaction
   const user = await User.create({
     name,
-    email,
+    email: normalizedEmail,
     password,
     accountType: accountType || 'user',
     phone: phone || '',
@@ -81,7 +83,8 @@ const registerUser = async (userData) => {
 };
 
 const loginUser = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select('+password');
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  const user = await User.findByEmail(normalizedEmail);
 
   if (!user || !(await user.matchPassword(password))) {
     throw new Error('Invalid email or password');
@@ -89,11 +92,18 @@ const loginUser = async ({ email, password }) => {
 
   let bloodGroup = undefined;
   if (user.accountType === 'user') {
-    const donorProfile = await DonorProfile.findOne({ user: user._id }).select('bloodGroup');
+    const donorProfile = await DonorProfile.findByUserId(user._id);
     bloodGroup = donorProfile?.bloodGroup;
   }
 
   const token = generateToken(user._id, user.accountType);
+
+  try {
+    const LoginLog = require('../repositories/loginLog.repository');
+    await LoginLog.recordLogin(user._id, user.email);
+  } catch (logErr) {
+    // Non-blocking log recording
+  }
 
   return {
     _id: user._id,
@@ -116,9 +126,9 @@ const getCurrentUser = async (userId) => {
 
   let profile = null;
   if (user.accountType === 'user') {
-    profile = await DonorProfile.findOne({ user: user._id });
+    profile = await DonorProfile.findByUserId(user._id);
   } else if (user.accountType === 'hospital') {
-    profile = await Hospital.findOne({ user: user._id });
+    profile = await Hospital.findByUserId(user._id);
   }
 
   return {
@@ -131,4 +141,5 @@ module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  generateToken,
 };

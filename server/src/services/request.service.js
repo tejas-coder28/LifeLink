@@ -1,10 +1,11 @@
-const BloodRequest = require('../models/BloodRequest');
-const Hospital = require('../models/Hospital');
-const User = require('../models/User');
-const Donation = require('../models/Donation');
-const InventoryTransaction = require('../models/InventoryTransaction');
-const Notification = require('../models/Notification');
-const DonorProfile = require('../models/DonorProfile');
+const BloodRequest = require('../repositories/bloodRequest.repository');
+const Hospital = require('../repositories/hospital.repository');
+const User = require('../repositories/user.repository');
+const Donation = require('../repositories/donation.repository');
+const InventoryTransaction = require('../repositories/inventoryTransaction.repository');
+const Notification = require('../repositories/notification.repository');
+const DonorProfile = require('../repositories/donorProfile.repository');
+const { getDb } = require('../config/db');
 const { notifyMatchedDonorsForRequest } = require('./notification.service');
 const { canDonate } = require('../utils/bloodCompatibility');
 const { rankDonorsForRequest } = require('./matching.service');
@@ -89,9 +90,9 @@ const createRequest = async (userId, requestData) => {
     hospital: targetHospitalDoc ? targetHospitalDoc._id : null,
     patientName,
     bloodGroup,
-    unitsNeeded,
+    unitsNeeded: Number(unitsNeeded) || 1,
     unitsFromStock: 0,
-    unitsFromDonors: initialStatus === 'pending_hospital_review' ? 0 : unitsNeeded,
+    unitsFromDonors: initialStatus === 'pending_hospital_review' ? 0 : (Number(unitsNeeded) || 1),
     unitsFulfilled: 0,
     urgency: urgency || 'high',
     address: reqAddress,
@@ -185,7 +186,7 @@ const getRequests = async (filters = {}, callerUser = null) => {
     const matches = rankDonorsForRequest(timedReq, candidateDonors);
     timedReq.matchedDonorsCount = matches.length;
     if (req.matchedDonorsCount !== matches.length) {
-      await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+      await BloodRequest.findByIdAndUpdate(req._id, { matchedDonorsCount: matches.length });
     }
     updatedRequests.push(timedReq);
   }
@@ -198,11 +199,6 @@ const getRequests = async (filters = {}, callerUser = null) => {
   return updatedRequests;
 };
 
-/**
- * Retrieves requests for the current user.
- * - For hospital accounts: returns EVERY request where targetHospital == this hospital (in all statuses).
- * - For individual users: returns all requests created by this user.
- */
 const getMyRequests = async (callerUser) => {
   const candidateDonors = await DonorProfile.find()
     .populate('user', 'name email phone accountType hospitalId');
@@ -229,7 +225,7 @@ const getMyRequests = async (callerUser) => {
       const matches = rankDonorsForRequest(timedReq, candidateDonors);
       timedReq.matchedDonorsCount = matches.length;
       if (req.matchedDonorsCount !== matches.length) {
-        await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+        await BloodRequest.findByIdAndUpdate(req._id, { matchedDonorsCount: matches.length });
       }
       updatedRequests.push(timedReq);
     }
@@ -250,7 +246,7 @@ const getMyRequests = async (callerUser) => {
     const matches = rankDonorsForRequest(timedReq, candidateDonors);
     timedReq.matchedDonorsCount = matches.length;
     if (req.matchedDonorsCount !== matches.length) {
-      await BloodRequest.updateOne({ _id: req._id }, { $set: { matchedDonorsCount: matches.length } });
+      await BloodRequest.findByIdAndUpdate(req._id, { matchedDonorsCount: matches.length });
     }
     updatedRequests.push(timedReq);
   }
@@ -292,7 +288,7 @@ const getRequestById = async (id, callerUser = null) => {
   const matches = rankDonorsForRequest(request, candidateDonors);
   request.matchedDonorsCount = matches.length;
   if (request.matchedDonorsCount !== matches.length) {
-    await BloodRequest.updateOne({ _id: request._id }, { $set: { matchedDonorsCount: matches.length } });
+    await BloodRequest.findByIdAndUpdate(request._id, { matchedDonorsCount: matches.length });
   }
 
   await checkHospitalTimeout(request);
@@ -313,9 +309,6 @@ const updateRequestStatus = async (id, status) => {
   return await request.populate('requester', 'name email phone');
 };
 
-/**
- * Hospital incoming requests queue
- */
 const getIncomingHospitalRequests = async (userId) => {
   const hospital = await Hospital.findOne({ user: userId });
   if (!hospital) {
@@ -342,26 +335,29 @@ const getIncomingHospitalRequests = async (userId) => {
     const matches = rankDonorsForRequest(timedReq, candidateDonors);
     timedReq.matchedDonorsCount = matches.length;
     if (r.matchedDonorsCount !== matches.length) {
-      await BloodRequest.updateOne({ _id: r._id }, { $set: { matchedDonorsCount: matches.length } });
+      await BloodRequest.findByIdAndUpdate(r._id, { matchedDonorsCount: matches.length });
     }
     updatedRequests.push(timedReq);
   }
 
   // Fetch all pledges for these requests to display live in dashboard
   const requestIds = updatedRequests.map(r => r._id);
-  const donations = await Donation.find({ request: { $in: requestIds } })
-    .populate('donor', 'name email phone')
-    .populate('donorProfile');
+  let donations = [];
+  if (requestIds.length > 0) {
+    donations = await Donation.find({ request: { $in: requestIds } })
+      .populate('donor', 'name email phone')
+      .populate('donorProfile');
+  }
 
   const donationsByRequestId = {};
   donations.forEach(d => {
-    const rId = d.request.toString();
+    const rId = (d.request?._id || d.request).toString();
     if (!donationsByRequestId[rId]) donationsByRequestId[rId] = [];
     donationsByRequestId[rId].push(d);
   });
 
   return updatedRequests.map(r => {
-    const rObj = r.toObject();
+    const rObj = typeof r.toObject === 'function' ? r.toObject() : { ...r };
     rObj.donations = donationsByRequestId[r._id.toString()] || [];
     return rObj;
   });
@@ -369,195 +365,189 @@ const getIncomingHospitalRequests = async (userId) => {
 
 /**
  * Hospital accepts request:
- * Checks stock for requested group:
- * - Stock >= needed: issues all from stock, status fulfilled, no donor matching
- * - 0 < stock < needed: issues stock, status partially_fulfilled, shortfall donor request opens
- * - stock == 0: status open, donor request for all units opens
+ * Atomic Firestore transaction ensures no negative stock and prevents double-fulfillment.
  */
 const acceptRequest = async (requestId, userId, callerRole) => {
-  const request = await BloodRequest.findById(requestId);
-  if (!request) {
-    const err = new Error('Blood request not found');
-    err.statusCode = 404;
-    throw err;
-  }
+  const db = getDb();
 
-  let hospital = null;
-  if (callerRole === 'admin') {
-    hospital = await Hospital.findById(request.targetHospital || request.hospital);
-  } else {
-    hospital = await Hospital.findOne({ user: userId });
-    const targetHospId = request.targetHospital || request.hospital;
-    if (!hospital || !targetHospId || targetHospId.toString() !== hospital._id.toString()) {
-      const err = new Error('Unauthorized: Request is not addressed to your hospital');
-      err.statusCode = 403;
+  const txResult = await db.runTransaction(async (transaction) => {
+    const reqRef = BloodRequest.collection.doc(requestId.toString());
+    const reqSnap = await transaction.get(reqRef);
+    if (!reqSnap.exists) {
+      const err = new Error('Blood request not found');
+      err.statusCode = 404;
       throw err;
     }
-  }
+    const requestData = BloodRequest.normalize(reqSnap);
 
-  if (request.status !== 'pending_hospital_review') {
-    throw new Error(`Only requests pending review can be accepted (current: ${request.status})`);
-  }
+    const targetHospId = requestData.targetHospital || requestData.hospital;
+    if (!targetHospId) {
+      throw new Error('Request has no assigned target hospital');
+    }
 
-  const inventoryItem = (hospital.inventory || []).find(i => i.bloodGroup === request.bloodGroup);
-  const availableStock = inventoryItem ? inventoryItem.units : 0;
-  let stockResult = {};
-  let unitsToIssue = 0;
+    const hospRef = Hospital.collection.doc(targetHospId.toString());
+    const hospSnap = await transaction.get(hospRef);
+    if (!hospSnap.exists) {
+      throw new Error('Target hospital not found');
+    }
+    const hospital = Hospital.normalize(hospSnap);
 
-  // 1. Attempt atomic deduction of the full needed quantity
-  const fullUpdated = await Hospital.findOneAndUpdate(
-    {
-      _id: hospital._id,
-      inventory: {
-        $elemMatch: { bloodGroup: request.bloodGroup, units: { $gte: request.unitsNeeded } },
-      },
-    },
-    {
-      $inc: { 'inventory.$.units': -request.unitsNeeded },
-    },
-    { new: true }
-  );
-
-  if (fullUpdated) {
-    unitsToIssue = request.unitsNeeded;
-  } else {
-    // 2. Full stock unavailable: attempt atomic deduction of available partial stock
-    const freshHosp = await Hospital.findById(hospital._id);
-    const availableNow = freshHosp?.inventory?.find((i) => i.bloodGroup === request.bloodGroup)?.units || 0;
-    const partialToTry = Math.min(availableNow, request.unitsNeeded - 1);
-
-    if (partialToTry > 0) {
-      const partialUpdated = await Hospital.findOneAndUpdate(
-        {
-          _id: hospital._id,
-          inventory: {
-            $elemMatch: { bloodGroup: request.bloodGroup, units: { $gte: partialToTry } },
-          },
-        },
-        {
-          $inc: { 'inventory.$.units': -partialToTry },
-        },
-        { new: true }
-      );
-      if (partialUpdated) {
-        unitsToIssue = partialToTry;
+    if (callerRole !== 'admin') {
+      if (hospital.user && hospital.user.toString() !== userId.toString()) {
+        const err = new Error('Unauthorized: Request is not addressed to your hospital');
+        err.statusCode = 403;
+        throw err;
       }
     }
-  }
 
-  if (unitsToIssue === request.unitsNeeded) {
-    // Full stock fulfillment
-    await InventoryTransaction.create({
-      hospital: hospital._id,
-      bloodGroup: request.bloodGroup,
-      change: -unitsToIssue,
-      reason: 'issued',
-      request: request._id,
-      actor: userId,
-      notes: `Fulfilled directly from hospital stock (${unitsToIssue} units of ${request.bloodGroup})`,
-    });
+    if (requestData.status !== 'pending_hospital_review') {
+      throw new Error(`Only requests pending review can be accepted (current: ${requestData.status})`);
+    }
 
-    request.unitsFromStock = unitsToIssue;
-    request.unitsFulfilled = unitsToIssue;
-    request.unitsFromDonors = 0;
-    request.status = 'fulfilled';
-    request.reviewedAt = new Date();
-    await request.save();
-    await pingService.cancelPendingPingsForRequest(request._id);
+    const inventory = hospital.inventory ? [...hospital.inventory] : [];
+    const itemIndex = inventory.findIndex(i => i.bloodGroup === requestData.bloodGroup);
+    const availableStock = itemIndex !== -1 ? (Number(inventory[itemIndex].units) || 0) : 0;
+
+    let unitsToIssue = 0;
+    if (availableStock >= requestData.unitsNeeded) {
+      unitsToIssue = requestData.unitsNeeded;
+    } else if (availableStock > 0) {
+      unitsToIssue = availableStock;
+    }
+
+    // Atomic deduction: non-negative inventory guaranteed
+    if (unitsToIssue > 0 && itemIndex !== -1) {
+      inventory[itemIndex] = {
+        ...inventory[itemIndex],
+        units: availableStock - unitsToIssue,
+      };
+      transaction.update(hospRef, {
+        inventory,
+        updatedAt: new Date(),
+      });
+    }
+
+    const now = new Date();
+    let newStatus = 'open';
+    let shortfall = requestData.unitsNeeded;
+
+    if (unitsToIssue === requestData.unitsNeeded) {
+      newStatus = 'fulfilled';
+      shortfall = 0;
+    } else if (unitsToIssue > 0) {
+      newStatus = 'partially_fulfilled';
+      shortfall = requestData.unitsNeeded - unitsToIssue;
+    }
+
+    const reqUpdates = {
+      unitsFromStock: unitsToIssue,
+      unitsFulfilled: unitsToIssue,
+      unitsFromDonors: shortfall,
+      status: newStatus,
+      reviewedAt: now,
+      updatedAt: now,
+    };
+    transaction.update(reqRef, reqUpdates);
+
+    if (unitsToIssue > 0) {
+      const txRef = InventoryTransaction.collection.doc();
+      transaction.set(txRef, {
+        hospital: hospital._id,
+        bloodGroup: requestData.bloodGroup,
+        change: -unitsToIssue,
+        reason: 'issued',
+        request: requestData._id,
+        actor: userId,
+        notes: unitsToIssue === requestData.unitsNeeded
+          ? `Fulfilled directly from hospital stock (${unitsToIssue} units of ${requestData.bloodGroup})`
+          : `Partially fulfilled from stock (${unitsToIssue} units of ${requestData.bloodGroup})`,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      request: { ...requestData, ...reqUpdates },
+      hospital,
+      unitsToIssue,
+      shortfall,
+      newStatus,
+    };
+  });
+
+  const { unitsToIssue, shortfall, newStatus } = txResult;
+  let stockResult = {};
+
+  if (unitsToIssue === txResult.request.unitsNeeded) {
+    await pingService.cancelPendingPingsForRequest(txResult.request._id);
 
     await Notification.create({
-      recipient: request.requester,
+      recipient: txResult.request.requester,
       title: '✅ Emergency Blood Request Fulfilled!',
-      message: `Hospital has accepted your request and issued all ${unitsToIssue} units of ${request.bloodGroup} directly from blood bank inventory.`,
+      message: `Hospital has accepted your request and issued all ${unitsToIssue} units of ${txResult.request.bloodGroup} directly from blood bank inventory.`,
       type: 'status_update',
-      link: `/requests/${request._id}`,
+      link: `/requests/${txResult.request._id}`,
     });
 
     stockResult = { fulfilled: true, unitsFromStock: unitsToIssue, shortfall: 0 };
   } else if (unitsToIssue > 0) {
-    // Partial stock fulfillment
-    await InventoryTransaction.create({
-      hospital: hospital._id,
-      bloodGroup: request.bloodGroup,
-      change: -unitsToIssue,
-      reason: 'issued',
-      request: request._id,
-      actor: userId,
-      notes: `Partially fulfilled from stock (${unitsToIssue} units of ${request.bloodGroup})`,
-    });
-
-    const shortfall = request.unitsNeeded - unitsToIssue;
-    request.unitsFromStock = unitsToIssue;
-    request.unitsFulfilled = unitsToIssue;
-    request.unitsFromDonors = shortfall;
-    request.status = 'partially_fulfilled';
-    request.reviewedAt = new Date();
-    await request.save();
-
-    // Trigger matching for shortfall
-    const populated = await BloodRequest.findById(request._id)
+    // Partial stock fulfillment: notify donors for remaining units
+    const populated = await BloodRequest.findById(txResult.request._id)
       .populate('requester', 'name email phone')
       .populate('targetHospital', 'name location address phone');
 
     try {
       const notifRes = await notifyMatchedDonorsForRequest(populated);
       if (notifRes && notifRes.count) {
-        request.matchedDonorsCount = notifRes.count;
-        await request.save();
+        await BloodRequest.findByIdAndUpdate(txResult.request._id, { matchedDonorsCount: notifRes.count });
       }
     } catch (err) {
-      console.error('Failed to notify donors for shortfall:', err.message);
+      console.error('Failed to notify donors for partial shortfall:', err.message);
     }
 
     await Notification.create({
-      recipient: request.requester,
-      title: '🩸 Request Partially Fulfilled — Donors Needed',
-      message: `Hospital issued ${unitsToIssue} units from stock. Donor request opened for remaining ${shortfall} units of ${request.bloodGroup}.`,
+      recipient: txResult.request.requester,
+      title: '⚡ Blood Request Partially Fulfilled by Hospital',
+      message: `Hospital has issued ${unitsToIssue} unit(s) of ${txResult.request.bloodGroup} from blood bank inventory. Remaining ${shortfall} unit(s) routed to nearby volunteer donors.`,
       type: 'status_update',
-      link: `/requests/${request._id}`,
+      link: `/requests/${txResult.request._id}`,
     });
 
     stockResult = { fulfilled: false, unitsFromStock: unitsToIssue, shortfall };
   } else {
-    // Zero stock fulfillment
-    request.unitsFromStock = 0;
-    request.unitsFulfilled = 0;
-    request.unitsFromDonors = request.unitsNeeded;
-    request.status = 'open';
-    request.reviewedAt = new Date();
-    await request.save();
-
-    const populated = await BloodRequest.findById(request._id)
+    // Zero stock: full donor outreach
+    const populated = await BloodRequest.findById(txResult.request._id)
       .populate('requester', 'name email phone')
       .populate('targetHospital', 'name location address phone');
 
     try {
       const notifRes = await notifyMatchedDonorsForRequest(populated);
       if (notifRes && notifRes.count) {
-        request.matchedDonorsCount = notifRes.count;
-        await request.save();
+        await BloodRequest.findByIdAndUpdate(txResult.request._id, { matchedDonorsCount: notifRes.count });
       }
     } catch (err) {
-      console.error('Failed to notify donors for zero stock:', err.message);
+      console.error('Failed to notify donors on accept:', err.message);
     }
 
     await Notification.create({
-      recipient: request.requester,
-      title: '📋 Hospital Approved — Community Donors Needed',
-      message: `Hospital approved your request. Stock is currently 0, community donor request opened for ${request.unitsNeeded} units of ${request.bloodGroup}.`,
+      recipient: txResult.request.requester,
+      title: '🚨 Hospital Accepted Request — Seeking Donors',
+      message: `Hospital confirmed your emergency request. Blood reserves are currently empty for ${txResult.request.bloodGroup}; donor network outreach is active.`,
       type: 'status_update',
-      link: `/requests/${request._id}`,
+      link: `/requests/${txResult.request._id}`,
     });
 
-    stockResult = { fulfilled: false, unitsFromStock: 0, shortfall: request.unitsNeeded };
+    stockResult = { fulfilled: false, unitsFromStock: 0, shortfall: txResult.request.unitsNeeded };
   }
 
-  const refreshedRequest = await BloodRequest.findById(request._id)
+  const refreshedRequest = await BloodRequest.findById(txResult.request._id)
     .populate('requester', 'name email phone')
     .populate('targetHospital', 'name phone address location inventory');
 
+  const plainRefreshed = typeof refreshedRequest.toObject === 'function' ? refreshedRequest.toObject() : refreshedRequest;
+
   return {
-    ...refreshedRequest.toObject(),
+    ...plainRefreshed,
     request: refreshedRequest,
     stockResult,
   };
@@ -609,172 +599,207 @@ const rejectRequest = async (requestId, userId, callerRole, reason) => {
 };
 
 /**
- * Issue compatible units manually chosen by hospital
+ * Issue compatible units manually chosen by hospital (Atomic transaction)
  */
 const issueCompatibleUnits = async (requestId, userId, callerRole, compatibleBloodGroup, units) => {
-  const request = await BloodRequest.findById(requestId);
-  if (!request) {
-    const err = new Error('Blood request not found');
-    err.statusCode = 404;
-    throw err;
-  }
+  const db = getDb();
 
-  let hospital = null;
-  if (callerRole === 'admin') {
-    hospital = await Hospital.findById(request.targetHospital || request.hospital);
-  } else {
-    hospital = await Hospital.findOne({ user: userId });
-    const targetHospId = request.targetHospital || request.hospital;
-    if (!hospital || !targetHospId || targetHospId.toString() !== hospital._id.toString()) {
-      const err = new Error('Unauthorized: Request is not addressed to your hospital');
-      err.statusCode = 403;
+  await db.runTransaction(async (transaction) => {
+    const reqRef = BloodRequest.collection.doc(requestId.toString());
+    const reqSnap = await transaction.get(reqRef);
+    if (!reqSnap.exists) {
+      const err = new Error('Blood request not found');
+      err.statusCode = 404;
       throw err;
     }
-  }
+    const requestData = BloodRequest.normalize(reqSnap);
 
-  if (!canDonate(compatibleBloodGroup, request.bloodGroup)) {
-    throw new Error(
-      `Blood group ${compatibleBloodGroup} is not medically compatible with patient blood group ${request.bloodGroup}`
-    );
-  }
+    const targetHospId = requestData.targetHospital || requestData.hospital;
+    const hospRef = Hospital.collection.doc(targetHospId.toString());
+    const hospSnap = await transaction.get(hospRef);
+    if (!hospSnap.exists) {
+      throw new Error('Target hospital not found');
+    }
+    const hospData = Hospital.normalize(hospSnap);
 
-  const remainingNeeded = request.unitsNeeded - (request.unitsFulfilled || 0);
-  if (remainingNeeded <= 0) {
-    throw new Error('Request is already completely fulfilled');
-  }
+    if (callerRole !== 'admin') {
+      if (hospData.user && hospData.user.toString() !== userId.toString()) {
+        const err = new Error('Unauthorized: Request is not addressed to your hospital');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
 
-  const unitsToDeduct = Math.min(units, remainingNeeded);
+    if (!canDonate(compatibleBloodGroup, requestData.bloodGroup)) {
+      throw new Error(
+        `Blood group ${compatibleBloodGroup} is not medically compatible with patient blood group ${requestData.bloodGroup}`
+      );
+    }
 
-  const updated = await Hospital.findOneAndUpdate(
-    {
-      _id: hospital._id,
-      inventory: {
-        $elemMatch: { bloodGroup: compatibleBloodGroup, units: { $gte: unitsToDeduct } },
-      },
-    },
-    {
-      $inc: { 'inventory.$.units': -unitsToDeduct },
-    },
-    { new: true }
-  );
+    const remainingNeeded = requestData.unitsNeeded - (requestData.unitsFulfilled || 0);
+    if (remainingNeeded <= 0) {
+      throw new Error('Request is already completely fulfilled');
+    }
 
-  if (!updated) {
-    throw new Error(`Insufficient stock of compatible ${compatibleBloodGroup} units in hospital inventory`);
-  }
+    const unitsToDeduct = Math.min(units, remainingNeeded);
 
-  await InventoryTransaction.create({
-    hospital: hospital._id,
-    bloodGroup: compatibleBloodGroup,
-    change: -unitsToDeduct,
-    reason: 'compatible_issued',
-    request: request._id,
-    actor: userId,
-    notes: `Issued ${unitsToDeduct} unit(s) of compatible ${compatibleBloodGroup} for patient needing ${request.bloodGroup}`,
+    const inventory = hospData.inventory ? [...hospData.inventory] : [];
+    const itemIndex = inventory.findIndex(i => i.bloodGroup === compatibleBloodGroup);
+    const availableStock = itemIndex !== -1 ? (Number(inventory[itemIndex].units) || 0) : 0;
+
+    if (availableStock < unitsToDeduct) {
+      throw new Error(`Insufficient stock of compatible ${compatibleBloodGroup} units in hospital inventory`);
+    }
+
+    inventory[itemIndex] = {
+      ...inventory[itemIndex],
+      units: availableStock - unitsToDeduct,
+    };
+    transaction.update(hospRef, { inventory, updatedAt: new Date() });
+
+    const now = new Date();
+    const newFulfilled = (requestData.unitsFulfilled || 0) + unitsToDeduct;
+    const newFromStock = (requestData.unitsFromStock || 0) + unitsToDeduct;
+    let newStatus = requestData.status;
+    if (newFulfilled >= requestData.unitsNeeded) {
+      newStatus = 'fulfilled';
+    } else if (['open', 'pending_hospital_review'].includes(requestData.status)) {
+      newStatus = 'partially_fulfilled';
+    }
+
+    transaction.update(reqRef, {
+      unitsFromStock: newFromStock,
+      unitsFulfilled: newFulfilled,
+      status: newStatus,
+      updatedAt: now,
+    });
+
+    const txRef = InventoryTransaction.collection.doc();
+    transaction.set(txRef, {
+      hospital: hospData._id,
+      bloodGroup: compatibleBloodGroup,
+      change: -unitsToDeduct,
+      reason: 'compatible_issued',
+      request: requestData._id,
+      actor: userId,
+      notes: `Issued ${unitsToDeduct} unit(s) of compatible ${compatibleBloodGroup} for patient needing ${requestData.bloodGroup}`,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 
-  request.unitsFromStock = (request.unitsFromStock || 0) + unitsToDeduct;
-  request.unitsFulfilled = (request.unitsFulfilled || 0) + unitsToDeduct;
-  if (request.unitsFulfilled >= request.unitsNeeded) {
-    request.status = 'fulfilled';
-  } else if (['open', 'pending_hospital_review'].includes(request.status)) {
-    request.status = 'partially_fulfilled';
-  }
-  await request.save();
-
-  if (request.status === 'fulfilled') {
-    await pingService.cancelPendingPingsForRequest(request._id);
+  const updatedRequest = await BloodRequest.findById(requestId);
+  if (updatedRequest.status === 'fulfilled') {
+    await pingService.cancelPendingPingsForRequest(updatedRequest._id);
   }
 
   await Notification.create({
-    recipient: request.requester,
+    recipient: updatedRequest.requester,
     title: '💉 Compatible Blood Units Issued',
-    message: `Hospital has issued ${unitsToDeduct} unit(s) of compatible ${compatibleBloodGroup} for patient ${request.patientName}. Total fulfilled: ${request.unitsFulfilled}/${request.unitsNeeded}.`,
+    message: `Hospital has issued ${units} unit(s) of compatible ${compatibleBloodGroup} for patient ${updatedRequest.patientName}. Total fulfilled: ${updatedRequest.unitsFulfilled}/${updatedRequest.unitsNeeded}.`,
     type: 'status_update',
-    link: `/requests/${request._id}`,
+    link: `/requests/${updatedRequest._id}`,
   });
 
-  return await BloodRequest.findById(request._id)
+  return await BloodRequest.findById(updatedRequest._id)
     .populate('requester', 'name email phone')
     .populate('targetHospital', 'name phone address location inventory');
 };
 
 /**
- * Issue donated / stock blood units to patient
+ * Issue donated / stock blood units to patient (Atomic transaction)
  */
 const issuePatientUnits = async (requestId, userId, callerRole, units = 1) => {
-  const request = await BloodRequest.findById(requestId);
-  if (!request) {
-    const err = new Error('Blood request not found');
-    err.statusCode = 404;
-    throw err;
-  }
+  const db = getDb();
 
-  let hospital = null;
-  if (callerRole === 'admin') {
-    hospital = await Hospital.findById(request.targetHospital || request.hospital);
-  } else {
-    hospital = await Hospital.findOne({ user: userId });
-    const targetHospId = request.targetHospital || request.hospital;
-    if (!hospital || !targetHospId || targetHospId.toString() !== hospital._id.toString()) {
-      const err = new Error('Unauthorized: Request is not addressed to your hospital');
-      err.statusCode = 403;
+  await db.runTransaction(async (transaction) => {
+    const reqRef = BloodRequest.collection.doc(requestId.toString());
+    const reqSnap = await transaction.get(reqRef);
+    if (!reqSnap.exists) {
+      const err = new Error('Blood request not found');
+      err.statusCode = 404;
       throw err;
     }
-  }
+    const requestData = BloodRequest.normalize(reqSnap);
 
-  const remainingNeeded = request.unitsNeeded - (request.unitsFulfilled || 0);
-  if (remainingNeeded <= 0) {
-    throw new Error('Request is already completely fulfilled');
-  }
+    const targetHospId = requestData.targetHospital || requestData.hospital;
+    const hospRef = Hospital.collection.doc(targetHospId.toString());
+    const hospSnap = await transaction.get(hospRef);
+    if (!hospSnap.exists) {
+      throw new Error('Target hospital not found');
+    }
+    const hospData = Hospital.normalize(hospSnap);
 
-  const unitsToDeduct = Math.min(units, remainingNeeded);
+    if (callerRole !== 'admin') {
+      if (hospData.user && hospData.user.toString() !== userId.toString()) {
+        const err = new Error('Unauthorized: Request is not addressed to your hospital');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
 
-  const updated = await Hospital.findOneAndUpdate(
-    {
-      _id: hospital._id,
-      inventory: {
-        $elemMatch: { bloodGroup: request.bloodGroup, units: { $gte: unitsToDeduct } },
-      },
-    },
-    {
-      $inc: { 'inventory.$.units': -unitsToDeduct },
-    },
-    { new: true }
-  );
+    const remainingNeeded = requestData.unitsNeeded - (requestData.unitsFulfilled || 0);
+    if (remainingNeeded <= 0) {
+      throw new Error('Request is already completely fulfilled');
+    }
 
-  if (!updated) {
-    throw new Error(`Insufficient ${request.bloodGroup} units in hospital inventory to issue to patient`);
-  }
+    const unitsToDeduct = Math.min(units, remainingNeeded);
 
-  await InventoryTransaction.create({
-    hospital: hospital._id,
-    bloodGroup: request.bloodGroup,
-    change: -unitsToDeduct,
-    reason: 'issued_to_patient',
-    request: request._id,
-    actor: userId,
-    notes: `Issued ${unitsToDeduct} unit(s) of ${request.bloodGroup} to patient ${request.patientName}`,
+    const inventory = hospData.inventory ? [...hospData.inventory] : [];
+    const itemIndex = inventory.findIndex(i => i.bloodGroup === requestData.bloodGroup);
+    const availableStock = itemIndex !== -1 ? (Number(inventory[itemIndex].units) || 0) : 0;
+
+    if (availableStock < unitsToDeduct) {
+      throw new Error(`Insufficient ${requestData.bloodGroup} units in hospital inventory to issue to patient`);
+    }
+
+    inventory[itemIndex] = {
+      ...inventory[itemIndex],
+      units: availableStock - unitsToDeduct,
+    };
+    transaction.update(hospRef, { inventory, updatedAt: new Date() });
+
+    const now = new Date();
+    const newFulfilled = (requestData.unitsFulfilled || 0) + unitsToDeduct;
+    let newStatus = requestData.status;
+    if (newFulfilled >= requestData.unitsNeeded) {
+      newStatus = 'fulfilled';
+    }
+
+    transaction.update(reqRef, {
+      unitsFulfilled: newFulfilled,
+      status: newStatus,
+      updatedAt: now,
+    });
+
+    const txRef = InventoryTransaction.collection.doc();
+    transaction.set(txRef, {
+      hospital: hospData._id,
+      bloodGroup: requestData.bloodGroup,
+      change: -unitsToDeduct,
+      reason: 'issued_to_patient',
+      request: requestData._id,
+      actor: userId,
+      notes: `Issued ${unitsToDeduct} unit(s) of ${requestData.bloodGroup} to patient ${requestData.patientName}`,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 
-  request.unitsFulfilled = (request.unitsFulfilled || 0) + unitsToDeduct;
-  if (request.unitsFulfilled >= request.unitsNeeded) {
-    request.status = 'fulfilled';
-  }
-  await request.save();
-
-  if (request.status === 'fulfilled') {
-    await pingService.cancelPendingPingsForRequest(request._id);
+  const updatedRequest = await BloodRequest.findById(requestId);
+  if (updatedRequest.status === 'fulfilled') {
+    await pingService.cancelPendingPingsForRequest(updatedRequest._id);
   }
 
   await Notification.create({
-    recipient: request.requester,
+    recipient: updatedRequest.requester,
     title: '🏥 Blood Units Issued to Patient',
-    message: `${unitsToDeduct} unit(s) of ${request.bloodGroup} have been issued to patient ${request.patientName}. Total fulfilled: ${request.unitsFulfilled}/${request.unitsNeeded}.`,
+    message: `${units} unit(s) of ${updatedRequest.bloodGroup} have been issued to patient ${updatedRequest.patientName}. Total fulfilled: ${updatedRequest.unitsFulfilled}/${updatedRequest.unitsNeeded}.`,
     type: 'status_update',
-    link: `/requests/${request._id}`,
+    link: `/requests/${updatedRequest._id}`,
   });
 
-  return await BloodRequest.findById(request._id)
+  return await BloodRequest.findById(updatedRequest._id)
     .populate('requester', 'name email phone')
     .populate('targetHospital', 'name phone address location inventory');
 };
@@ -791,4 +816,3 @@ module.exports = {
   issueCompatibleUnits,
   issuePatientUnits,
 };
-
