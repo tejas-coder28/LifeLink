@@ -34,29 +34,29 @@ export const ToastProvider = ({ children }) => {
         {toasts.map((toast) => {
           const config = {
             success: {
-              bg: 'bg-emerald-50 dark:bg-emerald-950/90 border-emerald-300 dark:border-emerald-500/50 text-emerald-900 dark:text-emerald-300 shadow-emerald-500/10',
+              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-teal-500/30 text-primary shadow-glow-teal',
               icon: CheckCircle2,
-              iconColor: 'text-emerald-600 dark:text-emerald-400',
+              iconColor: 'text-teal-500',
             },
             error: {
-              bg: 'bg-rose-50 dark:bg-rose-950/90 border-rose-300 dark:border-rose-500/50 text-rose-900 dark:text-rose-300 shadow-rose-500/10',
+              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-brand-500/30 text-primary shadow-glow-brand',
               icon: AlertCircle,
-              iconColor: 'text-rose-600 dark:text-rose-400',
+              iconColor: 'text-brand-500',
             },
             warning: {
-              bg: 'bg-amber-50 dark:bg-amber-950/90 border-amber-300 dark:border-amber-500/50 text-amber-900 dark:text-amber-300 shadow-amber-500/10',
+              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-amber-500/30 text-primary shadow-glow-amber',
               icon: AlertTriangle,
-              iconColor: 'text-amber-600 dark:text-amber-400',
+              iconColor: 'text-amber-500',
             },
             info: {
-              bg: 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 shadow-slate-500/10',
+              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-violet-500/30 text-primary shadow-glow-violet',
               icon: Info,
-              iconColor: 'text-sky-600 dark:text-sky-400',
+              iconColor: 'text-violet-500',
             },
           }[toast.type] || {
-            bg: 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 shadow-slate-500/10',
+            bg: 'bg-white/90 dark:bg-[#141F36]/90 border-theme text-primary shadow-card',
             icon: Info,
-            iconColor: 'text-sky-600 dark:text-sky-400',
+            iconColor: 'text-sky-500',
           };
 
           const IconComponent = config.icon;

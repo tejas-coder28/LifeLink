@@ -99,11 +99,15 @@ const RequestCard = ({
     ? `Needed: ${new Date(request.requiredByDate).toLocaleDateString()}`
     : 'Active Broadcast';
 
-  const isCompatible = donorBloodGroup ? canDonate(donorBloodGroup, request.bloodGroup) : true;
+  const isCritical = urgency === 'critical';
 
   return (
     <div
-      className={`glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 transition-all duration-200 ${className}`}
+      className={`glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border transition-all duration-200 ${
+        isCritical
+          ? 'border-brand-500/40 shadow-glow-brand'
+          : 'border-glass'
+      } ${className}`}
     >
       {/* ── 1. HEADER SECTION ──────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 pb-4 sm:pb-5">

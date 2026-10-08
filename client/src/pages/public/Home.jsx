@@ -7,6 +7,11 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import RequestCard from '../../components/cards/RequestCard';
+import PageTransition from '../../components/common/PageTransition';
+import AnimatedCounter from '../../components/common/AnimatedCounter';
+import Skeleton from '../../components/common/Skeleton';
+import { StaggerContainer, StaggerItem } from '../../components/common/StaggerList';
+import Button from '../../components/common/Button';
 import { DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import {
   HeartHandshake,
@@ -20,9 +25,9 @@ import {
   CheckCircle2,
   Users,
   Building2,
-  PhoneCall,
   Search,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 
 const Home = () => {
@@ -83,194 +88,226 @@ const Home = () => {
   };
 
   return (
-    <div className="space-y-16 pb-12">
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden pb-12">
+    <PageTransition className="space-y-16 sm:space-y-20 pb-16">
+      {/* ── 1. HERO SECTION ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden pt-4 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center space-y-6 max-w-4xl mx-auto">
-            <div className="section-label">
-              <Activity className="w-3.5 h-3.5 animate-pulse" />
+            <div className="section-label mx-auto">
+              <Activity className="w-3.5 h-3.5 animate-pulse text-brand-500" />
               <span>Smart Emergency Blood Match Engine</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl font-black text-primary tracking-tight leading-none font-heading">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-primary tracking-tight leading-none font-heading">
               Connecting blood donors with <br className="hidden sm:block" />
               <span className="gradient-text-brand">those who need them.</span>
             </h1>
 
-            <p className="text-base sm:text-lg font-medium max-w-2xl mx-auto leading-relaxed text-secondary">
-              LifeLink connects standby donors, hospital blood banks, and patients through real-time smart matching, blood compatibility checks, and safe donor cooldown tracking.
+            <p className="text-sm sm:text-lg font-medium max-w-2xl mx-auto leading-relaxed text-secondary">
+              LifeLink bridges standby volunteer donors, hospital blood banks, and emergency patients through real-time geospatial matching, compatibility verification, and medical recovery tracking.
             </p>
 
-            {/* CTAs */}
+            {/* Action CTA Buttons */}
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 to={user ? '/donor/dashboard' : '/register'}
-                className="btn-primary w-full sm:w-auto px-8 py-4 text-sm"
+                className="w-full sm:w-auto"
               >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>Donate Blood Now</span>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full sm:w-auto shadow-glow-brand"
+                  icon={Heart}
+                >
+                  Donate Blood Now
+                </Button>
               </Link>
 
               <Link
                 to="/emergency-request"
-                className="btn-secondary w-full sm:w-auto px-8 py-4 text-sm"
+                className="w-full sm:w-auto"
               >
-                <Activity className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                <span>Request Emergency Blood</span>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  icon={Activity}
+                >
+                  Request Emergency Blood
+                </Button>
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* STATISTICS COUNTER SECTION */}
+      {/* ── 2. GLASS STATS METRIC COUNTERS ─────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="glass-card rounded-3xl p-8 relative overflow-hidden border border-theme shadow-card">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <span className="text-3xl sm:text-4xl font-black block font-heading text-rose-600 dark:text-rose-400">
-                {stats?.totalDonors || 10}+
+        <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-glass shadow-card">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center divide-y sm:divide-y-0 sm:divide-x divide-theme">
+            <div className="pt-3 sm:pt-0">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-brand-500">
+                <AnimatedCounter value={stats?.totalDonors || 12} />+
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider mt-1 block text-muted">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-muted">
                 Registered Donors
               </span>
             </div>
 
-            <div>
-              <span className="text-3xl sm:text-4xl font-black block font-heading text-teal-600 dark:text-teal-400">
-                {stats?.availableDonors || 8}
+            <div className="pt-3 sm:pt-0">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-teal-400">
+                <AnimatedCounter value={stats?.availableDonors || 9} />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider mt-1 block text-muted">
-                Active Donors
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-muted">
+                Standby Donors Ready
               </span>
             </div>
 
-            <div>
-              <span className="text-3xl sm:text-4xl font-black block font-heading text-sky-600 dark:text-sky-400">
-                {stats?.fulfilledRequests || 1}
+            <div className="pt-3 sm:pt-0">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-sky-400">
+                <AnimatedCounter value={stats?.fulfilledRequests || 3} />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider mt-1 block text-muted">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-muted">
                 Requests Fulfilled
               </span>
             </div>
 
-            <div>
-              <span className="text-3xl sm:text-4xl font-black block font-heading text-amber-600 dark:text-amber-400">
-                {stats?.totalRequests || 2}
+            <div className="pt-3 sm:pt-0">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-amber-400">
+                <AnimatedCounter value={stats?.totalRequests || 4} />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider mt-1 block text-muted">
-                Total Requests
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-muted">
+                Total Broadcasts
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* HOW LIFELINK WORKS */}
+      {/* ── 3. HOW LIFELINK WORKS (4-STEP CONNECTED LOOP) ──────────────── */}
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-black text-primary tracking-tight font-heading">How LifeLink Works</h2>
-          <p className="text-sm max-w-xl mx-auto text-secondary">
-            A single connected loop — from emergency broadcast to fulfilled donation.
+          <div className="section-label mx-auto">
+            <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+            <span>Connected Medical Pipeline</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-primary tracking-tight font-heading">
+            How LifeLink Coordinates Surgeries
+          </h2>
+          <p className="text-xs sm:text-sm max-w-xl mx-auto text-secondary">
+            From hospital emergency broadcast to confirmed bedside donation in a single unified workflow.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           {[
-            { num: 1, color: '#e11d48', bg: 'rgba(220,38,38,0.12)', title: 'Emergency Broadcast', desc: 'A patient or hospital submits a blood request with blood group, units needed, and location.' },
-            { num: 2, color: '#0284c7', bg: 'rgba(59,158,255,0.12)', title: 'Smart Matching', desc: `The engine ranks compatible nearby donors by proximity, blood type, and ${DONATION_COOLDOWN_DAYS}-day safety cooldown.` },
-            { num: 3, color: '#d97706', bg: 'rgba(245,158,11,0.12)', title: 'Donor Response', desc: 'Matched donors accept the request and pledge blood directly to the hospital.' },
-            { num: 4, color: '#0d9488', bg: 'rgba(34,200,160,0.12)', title: 'Request Fulfilled', desc: 'Hospital confirms the donation, updates inventory, and marks the request complete.' },
+            { num: '01', color: 'text-brand-500', bg: 'bg-brand-500/10 border-brand-500/20', title: 'Emergency Broadcast', desc: 'Patient or hospital issues an urgent blood request with ABO/Rh group, units needed, and geo-coordinates.' },
+            { num: '02', color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20', title: 'Smart Proximity Match', desc: `Algorithm scores nearby donors against blood compatibility rules and the ${DONATION_COOLDOWN_DAYS}-day medical recovery cooldown.` },
+            { num: '03', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', title: 'Donor Response', desc: 'Matched standby donors receive high-priority alerts and pledge their donation directly to the hospital.' },
+            { num: '04', color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/20', title: 'Bedside Fulfilment', desc: 'Hospital confirms the donation receipt, automatically updates inventory records, and closes the request.' },
           ].map(({ num, color, bg, title, desc }) => (
-            <Card key={num} hover className="relative">
-              <div className="w-10 h-10 rounded-2xl font-black flex items-center justify-center mb-4 text-sm" style={{ background: bg, color }}>
-                {num}
+            <Card key={num} hover className="relative flex flex-col justify-between">
+              <div>
+                <div className={`w-10 h-10 rounded-2xl font-black flex items-center justify-center mb-4 text-xs border ${bg} ${color}`}>
+                  {num}
+                </div>
+                <h3 className="text-base font-bold text-primary mb-2 font-heading">{title}</h3>
+                <p className="text-xs leading-relaxed text-secondary">{desc}</p>
               </div>
-              <h3 className="text-base font-bold text-primary mb-2 font-heading">{title}</h3>
-              <p className="text-xs leading-relaxed text-secondary">{desc}</p>
             </Card>
           ))}
         </div>
       </section>
 
-      {/* EMERGENCY BLOOD REQUESTS LIVE SECTION */}
+      {/* ── 4. LIVE EMERGENCY BROADCASTS SECTION ───────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="section-label mb-2">
-              <Activity className="w-3.5 h-3.5 animate-pulse" />
-              <span>Live Emergency Broadcast</span>
+              <Activity className="w-3.5 h-3.5 animate-pulse text-brand-500" />
+              <span>Live Emergency Stream</span>
             </div>
-            <h2 className="text-2xl font-black text-primary font-heading">Urgent Active Demands</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-primary font-heading">
+              Urgent Active Broadcasts
+            </h2>
           </div>
           <Link
             to="/emergency-request"
-            className="text-xs font-bold flex items-center transition-colors text-rose-600 dark:text-rose-400 hover:underline"
+            className="text-xs font-bold flex items-center transition-colors text-brand-400 hover:text-brand-500 hover:underline"
           >
-            <span>Create Emergency Request</span>
+            <span>Broadcast New Request</span>
             <ChevronRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
 
         {pledgeMsg && (
-          <div className="p-4 rounded-2xl text-sm font-semibold flex items-center bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-500/30 text-teal-800 dark:text-teal-300">
-            <CheckCircle2 className="w-5 h-5 mr-2 shrink-0 text-teal-600 dark:text-teal-400" />
-            {pledgeMsg}
+          <div className="p-4 rounded-2xl text-xs sm:text-sm font-semibold flex items-center bg-teal-500/10 border border-teal-500/30 text-teal-400">
+            <CheckCircle2 className="w-5 h-5 mr-2.5 shrink-0 text-teal-400" />
+            <span>{pledgeMsg}</span>
           </div>
         )}
 
         {loading ? (
-          <Loader text="Fetching open emergency requests..." />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton variant="card" />
+            <Skeleton variant="card" />
+          </div>
         ) : openRequests.length === 0 ? (
           <Card hover={false} className="text-center py-12">
-            <p className="text-muted text-sm">No open blood requests currently broadcast.</p>
+            <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center bg-teal-500/10 text-teal-400 mb-3 border border-teal-500/20">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-primary">All Emergency Needs Met</h3>
+            <p className="text-muted text-xs mt-1">There are currently no open blood requests awaiting donors.</p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {openRequests.map((req) => (
-              <RequestCard
-                key={req._id}
-                request={req}
-                onPledge={handlePledge}
-                isPledging={pledgingId === req._id}
-                pledgeText="Pledge Donation"
-              />
+              <StaggerItem key={req._id}>
+                <RequestCard
+                  request={req}
+                  onPledge={handlePledge}
+                  isPledging={pledgingId === req._id}
+                  pledgeText="Pledge Donation"
+                />
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
       </section>
 
-      {/* WHY DONATE BLOOD */}
+      {/* ── 5. WHY DONATE SECTION ───────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-black text-primary tracking-tight font-heading">Why Donate with LifeLink?</h2>
-          <p className="text-sm max-w-lg mx-auto text-secondary">
-            Directly impact emergency surgeries, trauma care, and recovery in your community.
+          <h2 className="text-2xl sm:text-3xl font-black text-primary tracking-tight font-heading">
+            Why Standby Donors Matter
+          </h2>
+          <p className="text-xs sm:text-sm max-w-lg mx-auto text-secondary">
+            Your single donation provides the critical buffer in trauma, intensive care, and neonatal surgeries.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card hover title="Save Up to 3 Lives" icon={Heart}>
             <p className="text-xs leading-relaxed mt-2 text-secondary">
-              One whole blood donation separates into red cells, plasma, and platelets — helping up to three patients.
+              A single whole blood donation is fractionated into concentrated red cells, fresh frozen plasma, and platelets — supporting up to three distinct medical patients.
             </p>
           </Card>
 
-          <Card hover title={`${DONATION_COOLDOWN_DAYS}-Day Safety Cooldown`} icon={ShieldCheck}>
+          <Card hover title={`${DONATION_COOLDOWN_DAYS}-Day Safety Recovery`} icon={ShieldCheck}>
             <p className="text-xs leading-relaxed mt-2 text-secondary">
-              LifeLink automatically tracks your last donation date and enforces a {DONATION_COOLDOWN_DAYS}-day recovery period to keep you safe.
+              LifeLink automatically calculates recovery windows from your last recorded donation date, protecting donor cardiovascular health through programmatic cooldowns.
             </p>
           </Card>
 
-          <Card hover title="Real-Time Alerts" icon={Zap}>
+          <Card hover title="Zero Spam Notifications" icon={Zap}>
             <p className="text-xs leading-relaxed mt-2 text-secondary">
-              Get notified the moment a hospital near you needs your blood group — every second counts in an emergency.
+              You only receive alerts when a verified hospital within your target radius requests your compatible blood type, keeping communications high-priority and actionable.
             </p>
           </Card>
         </div>
       </section>
-    </div>
+    </PageTransition>
   );
 };
 

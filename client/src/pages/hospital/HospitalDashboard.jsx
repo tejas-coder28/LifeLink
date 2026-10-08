@@ -11,6 +11,8 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
+import PageTransition from '../../components/common/PageTransition';
+import SlidingTabs from '../../components/common/SlidingTabs';
 import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import RequestForm from '../../components/forms/RequestForm';
@@ -515,8 +517,31 @@ const HospitalDashboard = () => {
     ? incomingRequests.filter((r) => r.status === 'pending_hospital_review')
     : incomingRequests;
 
+  const hospitalTabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    {
+      id: 'incoming-requests',
+      label: 'Incoming Demands',
+      icon: Inbox,
+      badge: pendingIncomingCount > 0 ? pendingIncomingCount : null,
+      badgePulse: pendingIncomingCount > 0,
+    },
+    {
+      id: 'active-requests',
+      label: 'Active Requests',
+      icon: Layers,
+      count: myRequests.length,
+    },
+    {
+      id: 'inventory',
+      label: 'Inventory Reserves',
+      icon: Building2,
+      count: `${totalInventoryUnits}u`,
+    },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 page-enter">
+    <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
       {/* ⚠️ Pending Approval Banner — shown when hospital is not yet verified by admin */}
       {hospitalProfile && !hospitalProfile.isVerified && (
@@ -578,62 +603,12 @@ const HospitalDashboard = () => {
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center space-x-2 border-b border-theme pb-2 overflow-x-auto">
-        <button
-          onClick={() => setTab('overview')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-              : 'glass-card text-secondary hover:text-primary'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          <span>Overview</span>
-        </button>
-
-        <button
-          onClick={() => setTab('incoming-requests')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer relative ${
-            activeTab === 'incoming-requests'
-              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-              : pendingIncomingCount > 0
-              ? 'bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400'
-              : 'glass-card text-secondary hover:text-primary'
-          }`}
-        >
-          <Inbox className="w-4 h-4" />
-          <span>Incoming Demands</span>
-          {pendingIncomingCount > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
-              {pendingIncomingCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setTab('active-requests')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'active-requests'
-              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-              : 'glass-card text-secondary hover:text-primary'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Active Requests ({myRequests.length})</span>
-        </button>
-
-        <button
-          onClick={() => setTab('inventory')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'inventory'
-              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-              : 'glass-card text-secondary hover:text-primary'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>Blood Inventory Stock ({totalInventoryUnits} units)</span>
-        </button>
-      </div>
+      <SlidingTabs
+        tabs={hospitalTabs}
+        activeTab={activeTab}
+        onChange={(id) => setTab(id)}
+        layoutId="hospital-dashboard-tabs"
+      />
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
@@ -1611,7 +1586,7 @@ const HospitalDashboard = () => {
       </div>
     )}
       </Modal>
-    </div>
+    </PageTransition>
   );
 };
 

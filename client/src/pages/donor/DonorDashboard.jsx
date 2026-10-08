@@ -16,6 +16,9 @@ import Modal from '../../components/common/Modal';
 import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
+import PageTransition from '../../components/common/PageTransition';
+import SlidingTabs from '../../components/common/SlidingTabs';
+import Skeleton from '../../components/common/Skeleton';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 
@@ -247,14 +250,24 @@ const DonorDashboard = () => {
       .map((d) => (d.request?._id || d.request)?.toString())
   );
 
+  const donorTabs = [
+    { id: 'overview',       icon: Activity,  label: 'Overview' },
+    { id: 'requests',       icon: Heart,     label: 'Requests', count: liveRequests.length },
+    { id: 'pings',          icon: Send,      label: 'For You', count: pendingPings.length },
+    { id: 'profile',        icon: User,      label: 'Profile & Health' },
+    { id: 'history',        icon: Clock,     label: 'History', count: donationHistory.length },
+    { id: 'notifications',  icon: Bell,      label: 'Alerts', count: notifications.filter(n => !n.isRead).length },
+    { id: 'camps',          icon: Building2, label: 'Hospitals' },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
       {/* Banner Header */}
-      <div className="hero-glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="glass-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-glass shadow-card">
         <div className="space-y-2">
           <div className="flex items-center flex-wrap gap-3">
-            <h1 className="text-3xl font-black text-primary font-heading">Donor Portal</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading">Donor Portal</h1>
             <Badge accountType="donor" />
             {profile?.bloodGroup && <Badge bloodGroup={profile.bloodGroup} />}
           </div>
@@ -266,20 +279,20 @@ const DonorDashboard = () => {
         {/* Availability Controls */}
         <div className="flex flex-wrap items-center gap-3">
           {profile && (
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-2xl bg-surface border border-theme">
               <div>
                 <span className="text-[10px] font-bold block text-muted">Standby Status</span>
-                <span className="text-xs font-black text-teal-600 dark:text-teal-400">
+                <span className="text-xs font-black text-teal-400">
                   {profile.isAvailable ? '● ONLINE (ACTIVE)' : '○ OFFLINE'}
                 </span>
               </div>
               <button
                 onClick={handleToggleAvailability}
-                className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all"
-                style={profile.isAvailable
-                  ? { background: 'rgba(34,200,160,0.20)', color: 'var(--teal-500)', border: '1px solid rgba(34,200,160,0.40)' }
-                  : { background: 'rgba(100,116,139,0.12)', color: 'var(--text-secondary)', border: '1px solid rgba(100,116,139,0.25)' }
-                }
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  profile.isAvailable
+                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/40 shadow-glow-teal'
+                    : 'bg-surface text-secondary border border-theme hover:bg-surface/80'
+                }`}
               >
                 Toggle Status
               </button>
@@ -290,10 +303,7 @@ const DonorDashboard = () => {
 
       {/* One-time Blood Group Confirmation Banner for Unconfirmed Accounts */}
       {profile && !profile.bloodGroupConfirmed && !dismissedConfirmBanner && (
-        <div
-          className="p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-          style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#fcd34d' }}
-        >
+        <div className="p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/30 text-amber-300">
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
             <div>
@@ -310,7 +320,7 @@ const DonorDashboard = () => {
             </button>
             <button
               onClick={() => setDismissedConfirmBanner(true)}
-              className="text-xs px-2.5 py-1.5 rounded-xl text-muted hover:text-primary transition-colors"
+              className="text-xs px-2.5 py-1.5 rounded-xl text-muted hover:text-primary transition-colors cursor-pointer"
             >
               Dismiss
             </button>
@@ -318,28 +328,13 @@ const DonorDashboard = () => {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="tab-list overflow-x-auto flex-nowrap">
-        {[
-          { id: 'overview',       icon: Activity,  label: 'Overview' },
-          { id: 'requests',       icon: Heart,     label: `Requests (${liveRequests.length})` },
-          { id: 'pings',          icon: Send,      label: `For You (${pendingPings.length})`, badge: pendingPings.length > 0 },
-          { id: 'profile',        icon: User,      label: 'Profile & Health' },
-          { id: 'history',        icon: Clock,     label: `History (${donationHistory.length})` },
-          { id: 'notifications',  icon: Bell,      label: `Alerts (${notifications.filter(n => !n.isRead).length})` },
-          { id: 'camps',          icon: Building2, label: 'Hospitals' },
-        ].map(({ id, icon: Icon, label, badge }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`tab-item whitespace-nowrap relative ${activeTab === id ? 'active' : ''}`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            <span>{label}</span>
-            {badge && <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping absolute -top-0.5 -right-0.5" />}
-          </button>
-        ))}
-      </div>
+      {/* Animated Sliding Tabs Navigation */}
+      <SlidingTabs
+        tabs={donorTabs}
+        activeTab={activeTab}
+        onChange={setTab}
+        className="w-full"
+      />
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
@@ -835,7 +830,7 @@ const DonorDashboard = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </PageTransition>
   );
 };
 

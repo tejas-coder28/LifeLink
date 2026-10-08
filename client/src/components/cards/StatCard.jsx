@@ -1,8 +1,11 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
+import AnimatedCounter from '../common/AnimatedCounter';
 
 const StatCard = ({ title, value, icon: Icon, description, trend, color = 'rose' }) => {
   const { isDark } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
 
   const accentClass = {
     rose:    'stat-accent-rose',
@@ -15,95 +18,93 @@ const StatCard = ({ title, value, icon: Icon, description, trend, color = 'rose'
   }[color] || 'stat-accent-rose';
 
   const lightValueColor = {
-    rose:    '#e11d48',
-    emerald: '#0d9488',
-    teal:    '#0d9488',
-    sky:     '#0284c7',
-    amber:   '#d97706',
+    rose:    '#F43F5E',
+    emerald: '#2DD4BF',
+    teal:    '#2DD4BF',
+    sky:     '#0284C7',
+    amber:   '#D97706',
     slate:   'var(--text-primary)',
-    indigo:  '#4f46e5',
-  }[color] || '#e11d48';
+    indigo:  '#8B5CF6',
+  }[color] || '#F43F5E';
 
   const darkValueColor = {
-    rose:    '#fb7185',
-    emerald: '#5eead4',
-    teal:    '#5eead4',
-    sky:     '#93c5fd',
-    amber:   '#fcd34d',
+    rose:    '#FB7185',
+    emerald: '#2DD4BF',
+    teal:    '#2DD4BF',
+    sky:     '#38BDF8',
+    amber:   '#FBBF24',
     slate:   'var(--text-primary)',
-    indigo:  '#a5b4fc',
-  }[color] || '#fb7185';
+    indigo:  '#A78BFA',
+  }[color] || '#FB7185';
 
   const lightIconBg = {
-    rose:    'rgba(225, 29, 72, 0.10)',
-    emerald: 'rgba(13, 148, 136, 0.10)',
-    teal:    'rgba(13, 148, 136, 0.10)',
-    sky:     'rgba(2, 132, 199, 0.10)',
-    amber:   'rgba(217, 119, 6, 0.10)',
+    rose:    'rgba(244, 63, 94, 0.10)',
+    emerald: 'rgba(45, 212, 191, 0.12)',
+    teal:    'rgba(45, 212, 191, 0.12)',
+    sky:     'rgba(56, 189, 248, 0.10)',
+    amber:   'rgba(245, 158, 11, 0.10)',
     slate:   'rgba(15, 23, 42, 0.05)',
-    indigo:  'rgba(79, 70, 229, 0.10)',
-  }[color] || 'rgba(225, 29, 72, 0.10)';
+    indigo:  'rgba(139, 92, 246, 0.10)',
+  }[color] || 'rgba(244, 63, 94, 0.10)';
 
   const darkIconBg = {
-    rose:    'rgba(220, 38, 38, 0.15)',
-    emerald: 'rgba(34, 200, 160, 0.15)',
-    teal:    'rgba(34, 200, 160, 0.15)',
-    sky:     'rgba(59, 158, 255, 0.15)',
-    amber:   'rgba(245, 158, 11, 0.15)',
+    rose:    'rgba(244, 63, 94, 0.18)',
+    emerald: 'rgba(45, 212, 191, 0.18)',
+    teal:    'rgba(45, 212, 191, 0.18)',
+    sky:     'rgba(56, 189, 248, 0.18)',
+    amber:   'rgba(245, 158, 11, 0.18)',
     slate:   'rgba(255, 255, 255, 0.07)',
-    indigo:  'rgba(129, 140, 248, 0.15)',
-  }[color] || 'rgba(220, 38, 38, 0.15)';
+    indigo:  'rgba(139, 92, 246, 0.18)',
+  }[color] || 'rgba(244, 63, 94, 0.18)';
 
   const lightIconColor = {
-    rose:    '#e11d48',
-    emerald: '#0d9488',
-    teal:    '#0d9488',
-    sky:     '#0284c7',
-    amber:   '#d97706',
+    rose:    '#F43F5E',
+    emerald: '#0D9488',
+    teal:    '#0D9488',
+    sky:     '#0284C7',
+    amber:   '#D97706',
     slate:   'var(--text-secondary)',
-    indigo:  '#4f46e5',
-  }[color] || '#e11d48';
+    indigo:  '#7C3AED',
+  }[color] || '#F43F5E';
 
   const darkIconColor = {
-    rose:    '#fb7185',
-    emerald: '#5eead4',
-    teal:    '#5eead4',
-    sky:     '#93c5fd',
-    amber:   '#fcd34d',
+    rose:    '#FDA4AF',
+    emerald: '#2DD4BF',
+    teal:    '#2DD4BF',
+    sky:     '#7DD3FC',
+    amber:   '#FCD34D',
     slate:   'var(--text-secondary)',
-    indigo:  '#a5b4fc',
-  }[color] || '#fb7185';
+    indigo:  '#C4B5FD',
+  }[color] || '#FDA4AF';
 
   const valueColor = isDark ? darkValueColor : lightValueColor;
   const iconBg = isDark ? darkIconBg : lightIconBg;
   const iconColor = isDark ? darkIconColor : lightIconColor;
 
   return (
-    <div
-      className={`glass-card glass-card-hover p-5 sm:p-6 flex items-start justify-between min-h-[105px] ${accentClass}`}
+    <motion.div
+      whileHover={shouldReduceMotion ? {} : { y: -3, transition: { duration: 0.2 } }}
+      className={`glass-card p-5 sm:p-6 flex items-start justify-between min-h-[110px] ${accentClass}`}
     >
       <div className="space-y-1 flex flex-col justify-between h-full">
         <div>
-          <span
-            className="text-[11px] font-extrabold uppercase tracking-wider block"
-            style={{ color: 'var(--text-muted)' }}
-          >
+          <span className="text-[11px] font-extrabold uppercase tracking-wider block text-muted">
             {title}
           </span>
           <span
             className="text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1"
             style={{ color: valueColor }}
           >
-            {value}
+            <AnimatedCounter value={value} />
           </span>
         </div>
         {description && (
-          <p className="text-[11px] font-medium mt-1" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[11px] font-medium mt-1 text-secondary">
             {description}
           </p>
         )}
         {trend && (
-          <p className="text-[10px] font-bold mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-[10px] font-bold mt-0.5 text-muted">
             {trend}
           </p>
         )}
@@ -116,7 +117,7 @@ const StatCard = ({ title, value, icon: Icon, description, trend, color = 'rose'
           <Icon className="w-5 h-5" style={{ color: iconColor }} />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

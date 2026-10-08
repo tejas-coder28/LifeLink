@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HeartHandshake, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import PageTransition from '../../components/common/PageTransition';
+import Button from '../../components/common/Button';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -12,40 +14,35 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-4 py-8">
-      <div
-        className="w-full max-w-md rounded-3xl p-8 space-y-6 animate-scale-in glass-card border border-slate-200/80 dark:border-white/10 shadow-2xl"
-      >
+    <PageTransition className="min-h-[75vh] flex items-center justify-center p-3 sm:p-6 py-8">
+      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 glass-modal border border-glass shadow-elevated">
         {/* Header */}
         <div className="text-center space-y-3">
           <Link to="/" className="inline-flex items-center space-x-2">
-            <div
-              className="w-9 h-9 rounded-2xl flex items-center justify-center text-white"
-              style={{ background: 'linear-gradient(135deg, #DC2626, #b91c1c)', boxShadow: '0 0 18px rgba(220,38,38,0.35)' }}
-            >
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
               <HeartHandshake className="w-5 h-5" />
             </div>
             <span className="text-xl font-black text-primary font-heading">
               Life<span className="gradient-text-brand">Link</span>
             </span>
           </Link>
-          <h1 className="text-xl font-black text-primary tracking-tight pt-1 font-heading">Reset Password</h1>
+          <h1 className="text-xl font-black text-primary tracking-tight pt-1 font-heading">
+            Reset Password
+          </h1>
           <p className="text-xs text-secondary">
             Enter your registered email and we'll send reset instructions.
           </p>
         </div>
 
         {submitted ? (
-          <div
-            className="p-4 rounded-2xl text-xs font-semibold space-y-3 bg-teal-500/10 border border-teal-500/30 text-teal-800 dark:text-teal-200"
-          >
+          <div className="p-4 rounded-2xl text-xs font-semibold space-y-3 bg-teal-500/10 border border-teal-500/30 text-teal-400">
             <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-teal-600 dark:text-teal-400" />
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-teal-400" />
               <span>Instructions sent! Check your inbox for <b className="text-primary">{email}</b>.</span>
             </div>
             <Link
               to="/login"
-              className="inline-block font-bold hover:underline text-xs text-rose-600 dark:text-rose-400"
+              className="inline-block font-bold hover:underline text-xs text-brand-400"
             >
               Return to Sign In →
             </Link>
@@ -53,7 +50,7 @@ const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-secondary">
+              <label htmlFor="reset-email" className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-secondary">
                 Email Address
               </label>
               <div className="relative">
@@ -61,19 +58,20 @@ const ForgotPassword = () => {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="reset-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="donor@lifelink.com"
-                  className="glass-input w-full pl-10 text-xs px-3.5 py-3"
+                  className="glass-input w-full pl-10 text-xs sm:text-sm px-3.5 py-3"
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary w-full py-3.5 rounded-xl text-xs justify-center">
+            <Button type="submit" variant="primary" className="w-full py-3 rounded-xl text-xs font-bold shadow-glow-brand">
               Send Reset Link
-            </button>
+            </Button>
           </form>
         )}
 
@@ -87,7 +85,7 @@ const ForgotPassword = () => {
           </Link>
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 

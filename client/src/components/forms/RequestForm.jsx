@@ -194,25 +194,32 @@ const RequestForm = ({ onSubmit, loading, initialData = {} }) => {
       {/* Urgency Selector */}
       <div>
         <FieldLabel>Urgency Level</FieldLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {URGENCY_LEVELS.map((u) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => setUrgency(u.id)}
-              className="p-3 rounded-xl text-left transition-all cursor-pointer"
-              style={urgency === u.id
-                ? { background: u.bgCol, border: `1.5px solid ${u.borderCol}` }
-                : { background: 'var(--surface)', border: '1px solid var(--border)' }
-              }
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-primary">{u.label}</span>
-                {urgency === u.id && <Activity className="w-3.5 h-3.5 animate-pulse text-rose-600 dark:text-rose-400" />}
-              </div>
-              <span className="text-[10px] mt-0.5 block text-muted">{u.sub}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {URGENCY_LEVELS.map((u) => {
+            const isSelected = urgency === u.id;
+            return (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => setUrgency(u.id)}
+                className={`p-3 rounded-2xl text-left transition-all cursor-pointer border ${
+                  isSelected
+                    ? u.id === 'critical'
+                      ? 'bg-brand-500/20 border-brand-500 shadow-glow-brand'
+                      : u.id === 'high'
+                      ? 'bg-amber-500/20 border-amber-500 shadow-glow-amber'
+                      : 'bg-sky-500/20 border-sky-500'
+                    : 'bg-surface/60 border-theme hover:bg-surface text-secondary'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-primary">{u.label}</span>
+                  {isSelected && <Activity className="w-3.5 h-3.5 animate-pulse text-brand-500" />}
+                </div>
+                <span className="text-[10px] mt-1 block text-muted">{u.sub}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
