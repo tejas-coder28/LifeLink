@@ -46,7 +46,7 @@ const registerHospital = async (app, overrides = {}) => {
  * Create an admin user directly and generate an admin JWT token.
  */
 const registerAdmin = async (app, overrides = {}) => {
-  const User = require('../../src/models/User');
+  const User = require('../../src/repositories/user.repository');
   const jwt = require('jsonwebtoken');
   const { JWT_SECRET } = require('../../src/middleware/auth.middleware');
   const adminUser = await User.create({

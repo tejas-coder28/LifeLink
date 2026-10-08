@@ -271,6 +271,8 @@ class BaseRepository {
           query = query.where(key, '<', value.$lt);
         } else if (value.$ne !== undefined) {
           query = query.where(key, '!=', value.$ne);
+        } else if (value.$nin && Array.isArray(value.$nin)) {
+          inMemoryFilters.push(doc => !value.$nin.includes(doc[key]));
         } else {
           // Complex or unknown operator -> filter in memory
           inMemoryFilters.push(doc => {

@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const admin = require('firebase-admin');
 
 let initialized = false;
 let db = null;
@@ -12,23 +11,41 @@ let activeProjectId = '';
  * Fails fast and exits loudly if credentials are missing in normal runtime.
  */
 function initFirebase() {
-  if (initialized && admin.apps.length > 0) {
+  // 1. Test environment support: ultra-fast in-memory Firestore engine (unless real emulator is explicitly forced)
+  if (process.env.NODE_ENV === 'test' && !process.env.USE_REAL_EMULATOR) {
+    if (initialized && db && auth) {
+      return { admin: null, db, auth, projectId: activeProjectId };
+    }
+    const { memoryFirestoreInstance, memoryAuthInstance } = require('./inMemoryFirestore');
+    activeProjectId = 'lifelink-test-memory';
+    db = memoryFirestoreInstance;
+    auth = memoryAuthInstance;
+    initialized = true;
+    return { admin: null, db, auth, projectId: activeProjectId };
+  }
+
+  const admin = require('firebase-admin');
+  const { getFirestore } = require('firebase-admin/firestore');
+  const { getAuth } = require('firebase-admin/auth');
+
+  const existingApps = admin.getApps();
+  if (initialized && existingApps.length > 0) {
     return { admin, db, auth, projectId: activeProjectId };
   }
 
-  // 1. Emulator / Test environment support
-  if (process.env.FIRESTORE_EMULATOR_HOST || process.env.NODE_ENV === 'test') {
-    if (!process.env.FIRESTORE_EMULATOR_HOST && process.env.NODE_ENV === 'test') {
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
-    }
+  // 2. Real Firestore Emulator support
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
     activeProjectId = process.env.FIREBASE_PROJECT_ID || 'lifelink-emulator';
-    if (!admin.apps.length) {
-      admin.initializeApp({
+    let app;
+    if (!existingApps.length) {
+      app = admin.initializeApp({
         projectId: activeProjectId,
       });
+    } else {
+      app = existingApps[0];
     }
-    db = admin.firestore();
-    auth = admin.auth();
+    db = getFirestore(app);
+    auth = getAuth(app);
     initialized = true;
     console.log(`[Firebase] Connected to Firestore Emulator (Project: ${activeProjectId})`);
     return { admin, db, auth, projectId: activeProjectId };
@@ -69,14 +86,17 @@ function initFirebase() {
 
   activeProjectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || 'unknown-project';
 
-  if (!admin.apps.length) {
-    admin.initializeApp({
+  let app;
+  if (!existingApps.length) {
+    app = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
+  } else {
+    app = existingApps[0];
   }
 
-  db = admin.firestore();
-  auth = admin.auth();
+  db = getFirestore(app);
+  auth = getAuth(app);
   initialized = true;
 
   // Startup banner shows project ID only (no secrets)

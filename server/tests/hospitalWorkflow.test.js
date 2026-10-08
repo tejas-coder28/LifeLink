@@ -19,7 +19,6 @@
 require('./setup');
 
 const request = require('supertest');
-const mongoose = require('mongoose');
 const { connect, clearDatabase, disconnect } = require('./helpers/db');
 const { registerUser, registerHospital } = require('./helpers/auth');
 
@@ -35,13 +34,13 @@ let InventoryTransaction;
 beforeAll(async () => {
   await connect();
   app = require('../src/app');
-  User = require('../src/models/User');
-  Hospital = require('../src/models/Hospital');
-  BloodRequest = require('../src/models/BloodRequest');
-  DonorProfile = require('../src/models/DonorProfile');
-  Donation = require('../src/models/Donation');
-  Notification = require('../src/models/Notification');
-  InventoryTransaction = require('../src/models/InventoryTransaction');
+  User = require('../src/repositories/user.repository');
+  Hospital = require('../src/repositories/hospital.repository');
+  BloodRequest = require('../src/repositories/bloodRequest.repository');
+  DonorProfile = require('../src/repositories/donorProfile.repository');
+  Donation = require('../src/repositories/donation.repository');
+  Notification = require('../src/repositories/notification.repository');
+  InventoryTransaction = require('../src/repositories/inventoryTransaction.repository');
 });
 
 afterEach(async () => {
@@ -634,12 +633,9 @@ describe('9. Critical Request Timeout', () => {
     const requestId = reqRes.body.data._id;
     expect(reqRes.body.data.status).toBe('pending_hospital_review');
 
-    // Backdate createdAt directly in MongoDB collection by 16 minutes (beyond 15-minute SLA)
+    // Backdate createdAt by 16 minutes (beyond 15-minute SLA)
     const sixteenMinutesAgo = new Date(Date.now() - 16 * 60 * 1000);
-    await BloodRequest.collection.updateOne(
-      { _id: new mongoose.Types.ObjectId(requestId) },
-      { $set: { createdAt: sixteenMinutesAgo } }
-    );
+    await BloodRequest.findByIdAndUpdate(requestId, { createdAt: sixteenMinutesAgo });
 
     // Fetch the request via API
     const viewRes = await request(app).get(`/api/requests/${requestId}`);

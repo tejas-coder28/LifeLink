@@ -11,7 +11,6 @@
 require('./setup');
 
 const request = require('supertest');
-const mongoose = require('mongoose');
 const { connect, clearDatabase, disconnect } = require('./helpers/db');
 const { registerUser, registerAdmin } = require('./helpers/auth');
 
@@ -24,10 +23,10 @@ let User;
 beforeAll(async () => {
   await connect();
   app = require('../src/app');
-  DonorProfile = require('../src/models/DonorProfile');
-  BloodRequest = require('../src/models/BloodRequest');
-  Hospital = require('../src/models/Hospital');
-  User = require('../src/models/User');
+  DonorProfile = require('../src/repositories/donorProfile.repository');
+  BloodRequest = require('../src/repositories/bloodRequest.repository');
+  Hospital = require('../src/repositories/hospital.repository');
+  User = require('../src/repositories/user.repository');
 });
 
 afterEach(async () => {

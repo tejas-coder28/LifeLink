@@ -24,11 +24,11 @@ const path = require('path');
 const mongoose = require('mongoose');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const User = require('../src/models/User');
-const Hospital = require('../src/models/Hospital');
-const DonorProfile = require('../src/models/DonorProfile');
-const BloodRequest = require('../src/models/BloodRequest');
-const Donation = require('../src/models/Donation');
+const User = require('../src/repositories/user.repository');
+const Hospital = require('../src/repositories/hospital.repository');
+const DonorProfile = require('../src/repositories/donorProfile.repository');
+const BloodRequest = require('../src/repositories/bloodRequest.repository');
+const Donation = require('../src/repositories/donation.repository');
 
 // Whitelisted identities that MUST NEVER be deleted
 const WHITELIST_EMAILS = new Set([

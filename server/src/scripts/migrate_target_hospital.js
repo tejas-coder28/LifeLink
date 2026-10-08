@@ -14,8 +14,8 @@ const path = require('path');
 const mongoose = require('mongoose');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
-const BloodRequest = require('../models/BloodRequest');
-const Hospital = require('../models/Hospital');
+const BloodRequest = require('../repositories/bloodRequest.repository');
+const Hospital = require('../repositories/hospital.repository');
 
 async function runMigration() {
   console.log('--- Starting Safe TargetHospital Migration ---');
