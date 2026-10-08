@@ -1,6 +1,6 @@
-const Hospital = require('../models/Hospital');
-const User = require('../models/User');
-const InventoryTransaction = require('../models/InventoryTransaction');
+const Hospital = require('../repositories/hospital.repository');
+const User = require('../repositories/user.repository');
+const InventoryTransaction = require('../repositories/inventoryTransaction.repository');
 
 const getHospitalByUserId = async (userId) => {
   let hospital = await Hospital.findOne({ user: userId }).populate('user', 'name email phone accountType hospitalId');
@@ -84,9 +84,9 @@ const setHospitalVerification = async (hospitalId, isVerified) => {
     hospitalId,
     { isVerified },
     { new: true }
-  ).populate('user', 'name email phone accountType hospitalId');
+  );
   if (!hospital) throw new Error('Hospital not found');
-  return hospital;
+  return await hospital.populate('user', 'name email phone accountType hospitalId');
 };
 
 // Admin: delete a hospital record (and optionally its user)
@@ -105,4 +105,3 @@ module.exports = {
   setHospitalVerification,
   deleteHospital,
 };
-

@@ -1,7 +1,7 @@
-const { canDonate, isBloodCompatible, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { canDonate, isBloodCompatible, compatibleDonorGroups, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
 const { calculateHaversineDistance } = require('../utils/geo');
-const DonorProfile = require('../models/DonorProfile');
-const BloodRequest = require('../models/BloodRequest');
+const DonorProfile = require('../repositories/donorProfile.repository');
+const BloodRequest = require('../repositories/bloodRequest.repository');
 const { canSeekDonors } = require('../utils/requestRules');
 
 const COOLDOWN_DAYS = DONATION_COOLDOWN_DAYS; // 90-day cooldown between donations (business rule)
@@ -101,11 +101,15 @@ function scoreDonorForRequest(request, donor) {
     compatibilityScore = 40;
   } else if (tier === 2) {
     compatibilityScore = 32;
+    tierLabel = 'Universal donor (O-)';
+  } else {
+    compatibilityScore = 25;
   }
 
-  // Center distance on target hospital if available, otherwise request location
-  const hospitalCoords = request.targetHospital?.location?.coordinates || request.hospital?.location?.coordinates;
-  const reqCoords = hospitalCoords || request.location?.coordinates || [77.2090, 28.6139];
+  let availabilityScore = donor.isAvailable ? 15 : 0;
+
+  // Geographic distance calculation
+  const reqCoords = request.location?.coordinates || [77.2090, 28.6139];
   const donorCoords = donor.location?.coordinates || [77.2090, 28.6139];
   const distanceKm = calculateHaversineDistance(reqCoords, donorCoords);
 
@@ -116,37 +120,48 @@ function scoreDonorForRequest(request, donor) {
   else if (distanceKm <= 50) geoScore = 12;
   else geoScore = 5;
 
-  const availabilityScore = 15;
   let eligibilityScore = 10;
-  const flags = donor.healthFlags || [];
-  if (flags.some(f => ['active_infection', 'tattoos_recent', 'underweight', 'hepatitis'].includes(f))) {
-    eligibilityScore = 2;
+  if (candidateCheck.daysSinceLastDonation === null) {
+    eligibilityScore = 10;
+  } else if (candidateCheck.daysSinceLastDonation >= 120) {
+    eligibilityScore = 10;
+  } else {
+    eligibilityScore = 5;
   }
 
   const totalScore = compatibilityScore + availabilityScore + geoScore + eligibilityScore;
 
+  const rationale = [
+    `${tierLabel} (${donorGroup} for ${reqGroup})`,
+    `Distance: ${distanceKm} km`,
+    donor.isAvailable ? 'Available status' : 'Unavailable',
+  ];
+  if (candidateCheck.daysSinceLastDonation !== null) {
+    rationale.push(`${candidateCheck.daysSinceLastDonation} days since last donation`);
+  } else {
+    rationale.push('First-time or unrecorded donation history');
+  }
+
   return {
     donor,
-    matchScore: totalScore,
+    matchScore: Math.min(100, Math.max(0, totalScore)),
+    matchTier: tier,
+    distanceKm,
     isCompatible: true,
     isCandidate: true,
-    matchTier: tier,
-    matchTierLabel: tierLabel,
-    distanceKm,
-    daysSinceLastDonation: candidateCheck.daysSinceLastDonation,
     breakdown: {
       compatibilityScore,
       availabilityScore,
       geoScore,
       eligibilityScore,
     },
-    rationale: [tierLabel, `${distanceKm.toFixed(1)} km away`],
+    rationale,
   };
 }
 
 /**
- * Pure function: Ranks an array of candidate donors for a given request.
- * Enforces rule:
+ * Pure function: Filters and ranks a candidate pool against a request.
+ * Priority ranking rules:
  * 1. Must be a candidate (compatible, available, 90+ days cooldown)
  * 2. Rank exact matches first (tier 1)
  * 3. Then O- as universal donor (tier 2)
@@ -193,9 +208,12 @@ const findMatchesForRequestId = async (requestId, maxResults = 10) => {
     throw error;
   }
 
-  // Fetch candidate donors
-  const candidateDonors = await DonorProfile.find()
-    .populate('user', 'name email phone accountType hospitalId');
+  // Filter in Firestore by compatibility and availability to keep read count low
+  const compatibleGroups = compatibleDonorGroups(request.bloodGroup);
+  const candidateDonors = await DonorProfile.find({
+    isAvailable: true,
+    bloodGroup: { $in: compatibleGroups },
+  }).populate('user', 'name email phone accountType hospitalId');
 
   const rankedMatches = rankDonorsForRequest(request, candidateDonors);
   return {
@@ -205,7 +223,6 @@ const findMatchesForRequestId = async (requestId, maxResults = 10) => {
     matches: rankedMatches.slice(0, maxResults),
   };
 };
-
 
 module.exports = {
   COOLDOWN_DAYS,

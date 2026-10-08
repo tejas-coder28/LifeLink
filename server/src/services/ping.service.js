@@ -1,7 +1,7 @@
-const DonorRequestPing = require('../models/DonorRequestPing');
-const BloodRequest = require('../models/BloodRequest');
-const Notification = require('../models/Notification');
-const User = require('../models/User');
+const DonorRequestPing = require('../repositories/donorRequestPing.repository');
+const BloodRequest = require('../repositories/bloodRequest.repository');
+const Notification = require('../repositories/notification.repository');
+const User = require('../repositories/user.repository');
 const { canSeekDonors } = require('../utils/requestRules');
 
 /**
@@ -25,7 +25,7 @@ const notifyDonor = async (requestId, donorId, hospitalUserId) => {
   const hospitalName = hospitalUser?.name || 'Medical Center';
 
   // Check if a ping already exists for this request + donor
-  let ping = await DonorRequestPing.findOne({ requestId, donorId });
+  let ping = await DonorRequestPing.findByRequestAndDonor(requestId, donorId);
 
   if (ping) {
     ping.status = 'pending';
@@ -96,22 +96,14 @@ const respondToPing = async (pingId, donorUserId, decision) => {
  * Returns all pings for a specific blood request
  */
 const getRequestPings = async (requestId) => {
-  return await DonorRequestPing.find({ requestId })
-    .populate('donorId', 'name email phone bloodGroup')
-    .sort({ sentAt: -1 });
+  return await DonorRequestPing.findByRequestId(requestId);
 };
 
 /**
  * Returns all pending pings for a donor
  */
 const getPendingPingsForDonor = async (donorUserId) => {
-  return await DonorRequestPing.find({ donorId: donorUserId, status: 'pending' })
-    .populate({
-      path: 'requestId',
-      select: 'patientName bloodGroup unitsNeeded urgency address location requiredByDate status notes',
-    })
-    .populate('hospitalId', 'name email phone')
-    .sort({ sentAt: -1 });
+  return await DonorRequestPing.findPendingByDonor(donorUserId);
 };
 
 /**
@@ -119,8 +111,9 @@ const getPendingPingsForDonor = async (donorUserId) => {
  * Sends short notification ("Request fulfilled, thank you") to each donor.
  */
 const cancelPendingPingsForRequest = async (requestId) => {
+  const rId = requestId && requestId._id ? requestId._id.toString() : requestId.toString();
   const pendingPings = await DonorRequestPing.find({
-    requestId,
+    requestId: rId,
     status: 'pending',
   });
 
@@ -129,7 +122,7 @@ const cancelPendingPingsForRequest = async (requestId) => {
   }
 
   await DonorRequestPing.updateMany(
-    { requestId, status: 'pending' },
+    { requestId: rId, status: 'pending' },
     { $set: { status: 'cancelled', respondedAt: new Date() } }
   );
 

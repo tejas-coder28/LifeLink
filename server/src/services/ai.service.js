@@ -1,6 +1,6 @@
-const AIInsight = require('../models/AIInsight');
+const AIInsight = require('../repositories/aiInsight.repository');
 const analyticsService = require('./analytics.service');
-const BloodRequest = require('../models/BloodRequest');
+const BloodRequest = require('../repositories/bloodRequest.repository');
 
 /**
  * AI Service Layer - Aggregates data, builds prompt, calls external LLM API or fallback generator,

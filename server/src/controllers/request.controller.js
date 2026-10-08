@@ -130,7 +130,7 @@ const issuePatientUnits = async (req, res) => {
 // DELETE /api/requests/:id
 const deleteRequest = async (req, res) => {
   try {
-    const BloodRequest = require('../models/BloodRequest');
+    const BloodRequest = require('../repositories/bloodRequest.repository');
     const deleted = await BloodRequest.findByIdAndDelete(req.params.id);
     if (!deleted) return sendError(res, 'Blood request not found', 404);
     return sendSuccess(res, 'Blood request deleted successfully');

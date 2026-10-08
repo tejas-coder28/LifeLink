@@ -28,8 +28,27 @@ const getMe = async (req, res) => {
   }
 };
 
+const googleAuth = async (req, res) => {
+  try {
+    const { idToken, bloodGroup, phone } = req.body;
+    const result = await authService.loginWithGoogle({ idToken, bloodGroup, phone });
+    if (result.needsProfile) {
+      return res.status(200).json({
+        success: true,
+        needsProfile: true,
+        message: 'Additional profile information required',
+        data: result,
+      });
+    }
+    return sendSuccess(res, 'Google login successful', result, 200);
+  } catch (error) {
+    return sendError(res, error.message, error.statusCode || 401);
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
+  googleAuth,
 };

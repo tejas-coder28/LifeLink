@@ -27,8 +27,12 @@ app.use('/api', apiLimiter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
+  const { getProjectId } = require('./config/db');
   res.status(200).json({
     success: true,
+    status: 'operational',
+    dbType: 'firestore',
+    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink',
     message: 'LifeLink API Gateway is operational',
     timestamp: new Date().toISOString(),
   });

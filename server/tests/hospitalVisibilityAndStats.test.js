@@ -24,11 +24,11 @@ let DonorProfile;
 beforeAll(async () => {
   await connect();
   app = require('../src/app');
-  BloodRequest = require('../src/models/BloodRequest');
-  Hospital = require('../src/models/Hospital');
-  User = require('../src/models/User');
-  Donation = require('../src/models/Donation');
-  DonorProfile = require('../src/models/DonorProfile');
+  BloodRequest = require('../src/repositories/bloodRequest.repository');
+  Hospital = require('../src/repositories/hospital.repository');
+  User = require('../src/repositories/user.repository');
+  Donation = require('../src/repositories/donation.repository');
+  DonorProfile = require('../src/repositories/donorProfile.repository');
 });
 
 afterEach(async () => {
