@@ -24,7 +24,20 @@ const aiLimiter = rateLimit({
   },
 });
 
+// Stricter rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.',
+  },
+});
+
 module.exports = {
   apiLimiter,
   aiLimiter,
+  authLimiter,
 };

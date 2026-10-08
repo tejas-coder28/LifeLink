@@ -137,9 +137,130 @@ const getCurrentUser = async (userId) => {
   };
 };
 
+/**
+ * Google Login via Firebase Auth ID token verification.
+ * Existing email logs in unchanged.
+ * New email returns needsProfile if bloodGroup not provided,
+ * then creates a "user" (never admin or hospital) with donor profile.
+ */
+const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
+  const crypto = require('crypto');
+  const { BLOOD_GROUPS } = require('../utils/bloodCompatibility');
+  const { getAuth } = require('../config/db');
+
+  let decoded;
+  try {
+    const auth = getAuth();
+    decoded = await auth.verifyIdToken(idToken);
+  } catch (err) {
+    const error = new Error('Invalid or expired Google authentication token');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  if (!decoded.email_verified) {
+    const error = new Error('Google email address must be verified to continue');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const email = (decoded.email || '').trim().toLowerCase();
+  let user = await User.findByEmail(email);
+
+  if (user) {
+    // Existing user logs in unchanged
+    let userBloodGroup = undefined;
+    if (user.accountType === 'user') {
+      const donorProfile = await DonorProfile.findByUserId(user._id);
+      userBloodGroup = donorProfile?.bloodGroup;
+    }
+
+    const token = generateToken(user._id, user.accountType);
+
+    try {
+      const LoginLog = require('../repositories/loginLog.repository');
+      await LoginLog.recordLogin(user._id, user.email);
+    } catch (logErr) {
+      // Non-blocking log recording
+    }
+
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      accountType: user.accountType,
+      hospitalId: user.hospitalId,
+      role: user.accountType,
+      phone: user.phone,
+      bloodGroup: userBloodGroup,
+      token,
+    };
+  }
+
+  // New user: requires bloodGroup before creating account
+  if (!bloodGroup) {
+    return {
+      needsProfile: true,
+      email: decoded.email,
+      name: decoded.name || '',
+    };
+  }
+
+  if (!BLOOD_GROUPS.includes(bloodGroup)) {
+    const error = new Error(`Invalid blood group. Must be one of: ${BLOOD_GROUPS.join(', ')}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const generatedPassword = crypto.randomBytes(24).toString('hex');
+  const userName = decoded.name || email.split('@')[0];
+
+  // Strictly create as accountType 'user' (never admin or hospital)
+  user = await User.create({
+    name: userName,
+    email,
+    password: generatedPassword,
+    accountType: 'user',
+    phone: phone || '',
+  });
+
+  await DonorProfile.create({
+    user: user._id,
+    bloodGroup,
+    bloodGroupConfirmed: true,
+    contactNumber: phone || '',
+    location: {
+      type: 'Point',
+      coordinates: [77.2090, 28.6139],
+    },
+  });
+
+  const token = generateToken(user._id, user.accountType);
+
+  try {
+    const LoginLog = require('../repositories/loginLog.repository');
+    await LoginLog.recordLogin(user._id, user.email);
+  } catch (logErr) {
+    // Non-blocking log recording
+  }
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    accountType: user.accountType,
+    hospitalId: user.hospitalId,
+    role: user.accountType,
+    phone: user.phone,
+    bloodGroup,
+    token,
+  };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
   generateToken,
+  loginWithGoogle,
 };

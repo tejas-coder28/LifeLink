@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authApi } from '../api/authApi';
+import { logoutFirebase } from '../firebase';
 
 export const AuthContext = createContext();
 
@@ -67,12 +68,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const loginWithGoogle = async (payload) => {
+    const res = await authApi.loginWithGoogle(payload);
+    if (res.data) {
+      if (res.data.needsProfile) {
+        return res.data;
+      }
+      if (res.data.success) {
+        const userData = res.data.data;
+        localStorage.setItem('lifelink_token', userData.token);
+        localStorage.setItem('lifelink_user', JSON.stringify(userData));
+        setToken(userData.token);
+        setUser(userData);
+
+        const meRes = await authApi.getMe();
+        if (meRes.data && meRes.data.success) {
+          setUser(meRes.data.data.user);
+          setProfile(meRes.data.data.profile);
+        }
+        return userData;
+      }
+    }
+  };
+
+  // Logout clears both local storage and Firebase Auth session
+  const logout = async () => {
     localStorage.removeItem('lifelink_token');
     localStorage.removeItem('lifelink_user');
     setToken(null);
     setUser(null);
     setProfile(null);
+    await logoutFirebase();
   };
 
   return (
@@ -86,6 +112,7 @@ export const AuthProvider = ({ children }) => {
         role: user?.accountType || user?.role || null,
         login,
         register,
+        loginWithGoogle,
         logout,
         setProfile,
       }}

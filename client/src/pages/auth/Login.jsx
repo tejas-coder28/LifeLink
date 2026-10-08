@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { HeartHandshake, LogIn, AlertCircle, ShieldCheck, Mail, Lock, User, ArrowRight, Building2, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 
 const Login = () => {
   const { login } = useAuth();
@@ -139,6 +140,21 @@ const Login = () => {
               {error}
             </div>
           )}
+
+          <div className="mb-5">
+            <GoogleLoginButton redirect={redirect} label="Sign in with Google" />
+          </div>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="px-3 bg-white dark:bg-slate-900 text-slate-400 font-extrabold text-[10px] tracking-wider">
+                Or continue with email
+              </span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

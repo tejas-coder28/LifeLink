@@ -31,7 +31,16 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const googleAuthSchema = z.object({
+  idToken: z.string().min(1, 'Google ID token is required'),
+  bloodGroup: z.enum(BLOOD_GROUPS, {
+    errorMap: () => ({ message: 'Please select a valid blood group' }),
+  }).optional(),
+  phone: z.string().optional().default(''),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
+  googleAuthSchema,
 };
