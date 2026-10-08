@@ -11,16 +11,17 @@ let activeProjectId = '';
  * Fails fast and exits loudly if credentials are missing in normal runtime.
  */
 function initFirebase() {
-  // 1. Test environment support: ultra-fast in-memory Firestore engine (unless real emulator is explicitly forced)
-  if (process.env.NODE_ENV === 'test' && !process.env.USE_REAL_EMULATOR) {
+  // 1. In-memory Firestore engine for tests or local offline dev without a Firebase service account
+  if ((process.env.NODE_ENV === 'test' || process.env.USE_IN_MEMORY_DB === 'true') && !process.env.USE_REAL_EMULATOR) {
     if (initialized && db && auth) {
       return { admin: null, db, auth, projectId: activeProjectId };
     }
     const { memoryFirestoreInstance, memoryAuthInstance } = require('./inMemoryFirestore');
-    activeProjectId = 'lifelink-test-memory';
+    activeProjectId = 'lifelink-in-memory';
     db = memoryFirestoreInstance;
     auth = memoryAuthInstance;
     initialized = true;
+    console.log('[Firebase] Running in-memory database mode (active)');
     return { admin: null, db, auth, projectId: activeProjectId };
   }
 
