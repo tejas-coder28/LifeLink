@@ -30,10 +30,10 @@ app.get('/api/health', (req, res) => {
   const { getProjectId } = require('./config/db');
   res.status(200).json({
     success: true,
-    status: 'operational',
+    status: 'connected',
     dbType: 'firestore',
-    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink',
-    message: 'LifeLink API Gateway is operational',
+    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink-f6f3b',
+    message: 'LifeLink API Gateway is operational and connected to Firestore',
     timestamp: new Date().toISOString(),
   });
 });

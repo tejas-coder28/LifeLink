@@ -5,7 +5,7 @@
  * Manages clean state between test suites without touching external databases.
  */
 
-const { memoryFirestoreInstance } = require('../../src/config/inMemoryFirestore');
+const { memoryFirestoreInstance } = require('./inMemoryFirestore');
 
 /**
  * Initialize test database connection. Safe to call multiple times.
