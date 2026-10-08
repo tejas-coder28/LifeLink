@@ -305,7 +305,32 @@ class BaseRepository {
       query = query.limit(options.limit);
     }
 
-    const snapshot = await query.get();
+    let snapshot;
+    try {
+      snapshot = await query.get();
+    } catch (err) {
+      if (err.message && err.message.includes('The query requires an index')) {
+        console.warn(`[Firestore] Composite index not yet deployed for query on '${this.collectionName}'. Executing with in-memory sort fallback.`);
+        let fallbackQuery = this.collection;
+        for (const [key, value] of Object.entries(filter)) {
+          if (value === undefined) continue;
+          if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+            if (value.$gte !== undefined) fallbackQuery = fallbackQuery.where(key, '>=', value.$gte);
+            else if (value.$lte !== undefined) fallbackQuery = fallbackQuery.where(key, '<=', value.$lte);
+            else if (value.$gt !== undefined) fallbackQuery = fallbackQuery.where(key, '>', value.$gt);
+            else if (value.$lt !== undefined) fallbackQuery = fallbackQuery.where(key, '<', value.$lt);
+            else if (value.$ne !== undefined) fallbackQuery = fallbackQuery.where(key, '!=', value.$ne);
+            else if (value.$in && Array.isArray(value.$in) && value.$in.length <= 10) fallbackQuery = fallbackQuery.where(key, 'in', value.$in);
+          } else {
+            const eqVal = value && typeof value === 'object' && value._id ? value._id.toString() : value;
+            fallbackQuery = fallbackQuery.where(key, '==', eqVal);
+          }
+        }
+        snapshot = await fallbackQuery.get();
+      } else {
+        throw err;
+      }
+    }
     let results = [];
     snapshot.forEach(docSnap => {
       results.push(this.normalize(docSnap));
