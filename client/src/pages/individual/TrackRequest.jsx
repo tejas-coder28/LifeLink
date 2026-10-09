@@ -107,7 +107,7 @@ const TrackRequest = () => {
   };
 
   if (loading) return <Loader text="Querying live matching engine & hospital status..." />;
-  if (!request) return <div className="text-center py-12 text-slate-600">Request not found.</div>;
+  if (!request) return <EmptyState title="Request Not Found" description="The requested emergency blood broadcast could not be retrieved." />;
 
   const isPendingReview = request.status === 'pending_hospital_review';
   const isTimedOut =
@@ -247,7 +247,7 @@ const TrackRequest = () => {
               </div>
             </div>
             {targetHosp?.phone && (
-              <span className="px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-white/5 font-mono text-teal-600 dark:text-teal-400 text-xs">
+              <span className="px-3 py-1.5 rounded-xl bg-surface border border-theme font-mono text-teal-600 dark:text-teal-400 text-xs">
                 {targetHosp.phone}
               </span>
             )}
@@ -272,31 +272,31 @@ const TrackRequest = () => {
             return (
               <div className="p-4 rounded-2xl bg-surface border border-theme space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
-                  <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
                     <span className="text-[10px] text-muted uppercase font-bold block">Total needed</span>
                     <span className="font-black text-primary text-base sm:text-lg">{totalNeeded}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
                     <span className="text-[10px] text-muted uppercase font-bold block">From hospital stock</span>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-base sm:text-lg">{fromStock}</span>
+                    <span className="font-black text-teal-600 dark:text-teal-400 text-base sm:text-lg">{fromStock}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
                     <span className="text-[10px] text-muted uppercase font-bold block">Needed from donors</span>
                     <span className="font-black text-sky-600 dark:text-sky-400 text-base sm:text-lg">{neededFromDonors}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
                     <span className="text-[10px] text-muted uppercase font-bold block">Pledged</span>
                     <span className="font-black text-amber-600 dark:text-amber-400 text-base sm:text-lg">{pledgedUnits}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
+                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
                     <span className="text-[10px] text-muted uppercase font-bold block">Received</span>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-base sm:text-lg">{receivedUnits}</span>
+                    <span className="font-black text-teal-600 dark:text-teal-400 text-base sm:text-lg">{receivedUnits}</span>
                   </div>
                 </div>
 
                 {/* Small Progress Bar */}
                 <div className="space-y-1.5 pt-1">
-                  <div className="w-full bg-slate-200 dark:bg-white/10 h-2.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-surface border border-theme h-2.5 rounded-full overflow-hidden flex">
                     <div
                       style={{ width: `${pctReceived}%` }}
                       className="bg-emerald-500 h-full transition-all"

@@ -26,61 +26,39 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          className="min-h-screen flex items-center justify-center px-4"
-          style={{ background: 'var(--surface-950)' }}
-        >
-          <div
-            className="max-w-md w-full rounded-3xl p-8 text-center space-y-5"
-            style={{
-              background: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              boxShadow: 'var(--shadow-card)',
-            }}
-          >
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
-              style={{ background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.30)' }}
-            >
-              <AlertTriangle className="w-7 h-7" style={{ color: '#fb7185' }} />
+        <div className="min-h-screen flex items-center justify-center px-4 bg-surface/40">
+          <div className="max-w-md w-full rounded-3xl p-8 text-center space-y-5 glass-modal border border-glass shadow-spatial-overlay">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto bg-brand-500/15 border border-brand-500/30 text-brand-500 shadow-glow-brand">
+              <AlertTriangle className="w-7 h-7" />
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-lg font-black font-heading" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-lg font-black font-heading text-primary">
                 Something went wrong
               </h2>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                A rendering error occurred. Your data is safe — just reload the page to continue.
+              <p className="text-xs leading-relaxed text-secondary">
+                A rendering exception occurred. Your data is secure — reload or reset to resume.
               </p>
               {this.state.error && (
-                <p className="text-[11px] font-mono px-3 py-2 rounded-xl mt-2 text-left break-all"
-                  style={{ background: 'rgba(220,38,38,0.06)', color: '#f87171', border: '1px solid rgba(220,38,38,0.15)' }}>
+                <p className="text-[11px] font-mono px-3 py-2 rounded-xl mt-2 text-left break-all bg-brand-500/10 text-brand-500 border border-brand-500/20">
                   {this.state.error.message}
                 </p>
               )}
             </div>
 
-            <div className="flex gap-3 justify-center pt-1">
+            <div className="flex gap-3 justify-center pt-2">
               <button
+                type="button"
                 onClick={this.handleReload}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
-                style={{
-                  background: 'rgba(220,38,38,0.15)',
-                  color: '#fb7185',
-                  border: '1px solid rgba(220,38,38,0.30)',
-                }}
+                className="btn-primary text-xs px-4 py-2.5 rounded-xl cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Try Again</span>
               </button>
               <button
+                type="button"
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                }}
+                className="btn-secondary text-xs px-4 py-2.5 rounded-xl cursor-pointer"
               >
                 Full Reload
               </button>

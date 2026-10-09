@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 const ToastContext = createContext();
@@ -31,52 +32,61 @@ export const ToastProvider = ({ children }) => {
       {children}
       {/* Toast Render Portal Container */}
       <div className="fixed bottom-5 right-5 z-[100] flex flex-col space-y-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
-        {toasts.map((toast) => {
-          const config = {
-            success: {
-              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-teal-500/30 text-primary shadow-glow-teal',
-              icon: CheckCircle2,
-              iconColor: 'text-teal-500',
-            },
-            error: {
-              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-brand-500/30 text-primary shadow-glow-brand',
-              icon: AlertCircle,
-              iconColor: 'text-brand-500',
-            },
-            warning: {
-              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-amber-500/30 text-primary shadow-glow-amber',
-              icon: AlertTriangle,
-              iconColor: 'text-amber-500',
-            },
-            info: {
-              bg: 'bg-white/90 dark:bg-[#141F36]/90 border-violet-500/30 text-primary shadow-glow-violet',
+        <AnimatePresence>
+          {toasts.map((toast) => {
+            const config = {
+              success: {
+                border: 'border-teal-500/40 shadow-glow-teal',
+                icon: CheckCircle2,
+                iconColor: 'text-teal-500',
+              },
+              error: {
+                border: 'border-brand-500/40 shadow-glow-brand',
+                icon: AlertCircle,
+                iconColor: 'text-brand-500',
+              },
+              warning: {
+                border: 'border-amber-500/40 shadow-glow-amber',
+                icon: AlertTriangle,
+                iconColor: 'text-amber-500',
+              },
+              info: {
+                border: 'border-violet-500/40 shadow-glow-violet',
+                icon: Info,
+                iconColor: 'text-violet-500',
+              },
+            }[toast.type] || {
+              border: 'border-glass shadow-spatial-floating',
               icon: Info,
-              iconColor: 'text-violet-500',
-            },
-          }[toast.type] || {
-            bg: 'bg-white/90 dark:bg-[#141F36]/90 border-theme text-primary shadow-card',
-            icon: Info,
-            iconColor: 'text-sky-500',
-          };
+              iconColor: 'text-sky-500',
+            };
 
-          const IconComponent = config.icon;
+            const IconComponent = config.icon;
 
-          return (
-            <div
-              key={toast.id}
-              className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-md shadow-xl transition-all duration-300 animate-slideUp ${config.bg}`}
-            >
-              <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${config.iconColor}`} />
-              <div className="flex-1 text-xs font-semibold leading-relaxed">{toast.message}</div>
-              <button
-                onClick={() => removeToast(toast.id)}
-                className="text-muted hover:text-primary transition-colors p-1 rounded-lg cursor-pointer"
+            return (
+              <motion.div
+                key={toast.id}
+                layout
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-2xl bg-surface/90 text-primary shadow-spatial-floating ${config.border}`}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          );
-        })}
+                <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${config.iconColor}`} />
+                <div className="flex-1 text-xs font-semibold leading-relaxed">{toast.message}</div>
+                <button
+                  type="button"
+                  onClick={() => removeToast(toast.id)}
+                  className="text-muted hover:text-primary transition-colors p-1 rounded-lg cursor-pointer"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

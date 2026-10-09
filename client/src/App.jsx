@@ -106,7 +106,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
-            <div className="flex flex-col min-h-screen text-slate-900 dark:text-slate-100 font-sans selection:bg-rose-500/30 selection:text-white transition-colors duration-200">
+            <div className="flex flex-col min-h-screen text-primary font-sans selection:bg-brand-500/30 selection:text-white transition-colors duration-250">
               {/* Animated background colour orbs — 4 harmonic spectrum orbs (rose, teal, violet, sky) */}
               <div className="bg-orb bg-orb-1" aria-hidden="true" />
               <div className="bg-orb bg-orb-2" aria-hidden="true" />

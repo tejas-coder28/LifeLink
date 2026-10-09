@@ -3,6 +3,7 @@ import Card from '../../components/common/Card';
 import StatCard from '../../components/cards/StatCard';
 import EmptyState from '../../components/common/EmptyState';
 import { useTheme } from '../../context/ThemeContext';
+import useChartTheme from '../../hooks/useChartTheme';
 import {
   BarChart,
   Bar,
@@ -33,13 +34,7 @@ import {
 const COLORS = ['#e11d48', '#f59e0b', '#38bdf8', '#10b981', '#8b5cf6', '#ec4899', '#6366f1', '#64748b'];
 
 const AnalyticsPanel = ({ data }) => {
-  const { isDark } = useTheme();
-
-  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)';
-  const axisStroke = isDark ? '#94a3b8' : '#64748b';
-  const tooltipStyle = isDark
-    ? { backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: '#fff', fontSize: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)' }
-    : { backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', color: '#0f172a', fontSize: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' };
+  const { gridStroke, axisStroke, tooltipStyle, colors } = useChartTheme();
   const summary = data?.summary || {
     totalDonors: 0,
     availableDonors: 0,

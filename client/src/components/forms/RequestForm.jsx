@@ -112,7 +112,7 @@ const RequestForm = ({ onSubmit, loading, initialData = {} }) => {
         </div>
 
         {selectedHospitalObj && (
-          <div className="mt-2.5 p-3 rounded-xl bg-slate-100/90 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-start gap-2.5 text-xs text-secondary">
+          <div className="mt-2.5 p-3 rounded-xl bg-surface border border-theme flex items-start gap-2.5 text-xs text-secondary">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <span className="font-extrabold text-primary block">{selectedHospitalObj.name} (Verified)</span>

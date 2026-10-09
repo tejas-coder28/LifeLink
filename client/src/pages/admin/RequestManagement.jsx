@@ -170,8 +170,8 @@ const RequestManagement = () => {
       ) : (
         <Card hover={false} className="overflow-hidden p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-white/[0.03] border-b border-theme font-bold text-muted uppercase tracking-wider text-[10px]">
+            <table className="glass-table text-left text-xs">
+              <thead>
                 <tr>
                   <th className="px-5 py-3.5">Patient / Facility</th>
                   <th className="px-5 py-3.5">Blood Group</th>

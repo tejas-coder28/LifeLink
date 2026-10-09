@@ -149,33 +149,33 @@ const RequestCard = ({
       {/* ── 2. DETAILS SECTION ────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-3.5 text-xs text-secondary">
         {/* Five Unit Metrics Breakdown Box */}
-        <div className="p-3 rounded-2xl bg-surface/90 border border-slate-200/80 dark:border-white/10 space-y-2.5">
+        <div className="p-3 rounded-2xl bg-surface/90 border border-theme space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-            <div className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-white/5">
+            <div className="p-1.5 rounded-xl bg-surface border border-theme">
               <span className="text-[10px] text-muted uppercase font-bold block">Total needed</span>
               <span className="font-black text-primary text-sm">{totalNeeded}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-white/5">
+            <div className="p-1.5 rounded-xl bg-surface border border-theme">
               <span className="text-[10px] text-muted uppercase font-bold block">From hospital stock</span>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{fromStock}</span>
+              <span className="font-black text-teal-600 dark:text-teal-400 text-sm">{fromStock}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-white/5">
+            <div className="p-1.5 rounded-xl bg-surface border border-theme">
               <span className="text-[10px] text-muted uppercase font-bold block">Needed from donors</span>
               <span className="font-black text-sky-600 dark:text-sky-400 text-sm">{neededFromDonors}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-white/5">
+            <div className="p-1.5 rounded-xl bg-surface border border-theme">
               <span className="text-[10px] text-muted uppercase font-bold block">Pledged</span>
               <span className="font-black text-amber-600 dark:text-amber-400 text-sm">{pledgedUnits}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-white/5">
+            <div className="p-1.5 rounded-xl bg-surface border border-theme">
               <span className="text-[10px] text-muted uppercase font-bold block">Received</span>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{receivedUnits}</span>
+              <span className="font-black text-teal-600 dark:text-teal-400 text-sm">{receivedUnits}</span>
             </div>
           </div>
 
           {/* Progress Bar */}
           <div className="space-y-1">
-            <div className="w-full bg-slate-200 dark:bg-white/10 h-2 rounded-full overflow-hidden flex">
+            <div className="w-full bg-surface border border-theme h-2 rounded-full overflow-hidden flex">
               <div
                 style={{ width: `${pctReceived}%` }}
                 className="bg-emerald-500 h-full transition-all"
@@ -201,7 +201,7 @@ const RequestCard = ({
                 <Building2 className="w-3.5 h-3.5 text-rose-500" />
                 Current stock ({request.bloodGroup}):
               </span>
-              <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-slate-200/60 dark:bg-white/10">
+              <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-surface border border-theme">
                 {currentStock} available in inventory
               </span>
             </div>
@@ -245,7 +245,7 @@ const RequestCard = ({
 
         {/* Donor checklist shown after pledging */}
         {isPledged && (
-          <div className="p-3 rounded-xl bg-slate-100/90 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 space-y-1 text-[11px] text-secondary">
+          <div className="p-3 rounded-xl bg-surface border border-theme space-y-1 text-[11px] text-secondary">
             <span className="font-extrabold text-primary uppercase text-[10px] tracking-wider block flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Pre-Donation Checklist:
             </span>
@@ -283,7 +283,7 @@ const RequestCard = ({
         )}
 
         {notes && (
-          <p className="text-[11px] italic p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 text-secondary mt-2 line-clamp-2">
+          <p className="text-[11px] italic p-2.5 rounded-xl bg-surface border border-theme text-secondary mt-2 line-clamp-2">
             "{notes}"
           </p>
         )}
@@ -316,7 +316,7 @@ const RequestCard = ({
                 return (
                   <div
                     key={p._id}
-                    className="p-3 rounded-xl bg-slate-100/90 dark:bg-white/5 border border-slate-200/70 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    className="p-3 rounded-xl bg-surface border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -424,11 +424,11 @@ const RequestCard = ({
                 title={!isCompatible ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}` : ''}
                 className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all ${
                   !isCompatible
-                    ? 'bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-white/10 shadow-none'
+                    ? 'bg-surface text-muted cursor-not-allowed border border-theme shadow-none'
                     : 'btn-primary'
                 }`}
               >
-                <Heart className={`w-3.5 h-3.5 ${!isCompatible ? 'text-slate-400 dark:text-slate-500' : 'fill-white'}`} />
+                <Heart className={`w-3.5 h-3.5 ${!isCompatible ? 'text-muted' : 'fill-white'}`} />
                 <span>
                   {isPledging
                     ? 'Pledging...'

@@ -590,12 +590,12 @@ const HospitalDashboard = () => {
           <div className="relative group shrink-0">
             <button
               disabled
-              className="px-5 py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 font-extrabold text-xs flex items-center space-x-2 cursor-not-allowed opacity-60"
+              className="px-5 py-3 rounded-2xl bg-surface border border-theme text-muted font-extrabold text-xs flex items-center space-x-2 cursor-not-allowed opacity-60"
             >
               <Lock className="w-4 h-4" />
               <span>New Blood Request</span>
             </button>
-            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg glass-modal border border-glass text-primary text-[10px] font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               Requires admin verification
             </span>
           </div>
@@ -1064,7 +1064,7 @@ const HospitalDashboard = () => {
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(req._id, 'fulfilled')}
-                            className="px-3 py-1.5 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-secondary font-bold text-xs rounded-xl cursor-pointer transition-colors"
+                            className="btn-secondary text-xs px-3 py-1.5"
                           >
                             Mark Fulfilled
                           </button>
@@ -1142,7 +1142,7 @@ const HospitalDashboard = () => {
                       issued: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30',
                       issued_to_patient: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
                       compatible_issued: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
-                      manual_update: 'bg-slate-500/10 text-secondary border-slate-500/30',
+                      manual_update: 'bg-surface text-secondary border-theme',
                     };
 
                     return (
@@ -1404,7 +1404,7 @@ const HospitalDashboard = () => {
                   <button
                     type="button"
                     disabled
-                    className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-surface border border-theme text-muted font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Contact Donor (Disabled - Request Fulfilled)</span>
@@ -1439,7 +1439,7 @@ const HospitalDashboard = () => {
                                   ? isExact
                                     ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400'
                                     : 'bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-300'
-                                  : 'bg-slate-200/50 dark:bg-white/5 border-slate-200 dark:border-white/5 text-muted'
+                                  : 'bg-surface border border-theme text-muted'
                               }`}
                             >
                               <span className="font-extrabold text-xs">{grp} {isExact && '★'}</span>

@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import Card from '../../components/common/Card';
 import Loader from '../../components/common/Loader';
 import InventoryForm from '../../components/forms/InventoryForm';
+import PageTransition from '../../components/common/PageTransition';
 import { Building2 } from 'lucide-react';
 
 const InventoryManagerPage = () => {
@@ -47,7 +48,7 @@ const InventoryManagerPage = () => {
   if (loading) return <Loader text="Loading hospital inventory..." />;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 page-enter">
+    <PageTransition className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
           Hospital <span className="gradient-text-brand">Inventory Manager</span>
@@ -60,7 +61,7 @@ const InventoryManagerPage = () => {
       <Card title="Blood Bank Inventory Stock" icon={Building2} hover={false}>
         <InventoryForm initialInventory={profile?.inventory || []} onSubmit={handleUpdate} loading={saving} />
       </Card>
-    </div>
+    </PageTransition>
   );
 };
 

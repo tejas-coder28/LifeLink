@@ -255,7 +255,7 @@ const IndividualDashboard = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   profile.isAvailable
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
-                    : 'bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-secondary'
+                    : 'btn-secondary text-xs'
                 }`}
               >
                 Toggle
@@ -354,7 +354,7 @@ const IndividualDashboard = () => {
               </div>
               <button
                 onClick={() => setTab('pings')}
-                className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-md shrink-0 flex items-center space-x-1"
+                className="btn-primary text-xs px-5 py-2.5 rounded-xl shrink-0 flex items-center space-x-1"
               >
                 <span>Review Requests ({pendingPings.length})</span>
                 <ChevronRight className="w-4 h-4" />

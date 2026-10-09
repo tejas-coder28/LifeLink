@@ -123,8 +123,8 @@ const UserManagement = () => {
         /* DONORS DIRECTORY TABLE */
         <Card hover={false} className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-white/[0.03] text-muted uppercase font-extrabold text-[10px] tracking-wider border-b border-theme">
+            <table className="glass-table text-left text-xs">
+              <thead>
                 <tr>
                   <th className="px-5 py-3.5">Donor Name</th>
                   <th className="px-5 py-3.5">Blood Group</th>
@@ -163,8 +163,8 @@ const UserManagement = () => {
         /* HOSPITALS DIRECTORY TABLE */
         <Card hover={false} className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-white/[0.03] text-muted uppercase font-extrabold text-[10px] tracking-wider border-b border-theme">
+            <table className="glass-table text-left text-xs">
+              <thead>
                 <tr>
                   <th className="px-5 py-3.5">Hospital Name</th>
                   <th className="px-5 py-3.5">License Number</th>

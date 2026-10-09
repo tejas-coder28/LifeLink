@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { donorApi } from '../../api/donorApi';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import Card from '../../components/common/Card';
+import PageTransition from '../../components/common/PageTransition';
 import { User } from 'lucide-react';
 
 const DonorProfilePage = () => {
@@ -30,7 +31,7 @@ const DonorProfilePage = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6 page-enter">
+    <PageTransition className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
           Donor <span className="gradient-text-brand">Profile Management</span>
@@ -43,7 +44,7 @@ const DonorProfilePage = () => {
       <Card title="Blood & Location Credentials" icon={User} hover={false}>
         <DonorProfileForm initialData={profile || {}} onSubmit={handleSubmit} loading={loading} />
       </Card>
-    </div>
+    </PageTransition>
   );
 };
 

@@ -4,6 +4,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import PageTransition from '../../components/common/PageTransition';
 import { Heart, Calendar, MapPin, CheckCircle2 } from 'lucide-react';
 
 const DonationHistoryPage = () => {
@@ -28,7 +29,7 @@ const DonationHistoryPage = () => {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 page-enter">
+    <PageTransition className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
           Your Donation <span className="gradient-text-brand">Impact History</span>
@@ -51,7 +52,7 @@ const DonationHistoryPage = () => {
           {history.map((item) => (
             <div
               key={item._id}
-              className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-slate-300 dark:hover:border-white/20 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-brand-500/40 transition-all duration-200 shadow-card"
             >
               <div className="space-y-3 flex-1 min-w-0">
                 <div className="flex items-center flex-wrap gap-2.5">
@@ -63,7 +64,7 @@ const DonationHistoryPage = () => {
                 </div>
                 <div className="text-xs space-y-1.5 text-secondary">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
+                    <MapPin className="w-4 h-4 shrink-0 text-brand-500" />
                     <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -73,8 +74,8 @@ const DonationHistoryPage = () => {
                 </div>
               </div>
 
-              <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/80 dark:border-white/10 w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-rose-500/5 dark:bg-rose-500/10 px-4 py-2.5 rounded-xl border border-rose-500/15">
-                <span className="text-base font-black text-rose-600 dark:text-rose-400 block tracking-tight">
+              <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-theme w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-brand-500/10 px-4 py-2.5 rounded-xl border border-brand-500/20">
+                <span className="text-base font-black text-brand-500 block tracking-tight">
                   {item.unitsDonated} Unit(s)
                 </span>
                 <span className="text-[11px] text-muted block font-mono mt-0.5">
@@ -85,7 +86,7 @@ const DonationHistoryPage = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageTransition>
   );
 };
 

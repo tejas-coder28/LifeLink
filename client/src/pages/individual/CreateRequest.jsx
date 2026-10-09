@@ -4,6 +4,7 @@ import { requestApi } from '../../api/requestApi';
 import { useToast } from '../../context/ToastContext';
 import RequestForm from '../../components/forms/RequestForm';
 import Card from '../../components/common/Card';
+import PageTransition from '../../components/common/PageTransition';
 import { Activity } from 'lucide-react';
 
 const CreateRequest = () => {
@@ -28,10 +29,11 @@ const CreateRequest = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6 page-enter">
+    <PageTransition className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase mb-1" style={{ background: 'rgba(220,38,38,0.15)', color: '#fb7185', border: '1px solid rgba(220,38,38,0.3)' }}>
-          <Activity className="w-3.5 h-3.5" /> Emergency Dispatch
+        <div className="section-label mx-auto mb-1">
+          <Activity className="w-3.5 h-3.5 animate-pulse text-brand-500" />
+          <span>Priority Emergency Dispatch</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-black text-primary font-heading tracking-tight">
           Create <span className="gradient-text-brand">Emergency Request</span>
@@ -44,7 +46,7 @@ const CreateRequest = () => {
       <Card title="Patient Details & Need" icon={Activity} hover={false}>
         <RequestForm onSubmit={handleSubmit} loading={loading} />
       </Card>
-    </div>
+    </PageTransition>
   );
 };
 

@@ -727,7 +727,7 @@ const DonorDashboard = () => {
                     </div>
 
                     {/* Full width divider */}
-                    <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+                    <div className="w-full border-t border-theme" />
 
                     {/* Footer */}
                     <div className="p-5 sm:p-6 pt-4 sm:pt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
@@ -736,7 +736,7 @@ const DonorDashboard = () => {
                         disabled={isResponding}
                         className="btn-secondary w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
                       >
-                        <XCircle className="w-4 h-4 text-slate-400" />
+                        <XCircle className="w-4 h-4 text-muted" />
                         <span>Decline</span>
                       </button>
 
@@ -790,7 +790,7 @@ const DonorDashboard = () => {
                 <span className="font-bold text-primary text-sm">{selectedRequest.address}</span>
               </div>
               {selectedRequest.notes && (
-                <div className="col-span-2 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10">
+                <div className="col-span-2 p-3 rounded-xl bg-surface border border-theme">
                   <span className="block font-semibold mb-0.5 text-muted">Medical Notes</span>
                   <p className="text-xs italic mt-1 text-secondary">"{selectedRequest.notes}"</p>
                 </div>
@@ -811,11 +811,11 @@ const DonorDashboard = () => {
                     disabled={pledgingId === selectedRequest._id || !isComp}
                     className={`w-full py-3.5 rounded-xl text-xs justify-center flex items-center gap-2 transition-all ${
                       !isComp
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        ? 'bg-surface text-muted cursor-not-allowed border border-theme'
                         : 'btn-primary'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-slate-500'}`} />
+                    <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-muted'}`} />
                     <span>
                       {pledgingId === selectedRequest._id
                         ? 'Pledging...'
