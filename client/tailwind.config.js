@@ -95,13 +95,39 @@ export default {
 
       // ─── Typography ────────────────────────────────────────────────────
       fontFamily: {
-        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+        heading: ['"Plus Jakarta Sans"', 'Sora', 'sans-serif'],
+        sora:    ['Sora', 'sans-serif'],
         sans:    ['Inter', 'sans-serif'],
+      },
+
+      // ─── Blood Group Palette ───────────────────────────────────────────
+      colors: {
+        ...(() => {
+          return {
+            blood: {
+              'ap':  '#F43F5E',
+              'an':  '#FB7185',
+              'bp':  '#8B5CF6',
+              'bn':  '#A78BFA',
+              'abp': '#2DD4BF',
+              'abn': '#5EEAD4',
+              'op':  '#38BDF8',
+              'on':  '#7DD3FC',
+            },
+          };
+        })(),
       },
 
       // ─── Shadows & Glows ───────────────────────────────────────────────
       boxShadow: {
-        // Depth layers
+        // Spatial 5-Level Elevations
+        'elevation-canvas':   'none',
+        'elevation-base':     '0 4px 20px -2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12)',
+        'elevation-raised':   '0 10px 32px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
+        'elevation-floating': '0 16px 48px -6px rgba(0,0,0,0.45), 0 0 32px -4px rgba(244,63,94,0.18), inset 0 1px 0 rgba(255,255,255,0.22)',
+        'elevation-overlay':  '0 24px 64px -8px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.28)',
+
+        // Standard Depth layers
         'card':          '0 4px 24px rgba(0,0,0,0.40)',
         'card-hover':    '0 12px 40px rgba(0,0,0,0.55)',
         'elevated':      '0 20px 50px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.08)',
@@ -111,15 +137,17 @@ export default {
         'glow-violet':   '0 0 32px -4px rgba(139,92,246,0.45)',
         'glow-teal':     '0 0 28px -4px rgba(45,212,191,0.45)',
         'glow-amber':    '0 0 28px -4px rgba(245,158,11,0.45)',
-        // Glass top edge highlight
-        'glass-inset':   'inset 0 1px 0 rgba(255,255,255,0.10)',
+        // Glass top edge specular highlight
+        'glass-inset':   'inset 0 1px 0 rgba(255,255,255,0.15)',
+        'glass-specular': 'inset 0 1px 1px 0 rgba(255,255,255,0.35), inset 0 -1px 1px 0 rgba(0,0,0,0.20)',
       },
 
       // ─── Border colours ────────────────────────────────────────────────
       borderColor: {
         glass:      'rgba(255,255,255,0.08)',
-        'glass-md': 'rgba(255,255,255,0.12)',
-        'glass-lg': 'rgba(255,255,255,0.18)',
+        'glass-md': 'rgba(255,255,255,0.14)',
+        'glass-lg': 'rgba(255,255,255,0.22)',
+        'glass-top':'rgba(255,255,255,0.28)',
       },
 
       // ─── Backdrop blur ─────────────────────────────────────────────────
@@ -129,7 +157,8 @@ export default {
         md:   '12px',
         lg:   '16px',
         xl:   '20px',
-        '2xl': '28px',
+        '2xl': '24px',
+        '3xl': '32px',
       },
 
       // ─── Keyframe Animations ───────────────────────────────────────────
@@ -143,6 +172,7 @@ export default {
         'blob-drift':        'blobDrift 20s ease-in-out infinite alternate',
         'blob-drift-2':      'blobDrift2 24s ease-in-out infinite alternate',
         'blob-drift-3':      'blobDrift3 28s ease-in-out infinite alternate',
+        'blob-drift-4':      'blobDrift4 32s ease-in-out infinite alternate',
         'shimmer':           'shimmer 2s linear infinite',
         'float':             'float 6s ease-in-out infinite',
       },
@@ -173,19 +203,24 @@ export default {
           '50%':      { boxShadow: '0 0 28px rgba(245,158,11,0.75)' },
         },
         blobDrift: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(40px, -30px) scale(1.08)' },
-          '100%': { transform: 'translate(-20px, 20px) scale(0.96)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px) scale(1)' },
+          '50%':  { transform: 'translate3d(40px, -30px, 0px) scale(1.08)' },
+          '100%': { transform: 'translate3d(-20px, 20px, 0px) scale(0.96)' },
         },
         blobDrift2: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(-50px, 35px) scale(1.05)' },
-          '100%': { transform: 'translate(30px, -25px) scale(0.98)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px) scale(1)' },
+          '50%':  { transform: 'translate3d(-50px, 35px, 0px) scale(1.05)' },
+          '100%': { transform: 'translate3d(30px, -25px, 0px) scale(0.98)' },
         },
         blobDrift3: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(25px, 45px) scale(1.06)' },
-          '100%': { transform: 'translate(-35px, -20px) scale(0.97)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px) scale(1)' },
+          '50%':  { transform: 'translate3d(25px, 45px, 0px) scale(1.06)' },
+          '100%': { transform: 'translate3d(-35px, -20px, 0px) scale(0.97)' },
+        },
+        blobDrift4: {
+          '0%':   { transform: 'translate3d(0px, 0px, 0px) scale(1)' },
+          '50%':  { transform: 'translate3d(-30px, -45px, 0px) scale(1.09)' },
+          '100%': { transform: 'translate3d(40px, 30px, 0px) scale(0.95)' },
         },
         shimmer: {
           '0%':   { backgroundPosition: '-200% 0' },
@@ -198,8 +233,9 @@ export default {
       },
 
       borderRadius: {
-        'card':  '1rem',    // 16px — standard card
-        'panel': '1.5rem',  // 24px — modals, hero
+        'card':  '1.25rem', // 20px
+        'panel': '1.75rem', // 28px
+        'modal': '2rem',    // 32px
       },
     },
   },

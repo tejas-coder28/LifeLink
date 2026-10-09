@@ -107,10 +107,11 @@ function App() {
         <ToastProvider>
           <Router>
             <div className="flex flex-col min-h-screen text-slate-900 dark:text-slate-100 font-sans selection:bg-rose-500/30 selection:text-white transition-colors duration-200">
-              {/* Animated background colour orbs — give glass cards something to blur against */}
+              {/* Animated background colour orbs — 4 harmonic spectrum orbs (rose, teal, violet, sky) */}
               <div className="bg-orb bg-orb-1" aria-hidden="true" />
               <div className="bg-orb bg-orb-2" aria-hidden="true" />
               <div className="bg-orb bg-orb-3" aria-hidden="true" />
+              <div className="bg-orb bg-orb-4" aria-hidden="true" />
 
             <Navbar />
             <main className="flex-1 pt-24 sm:pt-28 pb-12">
