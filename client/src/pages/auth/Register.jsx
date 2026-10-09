@@ -105,7 +105,7 @@ const Register = () => {
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-brand group-hover:scale-105 transition-transform bg-gradient-to-br from-brand-500 to-brand-700">
                 <HeartHandshake className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-black tracking-tight text-primary font-heading">
+              <span className="text-xl font-black tracking-tight text-white font-heading">
                 Life<span className="gradient-text-brand">Link</span>
               </span>
             </Link>
@@ -115,11 +115,11 @@ const Register = () => {
                 <Sparkles className="w-3 h-3 text-teal-400" />
                 <span>Join the Standby Network</span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-primary">
+              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-white">
                 Every Donor <br />
                 <span className="gradient-text-brand">Saves Lives</span>
               </h2>
-              <p className="text-xs leading-relaxed text-secondary">
+              <p className="text-xs leading-relaxed text-slate-300">
                 Register as an individual standby donor or register your hospital to broadcast emergency requests in seconds.
               </p>
             </div>
@@ -128,17 +128,17 @@ const Register = () => {
             <div className="space-y-2 pt-2">
               <div className="p-3 rounded-2xl bg-brand-500/10 border border-brand-500/20">
                 <p className="text-xs font-bold text-brand-400">Standby Donor</p>
-                <p className="text-[10px] text-secondary mt-0.5">Receive matched alerts within your radius when lives are at risk.</p>
+                <p className="text-[10px] text-slate-300 mt-0.5">Receive matched alerts within your radius when lives are at risk.</p>
               </div>
               <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20">
                 <p className="text-xs font-bold text-sky-400">Hospital Medical Center</p>
-                <p className="text-[10px] text-secondary mt-0.5">Manage blood inventory and post instant emergency broadcasts.</p>
+                <p className="text-[10px] text-slate-300 mt-0.5">Manage blood inventory and post instant emergency broadcasts.</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-3 relative z-10 pt-6 border-t border-glass">
-            <div className="flex items-center space-x-3 text-xs font-semibold text-secondary">
+            <div className="flex items-center space-x-3 text-xs font-semibold text-slate-200">
               <ShieldCheck className="w-4 h-4 shrink-0 text-teal-400" />
               <span>Verified Identity Protection</span>
             </div>

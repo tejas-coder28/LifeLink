@@ -4,22 +4,13 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer
-      className="pt-16 pb-8 mt-20 bg-surface border-t border-theme backdrop-blur-xl transition-colors"
-    >
+    <footer className="pt-16 pb-8 mt-20 bg-surface/70 border-t border-theme backdrop-blur-2xl transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-
           {/* BRAND COLUMN */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div
-                className="w-9 h-9 rounded-2xl flex items-center justify-center text-white"
-                style={{
-                  background: 'linear-gradient(135deg, #DC2626, #b91c1c)',
-                  boxShadow: '0 0 20px rgba(220,38,38,0.35)',
-                }}
-              >
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
                 <HeartHandshake className="w-5 h-5" />
               </div>
               <span className="text-xl font-black text-primary tracking-tight font-heading">
@@ -33,9 +24,7 @@ const Footer = () => {
 
           {/* QUICK LINKS */}
           <div>
-            <h4
-              className="font-extrabold mb-4 text-xs uppercase tracking-wider text-primary"
-            >
+            <h4 className="font-extrabold mb-4 text-xs uppercase tracking-wider text-primary">
               Quick Links
             </h4>
             <ul className="space-y-2.5 text-xs font-medium">
@@ -50,7 +39,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/emergency-request" className="font-bold transition-colors text-rose-600 dark:text-rose-400 hover:underline">
+                <Link to="/emergency-request" className="font-bold transition-colors text-brand-500 hover:underline">
                   Emergency Blood Request
                 </Link>
               </li>
@@ -109,13 +98,11 @@ const Footer = () => {
           </div>
         </div>
 
-        <div
-          className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs border-t border-theme text-muted"
-        >
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs border-t border-theme text-muted">
           <p>© {new Date().getFullYear()} LifeLink Emergency Blood Platform. All rights reserved.</p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0 text-muted">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 text-teal-500" />
               Secure &amp; Private
             </span>
           </div>

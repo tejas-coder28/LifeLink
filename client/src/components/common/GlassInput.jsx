@@ -45,6 +45,7 @@ const GlassInput = ({
               ? 'border-brand-500 focus:border-brand-500 focus:ring-brand-500/30'
               : ''
           } ${className}`}
+          style={{ colorScheme: 'light dark', ...rest.style }}
           {...rest}
         />
       </div>

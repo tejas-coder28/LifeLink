@@ -83,6 +83,7 @@
   --divider-color:     rgba(226, 232, 240, 0.95);
   --input-bg:          rgba(255, 255, 255, 0.95);
   --input-border:      rgba(203, 213, 225, 0.90);
+  --specular-sheen:    rgba(255, 255, 255, 0.45);
 
   /* Transitions */
   --t-fast:   150ms;
@@ -158,6 +159,7 @@ html.dark {
   --divider-color:     rgba(255, 255, 255, 0.08);
   --input-bg:          rgba(255, 255, 255, 0.05);
   --input-border:      rgba(255, 255, 255, 0.10);
+  --specular-sheen:    rgba(255, 255, 255, 0.08);
 }
 
 /* ─── Base Styles ────────────────────────────────────────────────────────── */
@@ -377,6 +379,19 @@ html.dark .bg-orb-4 {
     transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
 
+  .spatial-elevation-1 {
+    @apply elevation-1;
+  }
+  .spatial-elevation-2 {
+    @apply elevation-2;
+  }
+  .spatial-elevation-3 {
+    @apply elevation-3;
+  }
+  .spatial-elevation-4 {
+    @apply elevation-4;
+  }
+
   /* Specular Highlight Sheen */
   .specular-highlight {
     position: relative;
@@ -594,7 +609,27 @@ html.dark .bg-orb-4 {
     background: rgba(255, 255, 255, 0.10);
     border-color: rgba(255, 255, 255, 0.22);
   }
-  .btn-secondary:disabled {
+  .btn-glass {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full;
+    background: var(--elevation-1-bg);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-highlight);
+    box-shadow: var(--shadow-card), var(--glass-inset);
+    transition: all var(--t-fast) var(--ease-out);
+    cursor: pointer;
+  }
+  .btn-glass:hover:not(:disabled) {
+    background: var(--elevation-2-bg);
+    border-color: var(--brand-500);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover), 0 0 16px -2px rgba(244, 63, 94, 0.25);
+  }
+  .btn-glass:disabled {
     opacity: 0.45;
     cursor: not-allowed;
   }
@@ -706,6 +741,165 @@ html.dark .bg-orb-4 {
     color: #FDA4AF;
     border-color: rgba(244, 63, 94, 0.45);
     box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+  }
+
+  /* ══ Liquid Glass Badges & Chips ═════════════════════════════════════ */
+  .badge-base {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase;
+    border-width: 1px;
+    border-style: solid;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.2s ease;
+  }
+
+  .badge-critical {
+    background: rgba(244, 63, 94, 0.14);
+    color: #F43F5E;
+    border-color: rgba(244, 63, 94, 0.40);
+    box-shadow: 0 0 16px -2px rgba(244, 63, 94, 0.45);
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  html.dark .badge-critical {
+    color: #FDA4AF;
+    background: rgba(244, 63, 94, 0.22);
+    border-color: rgba(244, 63, 94, 0.55);
+  }
+
+  .badge-high {
+    background: rgba(249, 115, 22, 0.14);
+    color: #EA580C;
+    border-color: rgba(249, 115, 22, 0.40);
+    box-shadow: 0 0 14px -2px rgba(249, 115, 22, 0.35);
+  }
+  html.dark .badge-high {
+    color: #FDBA74;
+    background: rgba(249, 115, 22, 0.22);
+    border-color: rgba(249, 115, 22, 0.50);
+  }
+
+  .badge-medium {
+    background: rgba(56, 189, 248, 0.12);
+    color: #0284C7;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+  html.dark .badge-medium {
+    color: #7DD3FC;
+    background: rgba(56, 189, 248, 0.20);
+    border-color: rgba(56, 189, 248, 0.45);
+  }
+
+  .badge-low {
+    background: rgba(100, 116, 139, 0.12);
+    color: #475569;
+    border-color: rgba(100, 116, 139, 0.30);
+  }
+  html.dark .badge-low {
+    color: #94A3B8;
+    background: rgba(100, 116, 139, 0.20);
+    border-color: rgba(100, 116, 139, 0.40);
+  }
+
+  .badge-open {
+    background: rgba(56, 189, 248, 0.14);
+    color: #0284C7;
+    border-color: rgba(56, 189, 248, 0.40);
+  }
+  html.dark .badge-open {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.22);
+  }
+
+  .badge-matching {
+    background: rgba(244, 63, 94, 0.14);
+    color: #E11D48;
+    border-color: rgba(244, 63, 94, 0.40);
+    animation: pulseGlow 2.5s ease-in-out infinite;
+  }
+  html.dark .badge-matching {
+    color: #FB7185;
+    background: rgba(244, 63, 94, 0.24);
+  }
+
+  .badge-fulfilled, .badge-completed {
+    background: rgba(45, 212, 191, 0.14);
+    color: #0D9488;
+    border-color: rgba(45, 212, 191, 0.40);
+    box-shadow: 0 0 14px -2px rgba(45, 212, 191, 0.30);
+  }
+  html.dark .badge-fulfilled, html.dark .badge-completed {
+    color: #5EEAD4;
+    background: rgba(45, 212, 191, 0.22);
+  }
+
+  .badge-pending {
+    background: rgba(245, 158, 11, 0.14);
+    color: #D97706;
+    border-color: rgba(245, 158, 11, 0.40);
+  }
+  html.dark .badge-pending {
+    color: #FCD34D;
+    background: rgba(245, 158, 11, 0.22);
+  }
+
+  .badge-pledged {
+    background: rgba(139, 92, 246, 0.14);
+    color: #7C3AED;
+    border-color: rgba(139, 92, 246, 0.40);
+  }
+  html.dark .badge-pledged {
+    color: #C4B5FD;
+    background: rgba(139, 92, 246, 0.22);
+  }
+
+  .badge-cancelled, .badge-expired, .badge-suspended {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748B;
+    border-color: rgba(100, 116, 139, 0.30);
+  }
+  html.dark .badge-cancelled, html.dark .badge-expired, html.dark .badge-suspended {
+    color: #94A3B8;
+    background: rgba(100, 116, 139, 0.20);
+  }
+
+  .badge-verified {
+    background: rgba(45, 212, 191, 0.14);
+    color: #0F766E;
+    border-color: rgba(45, 212, 191, 0.35);
+  }
+  html.dark .badge-verified {
+    color: #2DD4BF;
+    background: rgba(45, 212, 191, 0.20);
+  }
+
+  .badge-donor {
+    background: rgba(244, 63, 94, 0.12);
+    color: #E11D48;
+    border-color: rgba(244, 63, 94, 0.35);
+  }
+  html.dark .badge-donor {
+    color: #FB7185;
+    background: rgba(244, 63, 94, 0.20);
+  }
+
+  .badge-hospital {
+    background: rgba(56, 189, 248, 0.12);
+    color: #0284C7;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+  html.dark .badge-hospital {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.20);
+  }
+
+  .badge-admin {
+    background: rgba(245, 158, 11, 0.12);
+    color: #D97706;
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+  html.dark .badge-admin {
+    color: #FBBF24;
+    background: rgba(245, 158, 11, 0.20);
   }
 
   /* ══ Skeleton Shimmer ═════════════════════════════════════════════════ */
