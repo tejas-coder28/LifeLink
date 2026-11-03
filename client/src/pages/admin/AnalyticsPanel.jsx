@@ -31,10 +31,16 @@ import {
   Users
 } from 'lucide-react';
 
-const COLORS = ['#e11d48', '#f59e0b', '#38bdf8', '#10b981', '#8b5cf6', '#ec4899', '#6366f1', '#64748b'];
-
 const AnalyticsPanel = ({ data }) => {
   const { gridStroke, axisStroke, tooltipStyle, colors } = useChartTheme();
+
+  const urgencyColors = {
+    CRITICAL: colors.crimson,
+    HIGH: colors.warning,
+    MEDIUM: colors.info,
+    LOW: colors.teal || colors.success,
+    STANDARD: colors.silver,
+  };
   const summary = data?.summary || {
     totalDonors: 0,
     availableDonors: 0,
@@ -53,11 +59,14 @@ const AnalyticsPanel = ({ data }) => {
 
   const monthlyTrends = data?.monthlyTrends || [];
 
-  const urgencyBreakdown = (data?.urgencyDistribution || data?.byUrgency || []).map((item, idx) => ({
-    name: (item.urgency || item.name || 'Standard').toUpperCase(),
-    value: item.count || item.value || 0,
-    color: COLORS[idx % COLORS.length]
-  }));
+  const urgencyBreakdown = (data?.urgencyDistribution || data?.byUrgency || []).map((item) => {
+    const name = (item.urgency || item.name || 'Standard').toUpperCase();
+    return {
+      name,
+      value: item.count || item.value || 0,
+      color: urgencyColors[name] || colors.info,
+    };
+  });
 
   return (
     <div className="space-y-8">
@@ -65,7 +74,7 @@ const AnalyticsPanel = ({ data }) => {
       <div className="glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-black text-primary flex items-center gap-2 font-heading">
-            <BarChart3 className="w-5 h-5 text-rose-500" />
+            <BarChart3 className="w-5 h-5 text-info" />
             Regional Blood Analytics & Supply Insights
           </h2>
           <p className="text-xs mt-1 text-secondary">
@@ -126,21 +135,25 @@ const AnalyticsPanel = ({ data }) => {
                 <AreaChart data={monthlyTrends} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <stop offset="5%" stopColor={colors.info} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={colors.info} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#e11d48" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#e11d48" stopOpacity={0} />
+                      <stop offset="5%" stopColor={colors.silver} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={colors.silver} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
                   <XAxis dataKey="month" stroke={axisStroke} fontSize={11} tickLine={false} />
                   <YAxis stroke={axisStroke} fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  <Area type="monotone" dataKey="requests" name="Blood Demands" stroke="#e11d48" fillOpacity={1} fill="url(#colorRequests)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="donations" name="Fulfilled Donations" stroke="#10b981" fillOpacity={1} fill="url(#colorDonations)" strokeWidth={2} />
+                  <Legend
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                    formatter={(value) => <span className="text-primary font-semibold text-xs ml-1">{value}</span>}
+                  />
+                  <Area type="monotone" dataKey="requests" name="Blood Demands" stroke={colors.silver} fillOpacity={1} fill="url(#colorRequests)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="donations" name="Fulfilled Donations" stroke={colors.info} strokeDasharray="4 4" fillOpacity={1} fill="url(#colorDonations)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -172,11 +185,15 @@ const AnalyticsPanel = ({ data }) => {
                     dataKey="value"
                   >
                     {urgencyBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={entry.color || colors.info} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                  <Legend
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: '11px' }}
+                    formatter={(value) => <span className="text-primary font-semibold text-xs ml-1">{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -203,9 +220,13 @@ const AnalyticsPanel = ({ data }) => {
                 <XAxis dataKey="group" stroke={axisStroke} fontSize={12} fontWeight="bold" tickLine={false} />
                 <YAxis stroke={axisStroke} fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Bar dataKey="donors" name="Registered Donors" fill="#38bdf8" radius={[6, 6, 0, 0]} barSize={24} />
-                <Bar dataKey="requests" name="Blood Requests" fill="#e11d48" radius={[6, 6, 0, 0]} barSize={24} />
+                <Legend
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+                  formatter={(value) => <span className="text-primary font-semibold text-xs ml-1">{value}</span>}
+                />
+                <Bar dataKey="donors" name="Registered Donors" fill={colors.info} radius={[6, 6, 0, 0]} barSize={24} />
+                <Bar dataKey="requests" name="Blood Requests" fill={colors.silver} radius={[6, 6, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>

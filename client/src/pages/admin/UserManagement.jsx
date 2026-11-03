@@ -91,12 +91,12 @@ const UserManagement = () => {
   return (
     <div className="space-y-6">
       {/* Subtab Toggle */}
-      <div className="flex items-center space-x-2 border-b border-theme pb-3">
+      <div className="flex items-center space-x-2 border-b border-hairline pb-3">
         <button
           onClick={() => setSubTab('donors')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'donors'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -108,7 +108,7 @@ const UserManagement = () => {
           onClick={() => setSubTab('hospitals')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'hospitals'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -204,8 +204,8 @@ const UserManagement = () => {
                         title={hosp.isVerified ? 'Revoke Verification' : 'Approve Hospital'}
                         className={`p-2 rounded-xl transition-colors disabled:opacity-40 cursor-pointer ${
                           hosp.isVerified
-                            ? 'text-amber-500 hover:bg-amber-400/10'
-                            : 'text-teal-600 dark:text-teal-400 hover:bg-teal-400/10'
+                            ? 'text-secondary hover:bg-surface'
+                            : 'text-success hover:bg-success/10'
                         }`}
                       >
                         {hosp.isVerified ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
@@ -214,7 +214,7 @@ const UserManagement = () => {
                         onClick={() => handleRequestDelete(hosp)}
                         disabled={actionLoadingId === hosp._id}
                         title="Delete Hospital Record"
-                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-40 cursor-pointer"
+                        className="p-2 rounded-xl text-danger hover:bg-danger/10 transition-colors disabled:opacity-40 cursor-pointer"
                       >
                         <Ban className="w-4 h-4" />
                       </button>
@@ -235,12 +235,11 @@ const UserManagement = () => {
       >
         {selectedHospital && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-3 border-b border-theme pb-4">
+            <div className="flex items-center space-x-3 border-b border-hairline pb-4">
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0"
-                style={{ background: 'rgba(59,158,255,0.15)', border: '1px solid rgba(59,158,255,0.3)', color: '#0284c7' }}
+                className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0 bg-info/10 border border-info/20 text-info"
               >
-                <Building2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <Building2 className="w-5 h-5 text-info" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-primary">{selectedHospital.name}</h3>
@@ -264,7 +263,7 @@ const UserManagement = () => {
             </div>
 
             {selectedHospital.inventory && (
-              <div className="pt-2 border-t border-theme">
+              <div className="pt-2 border-t border-hairline">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider block mb-2 text-muted">
                   Inventory Reserve Breakdown:
                 </span>
@@ -272,10 +271,12 @@ const UserManagement = () => {
                   {selectedHospital.inventory.map((inv) => (
                     <div
                       key={inv.bloodGroup}
-                      className="p-2.5 rounded-xl text-center bg-surface border border-theme"
+                      className="p-2.5 rounded-xl text-center bg-surface border border-hairline"
                     >
                       <span className="text-[10px] font-extrabold block text-muted">{inv.bloodGroup}</span>
-                      <span className="text-xs font-black text-rose-600 dark:text-rose-400">{inv.units} units</span>
+                      <span className={`text-xs font-black ${inv.units === 0 ? 'text-danger' : inv.units <= 2 ? 'text-warning' : 'text-primary'}`}>
+                        {inv.units} units
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -309,7 +310,7 @@ const UserManagement = () => {
               type="button"
               onClick={handleConfirmDelete}
               disabled={deleteConfirm.loading}
-              className="btn-primary bg-rose-600 hover:bg-rose-500 text-xs px-4 py-2 rounded-xl cursor-pointer shadow-md shadow-rose-600/30"
+              className="btn-primary text-xs px-4 py-2 rounded-xl cursor-pointer"
             >
               {deleteConfirm.loading ? 'Deleting...' : 'Confirm Delete'}
             </button>

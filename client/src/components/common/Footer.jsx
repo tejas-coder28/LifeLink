@@ -10,11 +10,11 @@ const Footer = () => {
           {/* BRAND COLUMN */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white bg-danger shadow-glow-danger">
                 <HeartHandshake className="w-5 h-5" />
               </div>
               <span className="text-xl font-black text-primary tracking-tight font-heading">
-                Life<span className="gradient-text-brand">Link</span>
+                Life<span className="text-danger">Link</span>
               </span>
             </div>
             <p className="text-xs leading-relaxed text-secondary">
@@ -39,7 +39,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/emergency-request" className="font-bold transition-colors text-brand-500 hover:underline">
+                <Link to="/emergency-request" className="font-bold transition-colors text-danger hover:underline">
                   Emergency Blood Request
                 </Link>
               </li>
@@ -102,7 +102,7 @@ const Footer = () => {
           <p>© {new Date().getFullYear()} LifeLink Emergency Blood Platform. All rights reserved.</p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0 text-muted">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-teal-500" />
+              <ShieldCheck className="w-4 h-4 text-success" />
               Secure &amp; Private
             </span>
           </div>

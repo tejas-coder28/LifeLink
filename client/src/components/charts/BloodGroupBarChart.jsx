@@ -23,8 +23,8 @@ const BloodGroupBarChart = ({ data = [] }) => {
           <YAxis stroke={axisStroke} fontSize={12} tickLine={false} />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
-          <Bar dataKey="donors" name="Available Donors" fill={colors.rose} radius={[6, 6, 0, 0]} />
-          <Bar dataKey="requests" name="Blood Requests" fill={colors.sky} radius={[6, 6, 0, 0]} />
+          <Bar dataKey="donors" name="Available Donors" fill={colors.info} radius={[6, 6, 0, 0]} />
+          <Bar dataKey="requests" name="Blood Requests" fill={colors.silver} radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -107,13 +107,21 @@ function App() {
         <ToastProvider>
           <Router>
             <div className="flex flex-col min-h-screen text-primary font-sans selection:bg-brand-500/30 selection:text-white transition-colors duration-250">
-              {/* Animated background colour orbs — 4 harmonic spectrum orbs (rose, teal, violet, sky) */}
-              <div className="bg-orb bg-orb-1" aria-hidden="true" />
-              <div className="bg-orb bg-orb-2" aria-hidden="true" />
-              <div className="bg-orb bg-orb-3" aria-hidden="true" />
-              <div className="bg-orb bg-orb-4" aria-hidden="true" />
+              {/* Isolated hardware-accelerated ambient background */}
+              <div
+                className="fixed inset-0 pointer-events-none overflow-hidden z-[-1]"
+                style={{ contain: 'strict' }}
+                aria-hidden="true"
+              >
+                <div className="bg-noise" />
+                <div className="bg-vignette" />
+                <div className="bg-orb bg-orb-1" />
+                <div className="bg-orb bg-orb-2" />
+                <div className="bg-orb bg-orb-3" />
+                <div className="bg-orb bg-orb-4" />
+              </div>
 
-            <Navbar />
+              <Navbar />
             <main className="flex-1 pt-24 sm:pt-28 pb-12">
               <ErrorBoundary>
                 <AnimatedRoutes />

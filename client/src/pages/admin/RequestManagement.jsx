@@ -87,7 +87,7 @@ const RequestManagement = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-card p-6">
         <div>
           <h2 className="text-xl font-black text-primary flex items-center gap-2 font-heading">
-            <FileText className="w-5 h-5 text-rose-500" />
+            <FileText className="w-5 h-5 text-info" />
             Master Blood Requests Directory
           </h2>
           <p className="text-xs mt-1 text-secondary">

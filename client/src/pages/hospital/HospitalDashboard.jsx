@@ -545,17 +545,17 @@ const HospitalDashboard = () => {
 
       {/* ⚠️ Pending Approval Banner — shown when hospital is not yet verified by admin */}
       {hospitalProfile && !hospitalProfile.isVerified && (
-        <div className="flex items-start gap-4 p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/40 shadow-md">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+        <div className="flex items-start gap-4 p-5 rounded-2xl bg-warning/10 border-2 border-warning/40 shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-warning/20 border border-warning/30 text-warning flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-extrabold text-amber-800 dark:text-amber-300">Account Pending Admin Approval</h3>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+            <h3 className="text-sm font-extrabold text-primary">Account Pending Admin Approval</h3>
+            <p className="text-xs text-secondary mt-0.5 leading-relaxed">
               Your hospital registration is under review. An admin must verify your facility before patients can direct emergency requests to you, or before you can broadcast blood requests. You can manage your inventory while you wait.
             </p>
           </div>
-          <span className="px-3 py-1.5 rounded-xl bg-amber-200 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 font-extrabold text-[10px] uppercase tracking-wider shrink-0">
+          <span className="px-3 py-1.5 rounded-xl bg-warning/20 text-warning border border-warning/30 font-extrabold text-[10px] uppercase tracking-wider shrink-0">
             Awaiting Verification
           </span>
         </div>
@@ -581,7 +581,7 @@ const HospitalDashboard = () => {
         {hospitalProfile?.isVerified ? (
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="btn-primary px-5 py-3 rounded-2xl text-xs flex items-center space-x-2 shrink-0 shadow-lg shadow-rose-600/30"
+            className="btn-primary px-5 py-3 rounded-2xl text-xs flex items-center space-x-2 shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             <span>New Blood Request</span>
@@ -590,7 +590,7 @@ const HospitalDashboard = () => {
           <div className="relative group shrink-0">
             <button
               disabled
-              className="px-5 py-3 rounded-2xl bg-surface border border-theme text-muted font-extrabold text-xs flex items-center space-x-2 cursor-not-allowed opacity-60"
+              className="px-5 py-3 rounded-2xl bg-surface border border-hairline text-muted font-extrabold text-xs flex items-center space-x-2 cursor-not-allowed opacity-60"
             >
               <Lock className="w-4 h-4" />
               <span>New Blood Request</span>
@@ -615,9 +615,9 @@ const HospitalDashboard = () => {
         <div className="space-y-8">
           {/* Urgent Incoming Demands Callout Banner */}
           {pendingIncomingCount > 0 && (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-500/15 via-amber-500/10 to-rose-500/15 border-2 border-rose-500/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-danger/10 border-2 border-danger/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-danger-solid text-white flex items-center justify-center font-black shrink-0">
                   <Inbox className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
@@ -675,13 +675,13 @@ const HospitalDashboard = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-primary flex items-center font-heading">
-                <Activity className="w-5 h-5 mr-2 text-rose-500" />
+                <Activity className="w-5 h-5 mr-2 text-info" />
                 Active Hospital Broadcasts & Shortfalls
               </h2>
               {hospitalProfile?.isVerified && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-500 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-info hover:underline cursor-pointer"
                 >
                   + Create New Request
                 </button>
@@ -734,9 +734,9 @@ const HospitalDashboard = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenCompatibleModal(req)}
-                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center justify-center cursor-pointer rounded-xl"
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-secondary flex items-center justify-center cursor-pointer rounded-xl"
                           >
-                            <Droplet className="w-3.5 h-3.5 mr-1 text-sky-500" />
+                            <Droplet className="w-3.5 h-3.5 mr-1 text-info" />
                             <span>Compatible Stock</span>
                           </button>
                         )}
@@ -744,7 +744,7 @@ const HospitalDashboard = () => {
                           <button
                             type="button"
                             onClick={() => handleViewMatches(req._id)}
-                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-info flex items-center justify-center cursor-pointer rounded-xl"
                           >
                             <Cpu className="w-3.5 h-3.5 mr-1" />
                             <span>View Matches</span>
@@ -775,12 +775,12 @@ const HospitalDashboard = () => {
             </div>
 
             {/* Filter Toggle */}
-            <div className="flex items-center space-x-2 bg-surface p-1 rounded-xl border border-theme">
+            <div className="flex items-center space-x-2 bg-surface p-1 rounded-xl border border-hairline">
               <button
                 onClick={() => setIncomingFilter('pending')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'pending'
-                    ? 'bg-rose-600 text-white shadow-sm'
+                    ? 'bg-surface text-primary border border-hairline shadow-sm'
                     : 'text-secondary hover:text-primary'
                 }`}
               >
@@ -790,7 +790,7 @@ const HospitalDashboard = () => {
                 onClick={() => setIncomingFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'all'
-                    ? 'bg-rose-600 text-white shadow-sm'
+                    ? 'bg-surface text-primary border border-hairline shadow-sm'
                     : 'text-secondary hover:text-primary'
                 }`}
               >
@@ -828,8 +828,8 @@ const HospitalDashboard = () => {
                     key={req._id}
                     className={`glass-card p-6 rounded-3xl border transition-all space-y-4 shadow-sm hover:shadow-md ${
                       req.urgency === 'critical' && isPending
-                        ? 'border-rose-500/50 bg-rose-500/5'
-                        : 'border-theme'
+                        ? 'border-danger/40 bg-danger/5'
+                        : 'border-hairline'
                     }`}
                   >
                     {/* Header */}
@@ -853,8 +853,8 @@ const HospitalDashboard = () => {
 
                     {/* Critical urgency indicator */}
                     {req.urgency === 'critical' && isPending && (
-                      <div className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-2">
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                      <div className="px-3 py-1.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-bold flex items-center space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-danger animate-ping shrink-0" />
                         <span>Critical Emergency: Requires immediate review (15-min timeout rule applies)</span>
                       </div>
                     )}
@@ -879,13 +879,7 @@ const HospitalDashboard = () => {
 
                     {/* Hospital Stock Assessment Box */}
                     <div
-                      className={`p-3.5 rounded-2xl border flex flex-col space-y-2 ${
-                        isFullStock
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
-                          : isPartialStock
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-300'
-                      }`}
+                      className="p-3.5 rounded-2xl border flex flex-col space-y-2 bg-silver/10 border-silver/30 text-primary"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold flex items-center space-x-1.5">
@@ -899,17 +893,17 @@ const HospitalDashboard = () => {
 
                       <p className="text-[11px] leading-relaxed">
                         {isFullStock && (
-                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                          <span className="text-primary font-semibold">
                             ✓ <strong>Sufficient stock.</strong> Accepting will immediately allocate all {req.unitsNeeded} unit(s) from your inventory and fulfill the request.
                           </span>
                         )}
                         {isPartialStock && (
-                          <span className="text-amber-700 dark:text-amber-300 font-semibold">
+                          <span className="text-secondary font-semibold">
                             ⚠️ <strong>Partial stock.</strong> Accepting will allocate {currentStock} unit(s) from inventory and broadcast remaining {req.unitsNeeded - currentStock} unit(s) to donors.
                           </span>
                         )}
                         {isZeroStock && (
-                          <span className="text-rose-700 dark:text-rose-300 font-semibold">
+                          <span className="text-danger font-semibold">
                             ✗ <strong>Zero stock available.</strong> Accepting will broadcast all {req.unitsNeeded} unit(s) directly to nearby verified donors.
                           </span>
                         )}
@@ -922,7 +916,7 @@ const HospitalDashboard = () => {
                         <button
                           onClick={() => handleAcceptRequest(req._id)}
                           disabled={acceptingRequestId === req._id}
-                          className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-1.5 flex-1 justify-center shadow-md shadow-rose-600/20"
+                          className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-1.5 flex-1 justify-center"
                         >
                           <Check className="w-4 h-4" />
                           <span>{acceptingRequestId === req._id ? 'Accepting...' : 'Accept & Allocate Stock'}</span>
@@ -930,15 +924,15 @@ const HospitalDashboard = () => {
 
                         <button
                           onClick={() => handleOpenCompatibleModal(req)}
-                          className="btn-secondary text-xs px-3 py-2.5 rounded-xl flex items-center space-x-1 text-sky-600 dark:text-sky-300"
+                          className="btn-secondary text-xs px-3 py-2.5 rounded-xl flex items-center space-x-1 text-secondary"
                         >
-                          <Droplet className="w-3.5 h-3.5 text-sky-500" />
+                          <Droplet className="w-3.5 h-3.5 text-info" />
                           <span>Compatible</span>
                         </button>
 
                         <button
                           onClick={() => handleOpenRejectModal(req)}
-                          className="px-3.5 py-2.5 rounded-xl border border-rose-300 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center space-x-1 transition-colors"
+                          className="px-3.5 py-2.5 rounded-xl border border-danger/30 hover:bg-danger/10 text-danger font-bold text-xs flex items-center space-x-1 transition-colors cursor-pointer"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject</span>
@@ -1015,7 +1009,7 @@ const HospitalDashboard = () => {
                             type="button"
                             onClick={() => handleAcceptRequest(req._id)}
                             disabled={acceptingRequestId === req._id}
-                            className="btn-primary px-3 py-1.5 text-xs font-bold flex items-center justify-center cursor-pointer rounded-xl shadow-sm shadow-rose-600/20"
+                            className="btn-primary px-3 py-1.5 text-xs font-bold flex items-center justify-center cursor-pointer rounded-xl"
                           >
                             <Check className="w-3.5 h-3.5 mr-1" />
                             <span>{acceptingRequestId === req._id ? 'Accepting...' : 'Accept & Allocate'}</span>
@@ -1028,7 +1022,7 @@ const HospitalDashboard = () => {
                             type="button"
                             onClick={() => handleIssuePatientUnits(req._id, 1)}
                             disabled={issuingPatientRequestId === req._id}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-colors flex items-center space-x-1"
+                            className="btn-primary px-3 py-1.5 font-bold text-xs rounded-xl cursor-pointer transition-colors flex items-center space-x-1"
                           >
                             <CheckCheck className="w-3.5 h-3.5" />
                             <span>{issuingPatientRequestId === req._id ? 'Issuing...' : 'Issue 1 Unit to Patient'}</span>
@@ -1040,9 +1034,9 @@ const HospitalDashboard = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenCompatibleModal(req)}
-                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center justify-center cursor-pointer rounded-xl"
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-secondary flex items-center justify-center cursor-pointer rounded-xl"
                           >
-                            <Droplet className="w-3.5 h-3.5 mr-1 text-sky-500" />
+                            <Droplet className="w-3.5 h-3.5 mr-1 text-info" />
                             <span>Compatible Stock</span>
                           </button>
                         )}
@@ -1052,7 +1046,7 @@ const HospitalDashboard = () => {
                           <button
                             type="button"
                             onClick={() => handleViewMatches(req._id)}
-                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center justify-center cursor-pointer rounded-xl"
+                            className="btn-secondary px-3 py-1.5 text-xs font-bold text-info flex items-center justify-center cursor-pointer rounded-xl"
                           >
                             <Cpu className="w-3.5 h-3.5 mr-1" />
                             <span>View Matches</span>
@@ -1138,11 +1132,11 @@ const HospitalDashboard = () => {
                     };
 
                     const reasonColors = {
-                      donation_received: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-                      issued: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30',
-                      issued_to_patient: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-                      compatible_issued: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
-                      manual_update: 'bg-surface text-secondary border-theme',
+                      donation_received: 'bg-success/15 text-success border-success/30',
+                      issued: 'bg-surface text-secondary border-hairline',
+                      issued_to_patient: 'bg-surface text-secondary border-hairline',
+                      compatible_issued: 'bg-info/10 text-info border-info/25',
+                      manual_update: 'bg-surface text-secondary border-hairline',
                     };
 
                     return (
@@ -1151,8 +1145,8 @@ const HospitalDashboard = () => {
                           <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                               isPositive
-                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                                ? 'bg-success/15 text-success'
+                                : 'bg-surface text-secondary border border-hairline'
                             }`}
                           >
                             {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
@@ -1178,7 +1172,7 @@ const HospitalDashboard = () => {
                         <div className="text-right shrink-0">
                           <span
                             className={`text-sm font-black block font-mono ${
-                              isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                              isPositive ? 'text-success' : 'text-secondary'
                             }`}
                           >
                             {isPositive ? `+${tx.change}` : tx.change} Unit{Math.abs(tx.change) !== 1 ? 's' : ''}
@@ -1218,20 +1212,20 @@ const HospitalDashboard = () => {
         title="Reject Emergency Blood Request"
       >
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs leading-relaxed">
+          <div className="p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-xs leading-relaxed">
             You are rejecting the blood request for <strong>{rejectModal.request?.patientName}</strong> ({rejectModal.request?.unitsNeeded} units of {rejectModal.request?.bloodGroup}). The requester will be notified and can redirect their emergency demand to another hospital.
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-primary block">
-              Reason for Rejection <span className="text-rose-500">*</span>
+              Reason for Rejection <span className="text-danger">*</span>
             </label>
             <textarea
               rows={3}
               value={rejectModal.reason}
               onChange={(e) => setRejectModal((prev) => ({ ...prev, reason: e.target.value }))}
               placeholder="e.g., Blood bank depleted, emergency trauma surgery in progress, redirection advised..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-theme bg-surface text-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-hairline bg-surface text-primary text-xs focus:outline-none focus:border-danger resize-none"
             />
             <span className="text-[11px] text-muted">Minimum 3 characters required.</span>
           </div>
@@ -1246,7 +1240,7 @@ const HospitalDashboard = () => {
             <button
               onClick={handleRejectSubmit}
               disabled={rejectModal.submitting || rejectModal.reason.trim().length < 3}
-              className="btn-primary bg-rose-600 hover:bg-rose-500 text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 shadow-md shadow-rose-600/30"
+              className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5"
             >
               <XCircle className="w-4 h-4" />
               <span>{rejectModal.submitting ? 'Rejecting...' : 'Confirm Rejection'}</span>
@@ -1292,15 +1286,15 @@ const HospitalDashboard = () => {
                     onClick={() => setCompatibleModal((prev) => ({ ...prev, selectedGroup: grp }))}
                     className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
                       isSelected
-                        ? 'border-rose-500 bg-rose-500/10 text-primary ring-2 ring-rose-500/30'
+                        ? 'border-info bg-info/10 text-primary ring-2 ring-info/30'
                         : units > 0
-                        ? 'border-theme bg-surface hover:border-slate-400 text-primary'
-                        : 'border-theme bg-surface/50 text-muted opacity-50'
+                        ? 'border-hairline bg-surface hover:border-info/40 text-primary'
+                        : 'border-hairline bg-surface/50 text-muted opacity-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-extrabold text-xs">{grp}</span>
-                      <span className={`text-[11px] font-bold ${units > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted'}`}>
+                      <span className={`text-[11px] font-bold ${units > 0 ? 'text-primary font-mono' : 'text-muted'}`}>
                         {units} u
                       </span>
                     </div>
@@ -1318,7 +1312,7 @@ const HospitalDashboard = () => {
                 type="text"
                 readOnly
                 value={compatibleModal.selectedGroup}
-                className="w-full px-3 py-2 rounded-xl border border-theme bg-surface font-extrabold text-xs text-primary"
+                className="w-full px-3 py-2 rounded-xl border border-hairline bg-surface font-extrabold text-xs text-primary"
               />
             </div>
             <div className="space-y-1">
@@ -1329,7 +1323,7 @@ const HospitalDashboard = () => {
                 max={hospitalProfile?.inventory?.find((i) => i.bloodGroup === compatibleModal.selectedGroup)?.units || 1}
                 value={compatibleModal.units}
                 onChange={(e) => setCompatibleModal((prev) => ({ ...prev, units: Math.max(1, Number(e.target.value)) }))}
-                className="w-full px-3 py-2 rounded-xl border border-theme bg-surface font-bold text-xs text-primary focus:outline-none focus:border-rose-500"
+                className="w-full px-3 py-2 rounded-xl border border-hairline bg-surface font-bold text-xs text-primary focus:outline-none focus:border-info"
               />
             </div>
           </div>
@@ -1351,7 +1345,7 @@ const HospitalDashboard = () => {
                 compatibleModal.submitting ||
                 (hospitalProfile?.inventory?.find((i) => i.bloodGroup === compatibleModal.selectedGroup)?.units || 0) < compatibleModal.units
               }
-              className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 shadow-md shadow-rose-600/30"
+              className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5"
             >
               <Droplet className="w-4 h-4" />
               <span>{compatibleModal.submitting ? 'Issuing Units...' : `Issue ${compatibleModal.units} Unit(s)`}</span>
@@ -1394,8 +1388,8 @@ const HospitalDashboard = () => {
 
             {/* Fulfilled Notice & Disabled Contact Action */}
             {(matchingData.isFulfilled || !canSeekDonors(matchingData.request)) ? (
-              <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-center space-y-3">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+              <div className="p-6 rounded-2xl bg-surface border border-hairline text-center space-y-3">
+                <CheckCircle2 className="w-10 h-10 text-success mx-auto" />
                 <h4 className="text-base font-extrabold text-primary font-heading">Blood Request is Fulfilled</h4>
                 <p className="text-xs text-secondary max-w-md mx-auto">
                   {matchingData.message || 'This emergency blood request is already fulfilled. Donor seeking is closed and candidate contact pings are disabled.'}
@@ -1404,7 +1398,7 @@ const HospitalDashboard = () => {
                   <button
                     type="button"
                     disabled
-                    className="px-4 py-2 rounded-xl bg-surface border border-theme text-muted font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-surface border border-hairline text-muted font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Contact Donor (Disabled - Request Fulfilled)</span>
@@ -1417,13 +1411,13 @@ const HospitalDashboard = () => {
                 {(() => {
                   const compGroups = compatibleDonorGroups(matchingData.request?.bloodGroup || 'O+');
                   return (
-                    <div className="p-4 rounded-2xl bg-surface border border-theme space-y-2.5">
+                    <div className="p-4 rounded-2xl bg-surface border border-hairline space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-secondary">
                           Compatible Hospital Blood Reserves ({compGroups.join(', ')})
                         </span>
                         <span className="text-[11px] text-muted">
-                          Patient Requirement: <strong className="text-rose-600 dark:text-rose-400">{matchingData.request?.bloodGroup}</strong>
+                          Patient Requirement: <strong className="text-primary font-mono">{matchingData.request?.bloodGroup}</strong>
                         </span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -1437,9 +1431,9 @@ const HospitalDashboard = () => {
                               className={`p-2.5 rounded-xl border flex items-center justify-between ${
                                 units > 0
                                   ? isExact
-                                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400'
-                                    : 'bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-300'
-                                  : 'bg-surface border border-theme text-muted'
+                                    ? 'bg-info/15 border-info/30 text-info font-bold'
+                                    : 'bg-surface border-hairline text-primary'
+                                  : 'bg-surface/50 border border-hairline text-muted opacity-50'
                               }`}
                             >
                               <span className="font-extrabold text-xs">{grp} {isExact && '★'}</span>
@@ -1475,11 +1469,11 @@ const HospitalDashboard = () => {
                     return (
                       <div
                         key={index}
-                        className="p-4 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-card border-theme"
+                        className="p-4 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-card border-hairline"
                       >
                         <div className="flex items-start space-x-4">
                           <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-info/10 border border-info/25 text-info"
                           >
                             #{index + 1}
                           </div>
@@ -1493,8 +1487,8 @@ const HospitalDashboard = () => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 text-xs text-secondary">
-                              <span className="font-semibold text-rose-600 dark:text-rose-400 flex items-center font-mono">
-                                <MapPin className="w-3.5 h-3.5 mr-1" /> {item.distanceKm} km away
+                              <span className="font-semibold text-info flex items-center font-mono">
+                                <MapPin className="w-3.5 h-3.5 mr-1 text-muted" /> {item.distanceKm} km away
                               </span>
                               {item.donor?.age && (
                                 <>
@@ -1505,7 +1499,7 @@ const HospitalDashboard = () => {
                               {item.donor?.user?.phone && (
                                 <>
                                   <span>•</span>
-                                  <span className="font-bold text-teal-600 dark:text-teal-400 flex items-center font-mono">
+                                  <span className="font-bold text-secondary flex items-center font-mono">
                                     <Phone className="w-3.5 h-3.5 mr-1" /> {item.donor.user.phone}
                                   </span>
                                 </>
@@ -1517,7 +1511,7 @@ const HospitalDashboard = () => {
                               {item.rationale.map((r, rIdx) => (
                                 <span
                                   key={rIdx}
-                                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-surface text-secondary border border-theme"
+                                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-surface text-secondary border border-hairline"
                                 >
                                   {r}
                                 </span>
@@ -1529,10 +1523,10 @@ const HospitalDashboard = () => {
                         {/* Ping Actions & Match Score */}
                         <div className="flex flex-row md:flex-col items-end justify-between w-full md:w-auto gap-3 shrink-0">
                           <div
-                            className="text-right p-2.5 rounded-xl border border-theme bg-surface min-w-[120px]"
+                            className="text-right p-2.5 rounded-xl border border-hairline bg-surface min-w-[120px]"
                           >
                             <span className="text-[10px] font-bold uppercase tracking-wider block text-muted">Match Score</span>
-                            <span className="text-lg font-black text-rose-600 dark:text-rose-400 block">{item.matchScore}%</span>
+                            <span className="text-lg font-black text-primary block">{item.matchScore}%</span>
                           </div>
 
                           {/* Ping Status / Contact Controls */}
@@ -1547,21 +1541,21 @@ const HospitalDashboard = () => {
                                 <span>{isNotifying ? 'Pinging...' : 'Contact Donor'}</span>
                               </button>
                             ) : ping.status === 'pending' ? (
-                              <span className="px-3 py-1.5 rounded-xl bg-amber-400/10 text-amber-300 font-bold border border-amber-400/30 text-xs flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                              <span className="px-3 py-1.5 rounded-xl bg-surface text-secondary font-bold border border-hairline text-xs flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 animate-spin text-muted" />
                                 <span>Pending Response</span>
                               </span>
                             ) : ping.status === 'accepted' ? (
                               <div className="flex items-center space-x-2">
-                                <span className="px-3 py-1.5 rounded-xl bg-emerald-400/10 text-teal-300 font-bold border border-emerald-400/30 text-xs flex items-center gap-1.5">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                                <span className="px-3 py-1.5 rounded-xl bg-success/10 text-success font-bold border border-success/30 text-xs flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                                   <span>Accepted</span>
                                 </span>
                               </div>
                             ) : (
                               <div className="flex items-center space-x-2">
-                                <span className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-300 font-bold border border-rose-500/30 text-xs flex items-center gap-1.5">
-                                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                                <span className="px-3 py-1.5 rounded-xl bg-danger/10 text-danger font-bold border border-danger/30 text-xs flex items-center gap-1.5">
+                                  <XCircle className="w-3.5 h-3.5 text-danger" />
                                   <span>Declined</span>
                                 </span>
                                 <button

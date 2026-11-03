@@ -14,12 +14,13 @@ const SlidingTabs = ({
 }) => {
   return (
     <div
-      className={`tab-list flex items-center p-1 rounded-2xl border border-theme bg-surface/40 backdrop-blur-md overflow-x-auto ${className}`}
+      className={`tab-list flex items-center p-1 rounded-2xl border border-hairline bg-surface/40 backdrop-blur-md overflow-x-auto ${className}`}
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
         const badgeValue = tab.badge !== undefined ? tab.badge : tab.count;
+        const isUrgent = tab.isUrgent || (typeof tab.label === 'string' && /urgent|emergency/i.test(tab.label));
 
         return (
           <button
@@ -35,7 +36,7 @@ const SlidingTabs = ({
             {isActive && (
               <motion.div
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-xl bg-surface shadow-card border border-glass"
+                className="absolute inset-0 rounded-xl bg-surface shadow-card border border-hairline"
                 style={{ zIndex: -1 }}
                 transition={{
                   type: 'spring',
@@ -44,16 +45,24 @@ const SlidingTabs = ({
                 }}
               />
             )}
-            {Icon && <Icon className={`w-4 h-4 ${isActive ? 'text-brand-500' : 'text-muted'}`} />}
+            {Icon && (
+              <Icon
+                className={`w-4 h-4 ${
+                  isActive ? (isUrgent ? 'text-danger' : 'text-info') : 'text-muted'
+                }`}
+              />
+            )}
             <span>{tab.label}</span>
             {badgeValue !== undefined && badgeValue !== null && (
               <span
                 className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                   tab.badgePulse ? 'animate-pulse' : ''
                 } ${
-                  isActive
-                    ? 'bg-brand-500 text-white'
-                    : 'bg-brand-500/10 text-brand-500 border border-brand-500/20'
+                  isUrgent
+                    ? isActive
+                      ? 'bg-danger text-white'
+                      : 'bg-danger/15 text-danger border border-danger/30'
+                    : 'bg-info/15 text-[#165CA8] dark:text-ice border border-info/30'
                 }`}
               >
                 {badgeValue}

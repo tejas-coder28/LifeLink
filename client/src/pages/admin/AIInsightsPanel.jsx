@@ -74,7 +74,7 @@ const AIInsightsPanel = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-400 text-sm flex items-center">
+        <div className="p-4 bg-danger/10 border border-danger/30 rounded-2xl text-danger text-sm flex items-center">
           <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
           {error}
         </div>

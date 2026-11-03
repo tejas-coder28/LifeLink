@@ -122,7 +122,7 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-info" />
             <span>Connecting to Google...</span>
           </>
         ) : (
@@ -137,7 +137,7 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div
-            className="w-full max-w-md rounded-2xl p-6 sm:p-8 bg-surface border border-theme shadow-2xl relative"
+            className="w-full max-w-md rounded-2xl p-6 sm:p-8 bg-surface border border-hairline shadow-2xl relative"
           >
             <button
               type="button"
@@ -149,8 +149,8 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
             </button>
 
             <div className="mb-6">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-3">
-                <Droplet className="w-5 h-5 text-rose-500" />
+              <div className="w-10 h-10 rounded-xl bg-info/10 border border-info/25 flex items-center justify-center mb-3">
+                <Droplet className="w-5 h-5 text-info" />
               </div>
               <h2 className="text-lg font-black text-primary font-heading">
                 Complete Donor Profile
@@ -166,7 +166,7 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
                   Blood Group *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-rose-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-info">
                     <Droplet className="h-4 w-4" />
                   </div>
                   <select

@@ -82,7 +82,7 @@ const AdminDashboard = () => {
     <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Header Banner */}
       <div className="hero-glass-card relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-rose-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-info/10 blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center space-x-3">
             <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
           {aiInsights.length > 0 && (
             <Card title="Latest Regional AI Insight" icon={Sparkles} hover={false}>
               <div className="space-y-3">
-                <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">{aiInsights[0].title}</h3>
+                <h3 className="text-base font-bold text-primary">{aiInsights[0].title}</h3>
                 <p className="text-xs leading-relaxed text-secondary">
                   {aiInsights[0].summary}
                 </p>
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
                     <ul className="space-y-1 text-xs font-medium text-secondary">
                       {aiInsights[0].recommendations.map((rec, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="text-rose-500 mr-2">•</span> {rec}
+                          <span className="text-info mr-2">•</span> {rec}
                         </li>
                       ))}
                     </ul>

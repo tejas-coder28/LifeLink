@@ -47,12 +47,12 @@ const EmergencyRequest = () => {
     <PageTransition className="max-w-3xl mx-auto px-4 py-8 space-y-8">
       {/* Emergency Header */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-black shadow-glow-brand bg-brand-500/15 border border-brand-500/40 text-brand-400">
-          <Activity className="w-3.5 h-3.5 text-brand-500 animate-pulse" />
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-black shadow-glow-danger bg-danger/15 border border-danger/40 text-danger">
+          <Activity className="w-3.5 h-3.5 text-danger animate-pulse" />
           <span>Priority Emergency Dispatch</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-primary font-heading tracking-tight">
-          Broadcast <span className="gradient-text-brand">Emergency Blood Need</span>
+          Broadcast <span className="text-danger">Emergency Blood Need</span>
         </h1>
         <p className="text-xs sm:text-sm max-w-lg mx-auto text-secondary leading-relaxed">
           Submitting triggers the Smart Matching Engine to evaluate standby volunteer donors within hospital range and dispatch immediate push alerts.
@@ -61,9 +61,9 @@ const EmergencyRequest = () => {
 
       {/* Guest Warning Banner */}
       {!user && (
-        <div className="p-4 rounded-2xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-400">
+        <div className="p-4 rounded-2xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-warning/10 border border-warning/30 text-warning">
           <div className="flex items-center space-x-2.5">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
+            <AlertTriangle className="w-5 h-5 shrink-0 text-warning" />
             <span className="font-semibold">You need an active user account to broadcast emergency requests.</span>
           </div>
           <Button
@@ -79,8 +79,8 @@ const EmergencyRequest = () => {
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="p-4 bg-teal-500/10 border border-teal-500/30 rounded-2xl text-teal-400 text-xs sm:text-sm font-semibold flex items-center shadow-glow-teal">
-          <ShieldCheck className="w-5 h-5 mr-2.5 shrink-0 text-teal-400" />
+        <div className="p-4 bg-surface border border-hairline rounded-2xl text-primary text-xs sm:text-sm font-semibold flex items-center">
+          <ShieldCheck className="w-5 h-5 mr-2.5 shrink-0 text-success" />
           {successMsg}
         </div>
       )}
@@ -92,7 +92,7 @@ const EmergencyRequest = () => {
         icon={Flame}
         glow={true}
         hover={false}
-        className="border-brand-500/30"
+        className="border-danger/30"
       >
         <RequestForm onSubmit={handleSubmit} loading={loading} />
       </GlassCard>

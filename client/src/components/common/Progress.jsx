@@ -9,7 +9,7 @@ const Progress = ({
   max = 100,
   label,
   showValue = false,
-  color = 'brand',
+  color = 'info',
   height = 'h-2',
   className = '',
 }) => {
@@ -17,11 +17,17 @@ const Progress = ({
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
 
   const colorGradients = {
-    brand: 'bg-gradient-to-r from-brand-600 to-brand-400',
-    teal: 'bg-gradient-to-r from-teal-600 to-teal-400',
-    amber: 'bg-gradient-to-r from-amber-600 to-amber-400',
-    sky: 'bg-gradient-to-r from-sky-600 to-sky-400',
-  }[color] || 'bg-gradient-to-r from-brand-600 to-brand-400';
+    brand: 'bg-danger',
+    danger: 'bg-danger',
+    success: 'bg-success',
+    teal: 'bg-success',
+    emerald: 'bg-success',
+    warning: 'bg-warning',
+    amber: 'bg-warning',
+    info: 'bg-info',
+    sky: 'bg-info',
+    silver: 'bg-muted/40',
+  }[color] || 'bg-info';
 
   return (
     <div className={`space-y-1.5 w-full ${className}`}>
@@ -31,7 +37,7 @@ const Progress = ({
           {showValue && <span className="text-primary tabular-nums">{Math.round(percentage)}%</span>}
         </div>
       )}
-      <div className={`w-full ${height} rounded-full bg-surface/60 border border-glass overflow-hidden`}>
+      <div className={`w-full ${height} rounded-full bg-surface/60 border border-hairline overflow-hidden`}>
         <motion.div
           initial={shouldReduceMotion ? { width: `${percentage}%` } : { width: '0%' }}
           animate={{ width: `${percentage}%` }}

@@ -40,11 +40,12 @@ const GlassSwitch = ({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-info/40 ${
           checked
-            ? 'bg-gradient-to-r from-brand-600 to-brand-500 border-brand-400/50 shadow-glow-brand'
-            : 'bg-surface/80 border-glass'
+            ? 'bg-success border-success shadow-sm'
+            : 'bg-surface/80 border-hairline'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        aria-checked={checked}
       >
         <motion.span
           layout
@@ -52,7 +53,7 @@ const GlassSwitch = ({
           className={`pointer-events-none inline-block h-5 w-5 rounded-full shadow-md backdrop-blur-md ${
             checked
               ? 'translate-x-5 bg-white'
-              : 'translate-x-0 bg-secondary/80'
+              : 'translate-x-0 bg-muted/60'
           }`}
         />
       </button>

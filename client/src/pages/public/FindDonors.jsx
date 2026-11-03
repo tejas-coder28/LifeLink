@@ -85,7 +85,7 @@ const FindDonors = () => {
       {/* Header */}
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <div className="section-label mx-auto">
-          <Search className="w-3.5 h-3.5 text-brand-500" />
+          <Search className="w-3.5 h-3.5 text-info" />
           <span>Verified Regional Directory</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-tight font-heading">
@@ -132,8 +132,8 @@ const FindDonors = () => {
               onClick={() => setBloodGroup(bg)}
               className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all border cursor-pointer ${
                 bloodGroup === bg
-                  ? 'bg-brand-500 text-white border-brand-500 shadow-glow-brand'
-                  : 'bg-surface/60 text-secondary border-theme hover:bg-surface'
+                  ? 'bg-surface text-primary border-info ring-1 ring-info/30 shadow-sm'
+                  : 'bg-surface/60 text-secondary border-hairline hover:bg-surface'
               }`}
             >
               {bg}
@@ -180,7 +180,7 @@ const FindDonors = () => {
                 <div className="p-5 sm:p-6 pb-4 sm:pb-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-sky-500/15 text-sky-400 border border-sky-500/25">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-info/10 text-info border border-info/20">
                         <Building2 className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
@@ -203,16 +203,16 @@ const FindDonors = () => {
                   </div>
                 </div>
 
-                <div className="w-full border-t border-theme" />
+                <div className="w-full border-t border-hairline" />
 
                 {/* Details */}
                 <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-2.5 text-xs text-secondary">
                   <div className="flex items-center gap-2.5">
-                    <MapPin className="w-4 h-4 shrink-0 text-brand-400" />
+                    <MapPin className="w-4 h-4 shrink-0 text-muted" />
                     <span className="truncate">{hosp.address || 'Medical Facility Address'}</span>
                   </div>
                   {hosp.phone && (
-                    <div className="flex items-center gap-2.5 font-bold text-teal-400">
+                    <div className="flex items-center gap-2.5 font-bold text-secondary">
                       <Phone className="w-4 h-4 shrink-0" />
                       <span>{hosp.phone}</span>
                     </div>
@@ -228,10 +228,10 @@ const FindDonors = () => {
                         {hosp.inventory.map((inv) => (
                           <span
                             key={inv.bloodGroup}
-                            className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-surface border border-theme text-secondary"
+                            className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-surface border border-hairline text-secondary"
                           >
                             {inv.bloodGroup}:{' '}
-                            <span className="text-brand-400 font-black">{inv.units}</span>u
+                            <span className="text-primary font-black">{inv.units}</span>u
                           </span>
                         ))}
                       </div>
@@ -242,13 +242,13 @@ const FindDonors = () => {
                 {/* Contact Footer */}
                 {hosp.phone && (
                   <>
-                    <div className="w-full border-t border-theme" />
+                    <div className="w-full border-t border-hairline" />
                     <div className="p-5 sm:p-6 pt-4 sm:pt-5">
                       <a
                         href={`tel:${hosp.phone}`}
                         className="btn-secondary w-full py-2.5 text-xs rounded-xl justify-center font-bold flex items-center gap-2"
                       >
-                        <Phone className="w-3.5 h-3.5 text-brand-400" />
+                        <Phone className="w-3.5 h-3.5 text-info" />
                         <span>Call Facility Desk</span>
                       </a>
                     </div>

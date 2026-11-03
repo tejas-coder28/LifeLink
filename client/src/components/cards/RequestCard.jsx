@@ -77,7 +77,6 @@ const RequestCard = ({
     0,
     (request.unitsFulfilled !== undefined ? request.unitsFulfilled : totalNeeded) - fromStock
   );
-  // hospital may be a populated object {_id, name, address, phone} or a plain string id or missing
   const targetHosp = request.targetHospital || (request.hospital && typeof request.hospital === 'object' ? request.hospital : null);
   const hospitalRaw = request.hospital;
   const hospital = request.hospitalName
@@ -88,7 +87,6 @@ const RequestCard = ({
     || (hospitalRaw && typeof hospitalRaw === 'object' ? hospitalRaw.address : '')
     || '';
   const hospitalPhone = targetHosp?.phone || (hospitalRaw && typeof hospitalRaw === 'object' ? hospitalRaw.phone : '') || '';
-  // requester may be a populated object or missing
   const requesterRaw = request.requester;
   const requesterName = (requesterRaw && typeof requesterRaw === 'object' ? requesterRaw.name : request.requesterName) || '';
   const matchedCount = request.matchedDonorsCount;
@@ -100,19 +98,21 @@ const RequestCard = ({
     : 'Active Broadcast';
 
   const isCritical = urgency === 'critical';
+  const isCompatible = donorBloodGroup && request.bloodGroup
+    ? canDonate(donorBloodGroup, request.bloodGroup)
+    : true;
 
   return (
     <div
       className={`glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border transition-all duration-200 ${
         isCritical
-          ? 'border-brand-500/40 shadow-glow-brand'
-          : 'border-glass'
+          ? 'border-danger/40 shadow-glow-danger/30'
+          : 'border-hairline'
       } ${className}`}
     >
       {/* ── 1. HEADER SECTION ──────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 pb-4 sm:pb-5">
         <div className="flex items-start justify-between gap-3">
-          {/* Blood group chip on left, patient name + required units beside it with gap-3 */}
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className="shrink-0 mt-0.5">
               <Badge bloodGroup={request.bloodGroup} />
@@ -122,8 +122,8 @@ const RequestCard = ({
                 {patientName}
               </h3>
               {isDonorCard ? (
-                <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1">
-                  Needed from donors: <span className="font-black text-sm">{neededFromDonors}</span> unit(s)
+                <p className="text-xs font-semibold text-secondary mt-1">
+                  Needed from donors: <span className={`font-black text-sm ${isCritical ? 'text-danger' : 'text-primary'}`}>{neededFromDonors}</span> unit(s)
                 </p>
               ) : (
                 <p className="text-xs font-semibold text-secondary mt-1">
@@ -133,7 +133,6 @@ const RequestCard = ({
             </div>
           </div>
 
-          {/* Urgency badge pinned top-right on the same line */}
           <div className="shrink-0 mt-0.5 flex items-center gap-1.5">
             <Badge status={urgency} />
             {status && (
@@ -144,64 +143,64 @@ const RequestCard = ({
       </div>
 
       {/* FULL WIDTH DIVIDER */}
-      <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+      <div className="w-full border-t border-hairline" />
 
       {/* ── 2. DETAILS SECTION ────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-3.5 text-xs text-secondary">
         {/* Five Unit Metrics Breakdown Box */}
-        <div className="p-3 rounded-2xl bg-surface/90 border border-theme space-y-2.5">
+        <div className="p-3 rounded-2xl bg-surface/90 border border-hairline space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-            <div className="p-1.5 rounded-xl bg-surface border border-theme">
+            <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Total needed</span>
               <span className="font-black text-primary text-sm">{totalNeeded}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-theme">
+            <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">From hospital stock</span>
-              <span className="font-black text-teal-600 dark:text-teal-400 text-sm">{fromStock}</span>
+              <span className="font-black text-primary text-sm">{fromStock}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-theme">
+            <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Needed from donors</span>
-              <span className="font-black text-sky-600 dark:text-sky-400 text-sm">{neededFromDonors}</span>
+              <span className={`font-black text-sm ${isCritical ? 'text-danger' : 'text-primary'}`}>{neededFromDonors}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-theme">
+            <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Pledged</span>
-              <span className="font-black text-amber-600 dark:text-amber-400 text-sm">{pledgedUnits}</span>
+              <span className="font-black text-info text-sm">{pledgedUnits}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-theme">
+            <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Received</span>
-              <span className="font-black text-teal-600 dark:text-teal-400 text-sm">{receivedUnits}</span>
+              <span className="font-black text-success text-sm">{receivedUnits}</span>
             </div>
           </div>
 
           {/* Progress Bar */}
           <div className="space-y-1">
-            <div className="w-full bg-surface border border-theme h-2 rounded-full overflow-hidden flex">
+            <div className="w-full bg-surface border border-hairline h-2 rounded-full overflow-hidden flex">
               <div
                 style={{ width: `${pctReceived}%` }}
-                className="bg-emerald-500 h-full transition-all"
+                className="bg-success h-full transition-all"
                 title={`Received: ${receivedUnits}/${totalNeeded}`}
               />
               <div
                 style={{ width: `${pctPledged}%` }}
-                className="bg-amber-400 h-full transition-all"
+                className="bg-info h-full transition-all"
                 title={`Pledged: ${pledgedUnits}/${totalNeeded}`}
               />
             </div>
             <div className="flex items-center justify-between text-[10px] text-muted font-medium">
               <span>{pctReceived}% Received</span>
-              {pledgedUnits > 0 && <span className="text-amber-600 dark:text-amber-400 font-bold">+{pledgedUnits} Pledged</span>}
+              {pledgedUnits > 0 && <span className="text-info font-bold">+{pledgedUnits} Pledged</span>}
               <span>Target: {totalNeeded} unit(s)</span>
             </div>
           </div>
 
-          {/* Current Hospital Inventory Stock (shown on hospital dashboard cards) */}
+          {/* Current Hospital Inventory Stock */}
           {currentStock !== undefined && (
-            <div className="pt-2 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[11px]">
+            <div className="pt-2 border-t border-hairline flex items-center justify-between text-[11px]">
               <span className="text-secondary font-semibold flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-rose-500" />
+                <Building2 className="w-3.5 h-3.5 text-info" />
                 Current stock ({request.bloodGroup}):
               </span>
-              <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-surface border border-theme">
+              <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-surface border border-hairline">
                 {currentStock} available in inventory
               </span>
             </div>
@@ -210,7 +209,7 @@ const RequestCard = ({
 
         {hospital && (
           <div className="flex items-center gap-2.5">
-            <Building2 className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+            <Building2 className="w-4 h-4 shrink-0 text-muted" />
             <span className="truncate font-medium">{hospital}</span>
           </div>
         )}
@@ -218,7 +217,7 @@ const RequestCard = ({
         {address && (
           <div className="flex items-center justify-between gap-2.5 flex-wrap">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <MapPin className="w-4 h-4 shrink-0 text-sky-500 dark:text-sky-400" />
+              <MapPin className="w-4 h-4 shrink-0 text-muted" />
               <span className="truncate">{address}</span>
             </div>
             {isPledged && (
@@ -226,7 +225,7 @@ const RequestCard = ({
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || hospital)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline shrink-0"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-info hover:underline shrink-0"
               >
                 <Navigation className="w-3 h-3" />
                 <span>Get Directions</span>
@@ -235,19 +234,17 @@ const RequestCard = ({
           </div>
         )}
 
-        {/* Hospital phone shown ONLY after pledging */}
         {isPledged && hospitalPhone && (
-          <div className="flex items-center gap-2.5 text-teal-600 dark:text-teal-400 font-mono text-xs">
-            <Phone className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2.5 text-primary font-mono text-xs">
+            <Phone className="w-4 h-4 shrink-0 text-info" />
             <span>Hospital Contact: <strong>{hospitalPhone}</strong></span>
           </div>
         )}
 
-        {/* Donor checklist shown after pledging */}
         {isPledged && (
-          <div className="p-3 rounded-xl bg-surface border border-theme space-y-1 text-[11px] text-secondary">
+          <div className="p-3 rounded-xl bg-surface border border-hairline space-y-1 text-[11px] text-secondary">
             <span className="font-extrabold text-primary uppercase text-[10px] tracking-wider block flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Pre-Donation Checklist:
+              <ShieldCheck className="w-3.5 h-3.5 text-success" /> Pre-Donation Checklist:
             </span>
             <p className="text-muted">✓ Bring official Government / Photo ID</p>
             <p className="text-muted">✓ Eat a healthy meal &amp; hydrate with 500ml water</p>
@@ -257,7 +254,7 @@ const RequestCard = ({
 
         {requesterName && (
           <div className="flex items-center gap-2.5">
-            <Users className="w-4 h-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
+            <Users className="w-4 h-4 shrink-0 text-muted" />
             <span className="truncate">
               Requester: <strong className="text-primary">{requesterName}</strong>
             </span>
@@ -266,7 +263,7 @@ const RequestCard = ({
 
         {seekingDonors && matchedCount !== undefined && matchedCount !== null && (
           <div className="flex items-center gap-2.5">
-            <Cpu className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+            <Cpu className="w-4 h-4 shrink-0 text-info" />
             <span>
               Matched Donors: <strong className="text-primary">{matchedCount} candidate(s)</strong>
             </span>
@@ -274,8 +271,8 @@ const RequestCard = ({
         )}
 
         {isFulfilled && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold text-xs flex items-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-3 rounded-xl bg-surface border border-hairline text-primary font-semibold text-xs flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-success" />
             <span>
               Fulfilled: {fromStock} units from hospital stock, {donorUnitsFulfilled} units from donors
             </span>
@@ -283,18 +280,17 @@ const RequestCard = ({
         )}
 
         {notes && (
-          <p className="text-[11px] italic p-2.5 rounded-xl bg-surface border border-theme text-secondary mt-2 line-clamp-2">
+          <p className="text-[11px] italic p-2.5 rounded-xl bg-surface border border-hairline text-secondary mt-2 line-clamp-2">
             "{notes}"
           </p>
         )}
 
-
         {/* ── Pledged Donors Section ── */}
         {pledges && pledges.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-white/10 space-y-2.5">
+          <div className="mt-4 pt-3 border-t border-hairline space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                <Heart className="w-3.5 h-3.5 text-danger fill-danger/20" />
                 <span>Pledged Donors ({pledges.length})</span>
               </span>
               {request.unitsFulfilled !== undefined && (
@@ -316,7 +312,7 @@ const RequestCard = ({
                 return (
                   <div
                     key={p._id}
-                    className="p-3 rounded-xl bg-surface border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    className="p-3 rounded-xl bg-surface border border-hairline flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -331,20 +327,19 @@ const RequestCard = ({
                         {p.donor?.phone && (
                           <>
                             <span>•</span>
-                            <span className="text-teal-600 dark:text-teal-400 font-medium">{p.donor.phone}</span>
+                            <span className="text-primary font-medium">{p.donor.phone}</span>
                           </>
                         )}
                       </div>
                     </div>
 
-                    {/* Action buttons for Pledged status */}
                     {p.status === 'pledged' && (
-                      <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-white/5">
+                      <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-hairline">
                         <button
                           type="button"
                           disabled={isActionLoading}
                           onClick={() => onConfirmDonation && onConfirmDonation(p._id, request._id)}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 rounded-lg bg-success hover:opacity-90 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>{isActionLoading ? 'Saving...' : 'Confirm Donation'}</span>
@@ -353,7 +348,7 @@ const RequestCard = ({
                           type="button"
                           disabled={isActionLoading}
                           onClick={() => onDeclineDonation && onDeclineDonation(p._id, request._id)}
-                          className="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2.5 py-1.5 rounded-lg bg-surface text-secondary hover:text-primary border border-hairline font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Decline / No-show</span>
@@ -370,13 +365,12 @@ const RequestCard = ({
 
       {/* FULL WIDTH DIVIDER */}
       {showActions && (
-        <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+        <div className="w-full border-t border-hairline" />
       )}
 
       {/* ── 3. FOOTER SECTION ────────────────────────────────────────────── */}
       {showActions && (
         <div className="p-5 sm:p-6 pt-4 sm:pt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Left: View Details or Date info or Track link */}
           <div className="flex items-center gap-2">
             {onSelect ? (
               <button
@@ -390,7 +384,7 @@ const RequestCard = ({
             ) : trackLink ? (
               <Link
                 to={trackLink}
-                className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-info hover:underline flex items-center gap-1"
               >
                 <span>Track Status</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -403,7 +397,6 @@ const RequestCard = ({
             )}
           </div>
 
-          {/* Right Action Button (stack / full width on small screens) */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {extraAction}
 
@@ -411,9 +404,9 @@ const RequestCard = ({
               <button
                 type="button"
                 disabled
-                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-default font-extrabold shadow-none"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-surface text-success border border-hairline cursor-default font-extrabold shadow-none"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5 text-success" />
                 <span>Pledged ✓</span>
               </button>
             ) : onPledge ? (
@@ -424,7 +417,7 @@ const RequestCard = ({
                 title={!isCompatible ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}` : ''}
                 className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all ${
                   !isCompatible
-                    ? 'bg-surface text-muted cursor-not-allowed border border-theme shadow-none'
+                    ? 'bg-surface text-muted cursor-not-allowed border border-hairline shadow-none'
                     : 'btn-primary'
                 }`}
               >
@@ -438,7 +431,6 @@ const RequestCard = ({
                 </span>
               </button>
             ) : null}
-
 
             {!onPledge && !extraAction && !onSelect && !trackLink && (
               <Link

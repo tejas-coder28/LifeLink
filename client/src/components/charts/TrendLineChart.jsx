@@ -27,17 +27,18 @@ const TrendLineChart = ({ data = [] }) => {
             type="monotone"
             dataKey="donations"
             name="Donations Completed"
-            stroke={colors.teal}
+            stroke={colors.info}
             strokeWidth={3}
-            dot={{ r: 4, fill: colors.teal }}
+            dot={{ r: 4, fill: colors.info }}
           />
           <Line
             type="monotone"
             dataKey="requests"
             name="Requests Logged"
-            stroke={colors.roseLight}
-            strokeWidth={3}
-            dot={{ r: 4, fill: colors.roseLight }}
+            stroke={colors.silver}
+            strokeWidth={2.5}
+            strokeDasharray="5 5"
+            dot={{ r: 4, fill: colors.silver }}
           />
         </LineChart>
       </ResponsiveContainer>

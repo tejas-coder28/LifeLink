@@ -1,14 +1,13 @@
-import React, { useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
 /**
  * Reusable GlassCard component with Apple Spatial UI aesthetic.
- * Features:
+ * Performance optimized:
+ * - Direct RAF hardware-accelerated cursor sheen tracking (ZERO React re-renders)
+ * - 3D spatial tilt using direct CSS transforms
  * - 5 Spatial depth levels: elevation 1 (canvas/base), 2 (raised), 3 (floating), 4 (overlay)
- * - Cursor-reactive specular highlight that tracks pointer movement
- * - Subtle 3D tilt option (max 5 deg, disabled on reduced motion)
  * - Translucent glass fill with 1px specular gradient border
- * - Top edge specular highlight
  */
 const GlassCard = ({
   children,
@@ -26,10 +25,9 @@ const GlassCard = ({
   ...rest
 }) => {
   const cardRef = useRef(null);
+  const specularRef = useRef(null);
   const shouldReduceMotion = useReducedMotion();
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const [tiltStyle, setTiltStyle] = useState({ rotateX: 0, rotateY: 0 });
+  const rafId = useRef(null);
 
   const elevationClasses = {
     1: 'spatial-elevation-1',
@@ -40,49 +38,56 @@ const GlassCard = ({
 
   const handleMouseMove = (e) => {
     if (!cardRef.current || shouldReduceMotion) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setMousePos({ x, y });
+    if (rafId.current) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    if (tilt) {
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const rotateX = ((y - centerY) / centerY) * -4;
-      const rotateY = ((x - centerX) / centerX) * 4;
-      setTiltStyle({ rotateX, rotateY });
-    }
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = null;
+      if (!cardRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      if (specularRef.current) {
+        specularRef.current.style.background = `radial-gradient(360px circle at ${x}px ${y}px, var(--specular-sheen), transparent 75%)`;
+      }
+
+      if (tilt) {
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -3;
+        const rotateY = ((x - centerX) / centerX) * 3;
+        cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      }
+    });
   };
 
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (specularRef.current && !shouldReduceMotion) {
+      specularRef.current.style.opacity = '1';
+    }
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    if (tilt) {
-      setTiltStyle({ rotateX: 0, rotateY: 0 });
+    if (rafId.current) {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
+    if (specularRef.current) {
+      specularRef.current.style.opacity = '0';
+    }
+    if (tilt && cardRef.current && !shouldReduceMotion) {
+      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
     }
   };
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      animate={
-        tilt && !shouldReduceMotion
-          ? {
-              rotateX: isHovered ? tiltStyle.rotateX : 0,
-              rotateY: isHovered ? tiltStyle.rotateY : 0,
-            }
-          : {}
-      }
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      style={{
-        transformStyle: tilt ? 'preserve-3d' : 'flat',
-      }}
       className={`glass-card relative overflow-hidden ${elevationClasses} ${
         hover ? 'glass-card-hover' : ''
       } ${
@@ -90,24 +95,22 @@ const GlassCard = ({
       } ${padding} ${className}`}
       {...rest}
     >
-      {/* Specular pointer follow effect */}
+      {/* Specular pointer follow effect — 100% direct GPU DOM, ZERO React re-renders */}
       {specular && !shouldReduceMotion && (
         <div
-          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300 z-0"
-          style={{
-            opacity: isHovered ? 1 : 0,
-            background: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, var(--specular-sheen), transparent 75%)`,
-          }}
+          ref={specularRef}
+          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-200 z-0 opacity-0"
+          style={{ willChange: 'opacity' }}
           aria-hidden="true"
         />
       )}
 
       {/* Card Header */}
       {(title || Icon || action) && (
-        <div className="relative z-10 flex items-center justify-between mb-4 pb-3 border-b border-theme">
+        <div className="relative z-10 flex items-center justify-between mb-4 pb-3 border-b border-hairline">
           <div className="flex items-center space-x-3 min-w-0">
             {Icon && (
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/20 text-brand-500 shadow-sm">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-info/10 border border-info/20 text-info shadow-sm">
                 <Icon className="w-5 h-5" />
               </div>
             )}
@@ -130,7 +133,7 @@ const GlassCard = ({
 
       {/* Content */}
       <div className="relative z-10">{children}</div>
-    </motion.div>
+    </div>
   );
 };
 

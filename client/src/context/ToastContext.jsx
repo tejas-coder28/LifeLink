@@ -36,29 +36,29 @@ export const ToastProvider = ({ children }) => {
           {toasts.map((toast) => {
             const config = {
               success: {
-                border: 'border-teal-500/40 shadow-glow-teal',
+                border: 'border-success/40 shadow-glow-success/20',
                 icon: CheckCircle2,
-                iconColor: 'text-teal-500',
+                iconColor: 'text-success',
               },
               error: {
-                border: 'border-brand-500/40 shadow-glow-brand',
+                border: 'border-danger/50 shadow-glow-danger/25',
                 icon: AlertCircle,
-                iconColor: 'text-brand-500',
+                iconColor: 'text-danger',
               },
               warning: {
-                border: 'border-amber-500/40 shadow-glow-amber',
+                border: 'border-warning/50 shadow-glow-warning/20',
                 icon: AlertTriangle,
-                iconColor: 'text-amber-500',
+                iconColor: 'text-warning',
               },
               info: {
-                border: 'border-violet-500/40 shadow-glow-violet',
+                border: 'border-info/40 shadow-glow-info/20',
                 icon: Info,
-                iconColor: 'text-violet-500',
+                iconColor: 'text-info',
               },
             }[toast.type] || {
-              border: 'border-glass shadow-spatial-floating',
+              border: 'border-hairline shadow-elevated',
               icon: Info,
-              iconColor: 'text-sky-500',
+              iconColor: 'text-info',
             };
 
             const IconComponent = config.icon;

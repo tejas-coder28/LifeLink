@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import EmptyState from '../../components/common/EmptyState';
 import {
   Activity,
   CheckCircle2,
@@ -147,9 +148,9 @@ const TrackRequest = () => {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8 page-enter">
       {/* ⚠️ Hospital Timeout Banner if critical request passed 15 minutes */}
       {isTimedOut && (
-        <div className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/10">
+        <div className="p-5 rounded-2xl bg-warning/10 border-2 border-warning/40 text-primary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div>
               <h4 className="font-extrabold text-sm text-primary">Hospital Response Window Expired (15 Minutes)</h4>
               <p className="text-xs text-secondary mt-0.5">
@@ -169,11 +170,11 @@ const TrackRequest = () => {
 
       {/* ❌ Rejection Banner */}
       {request.status === 'rejected' && (
-        <div className="p-5 rounded-2xl bg-rose-500/10 border-2 border-rose-500/40 text-rose-900 dark:text-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-500/10">
+        <div className="p-5 rounded-2xl bg-danger/10 border-2 border-danger/40 text-primary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-extrabold text-sm text-rose-700 dark:text-rose-300">Request Declined by Hospital</h4>
+              <h4 className="font-extrabold text-sm text-danger">Request Declined by Hospital</h4>
               <p className="text-xs text-secondary mt-0.5">
                 Reason provided: <strong className="text-primary">{request.rejectionReason || 'Unable to accept request at this time.'}</strong>
               </p>
@@ -190,7 +191,7 @@ const TrackRequest = () => {
       )}
 
       {/* Request Header */}
-      <div className="hero-glass-card rounded-3xl p-6 sm:p-8 border border-theme space-y-6">
+      <div className="hero-glass-card rounded-3xl p-6 sm:p-8 border border-hairline space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <Badge bloodGroup={request.bloodGroup} />
@@ -206,7 +207,7 @@ const TrackRequest = () => {
         </div>
 
         {/* 4-Step Lifecycle Tracker */}
-        <div className="pt-4 border-t border-theme">
+        <div className="pt-4 border-t border-hairline">
           <span className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-3">
             Emergency Request Lifecycle Flow
           </span>
@@ -218,10 +219,10 @@ const TrackRequest = () => {
               { label: '4. Donors / Fulfilled', sub: request.status === 'fulfilled' ? 'Fulfilled ✓' : request.unitsFromDonors > 0 ? `${request.unitsFromDonors} donor units needed` : 'Pending review' },
             ].map((step, idx) => {
               const state = getStepState(idx);
-              let badgeBg = 'bg-surface border-theme text-secondary';
-              if (state === 'complete') badgeBg = 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold';
-              else if (state === 'active') badgeBg = 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 font-extrabold animate-pulse';
-              else if (state === 'error') badgeBg = 'bg-rose-950/20 border-rose-500/40 text-rose-600 dark:text-rose-400 font-extrabold';
+              let badgeBg = 'bg-surface border-hairline text-secondary';
+              if (state === 'complete') badgeBg = 'bg-success/15 border-success/30 text-success font-extrabold';
+              else if (state === 'active') badgeBg = 'bg-info/15 border-info/35 text-info font-extrabold animate-pulse';
+              else if (state === 'error') badgeBg = 'bg-danger/15 border-danger/35 text-danger font-extrabold';
 
               return (
                 <div key={idx} className={`p-3 rounded-2xl border transition-all text-center ${badgeBg}`}>
@@ -234,10 +235,10 @@ const TrackRequest = () => {
         </div>
 
         {/* Target Hospital & Units Breakdown Cards */}
-        <div className="space-y-4 pt-4 border-t border-theme">
-          <div className="p-3.5 rounded-2xl bg-surface border border-theme flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-4 pt-4 border-t border-hairline">
+          <div className="p-3.5 rounded-2xl bg-surface border border-hairline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-info/10 text-info flex items-center justify-center shrink-0">
                 <Building2 className="w-4 h-4" />
               </div>
               <div>
@@ -247,7 +248,7 @@ const TrackRequest = () => {
               </div>
             </div>
             {targetHosp?.phone && (
-              <span className="px-3 py-1.5 rounded-xl bg-surface border border-theme font-mono text-teal-600 dark:text-teal-400 text-xs">
+              <span className="px-3 py-1.5 rounded-xl bg-surface border border-theme font-mono text-secondary text-xs">
                 {targetHosp.phone}
               </span>
             )}
@@ -270,47 +271,47 @@ const TrackRequest = () => {
             const pctPledged = Math.min(100 - pctReceived, Math.round((pledgedUnits / (totalNeeded || 1)) * 100));
 
             return (
-              <div className="p-4 rounded-2xl bg-surface border border-theme space-y-3">
+              <div className="p-4 rounded-2xl bg-surface border border-hairline space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
-                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
+                  <div className="p-2.5 rounded-xl bg-surface border border-hairline">
                     <span className="text-[10px] text-muted uppercase font-bold block">Total needed</span>
                     <span className="font-black text-primary text-base sm:text-lg">{totalNeeded}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
+                  <div className="p-2.5 rounded-xl bg-surface border border-hairline">
                     <span className="text-[10px] text-muted uppercase font-bold block">From hospital stock</span>
-                    <span className="font-black text-teal-600 dark:text-teal-400 text-base sm:text-lg">{fromStock}</span>
+                    <span className="font-black text-primary text-base sm:text-lg">{fromStock}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
+                  <div className="p-2.5 rounded-xl bg-surface border border-hairline">
                     <span className="text-[10px] text-muted uppercase font-bold block">Needed from donors</span>
-                    <span className="font-black text-sky-600 dark:text-sky-400 text-base sm:text-lg">{neededFromDonors}</span>
+                    <span className={`font-black text-base sm:text-lg ${neededFromDonors > 0 ? 'text-danger' : 'text-primary'}`}>{neededFromDonors}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
+                  <div className="p-2.5 rounded-xl bg-surface border border-hairline">
                     <span className="text-[10px] text-muted uppercase font-bold block">Pledged</span>
-                    <span className="font-black text-amber-600 dark:text-amber-400 text-base sm:text-lg">{pledgedUnits}</span>
+                    <span className="font-black text-info text-base sm:text-lg">{pledgedUnits}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-surface border border-theme">
+                  <div className="p-2.5 rounded-xl bg-surface border border-hairline">
                     <span className="text-[10px] text-muted uppercase font-bold block">Received</span>
-                    <span className="font-black text-teal-600 dark:text-teal-400 text-base sm:text-lg">{receivedUnits}</span>
+                    <span className="font-black text-success text-base sm:text-lg">{receivedUnits}</span>
                   </div>
                 </div>
 
                 {/* Small Progress Bar */}
                 <div className="space-y-1.5 pt-1">
-                  <div className="w-full bg-surface border border-theme h-2.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-surface border border-hairline h-2.5 rounded-full overflow-hidden flex">
                     <div
                       style={{ width: `${pctReceived}%` }}
-                      className="bg-emerald-500 h-full transition-all"
+                      className="bg-success h-full transition-all"
                       title={`Received: ${receivedUnits}/${totalNeeded}`}
                     />
                     <div
                       style={{ width: `${pctPledged}%` }}
-                      className="bg-amber-400 h-full transition-all"
+                      className="bg-info/60 h-full transition-all"
                       title={`Pledged: ${pledgedUnits}/${totalNeeded}`}
                     />
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-muted font-medium">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{pctReceived}% Received ({receivedUnits}/{totalNeeded})</span>
-                    {pledgedUnits > 0 && <span className="text-amber-600 dark:text-amber-400 font-bold">+{pledgedUnits} Pledged</span>}
+                    <span className="text-success font-bold">{pctReceived}% Received ({receivedUnits}/{totalNeeded})</span>
+                    {pledgedUnits > 0 && <span className="text-info font-bold">+{pledgedUnits} Pledged</span>}
                     <span>Target: {totalNeeded} unit(s)</span>
                   </div>
                 </div>
@@ -325,15 +326,15 @@ const TrackRequest = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="p-2.5 rounded-2xl shadow-lg shrink-0" style={{ background: 'rgba(34,200,160,0.2)', border: '1px solid rgba(34,200,160,0.35)', color: '#0d9488' }}>
-              <Heart className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <div className="p-2.5 rounded-2xl shadow-sm shrink-0 bg-info/10 border border-info/20 text-info">
+              <Heart className="w-5 h-5 text-info" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-primary font-heading">Pledged Donors & Fulfillments</h2>
               <p className="text-xs text-secondary">Donors who have stepped up to donate for this request</p>
             </div>
           </div>
-          <span className="px-3 py-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold">
+          <span className="px-3 py-1 bg-surface text-primary border border-hairline rounded-full text-xs font-bold">
             {donations.length} Active Pledge(s)
           </span>
         </div>
@@ -349,10 +350,9 @@ const TrackRequest = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center space-x-3">
                     <div
-                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0"
-                      style={{ background: 'rgba(34,200,160,0.15)', border: '1px solid rgba(34,200,160,0.3)', color: '#0d9488' }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 bg-info/10 border border-info/20 text-info"
                     >
-                      <User className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                      <User className="w-5 h-5 text-info" />
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
@@ -363,7 +363,7 @@ const TrackRequest = () => {
                         <span>Pledged: {don.unitsDonated} unit(s)</span>
                         <span>•</span>
                         {don.donor?.phone && (
-                          <span className="flex items-center text-teal-600 dark:text-teal-400 font-semibold font-mono">
+                          <span className="flex items-center text-secondary font-semibold font-mono">
                             <Phone className="w-3 h-3 mr-1" /> {don.donor.phone}
                           </span>
                         )}
@@ -377,7 +377,7 @@ const TrackRequest = () => {
                     <button
                       onClick={() => handleCompleteDonation(don._id)}
                       disabled={completingId === don._id}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer shadow-md"
+                      className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>{completingId === don._id ? 'Completing...' : 'Mark Donation Completed'}</span>
@@ -395,17 +395,16 @@ const TrackRequest = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div
-              className="p-2.5 rounded-2xl shadow-lg shrink-0"
-              style={{ background: 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(245,158,11,0.15))', border: '1px solid rgba(220,38,38,0.35)', color: '#e11d48' }}
+              className="p-2.5 rounded-2xl shadow-sm shrink-0 bg-info/10 border border-info/20 text-info"
             >
-              <Cpu className="w-5 h-5 animate-pulse text-rose-600 dark:text-rose-400" />
+              <Cpu className="w-5 h-5 animate-pulse text-info" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-primary font-heading">Smart Donor Matching Engine</h2>
               <p className="text-xs text-secondary">Rule-based scoring: Compatibility + Cooldown + Distance + Health Flags</p>
             </div>
           </div>
-          <span className="px-3 py-1 bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-full text-xs font-bold">
+          <span className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-full text-xs font-bold">
             {matches.length} Top Candidate Donors Ranked
           </span>
         </div>
@@ -421,8 +420,7 @@ const TrackRequest = () => {
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
                     <div
-                      className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0"
-                      style={{ background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#e11d48' }}
+                      className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 bg-info/10 border border-info/20 text-info"
                     >
                       <span className="text-[9px] uppercase font-bold text-muted">Rank</span>
                       <span className="text-lg font-black leading-none text-primary">#{index + 1}</span>
@@ -437,8 +435,8 @@ const TrackRequest = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-xs text-secondary">
-                        <span className="flex items-center text-rose-600 dark:text-rose-400 font-semibold font-mono">
-                          <MapPin className="w-3.5 h-3.5 mr-1" /> {res.distanceKm} km away
+                        <span className="flex items-center text-info font-semibold font-mono">
+                          <MapPin className="w-3.5 h-3.5 mr-1 text-muted" /> {res.distanceKm} km away
                         </span>
                         {res.donor?.age && (
                           <>
@@ -448,7 +446,7 @@ const TrackRequest = () => {
                         )}
                         <span>•</span>
                         {res.donor?.user?.phone && (
-                          <span className="flex items-center text-teal-600 dark:text-teal-400 font-mono">
+                          <span className="flex items-center text-secondary font-mono">
                             <Phone className="w-3.5 h-3.5 mr-1" /> {res.donor.user.phone}
                           </span>
                         )}
@@ -459,7 +457,7 @@ const TrackRequest = () => {
                         {res.rationale.map((r, rIdx) => (
                           <span
                             key={rIdx}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-medium border border-theme bg-surface text-secondary"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-medium border border-hairline bg-surface text-secondary"
                           >
                             {r}
                           </span>
@@ -470,10 +468,10 @@ const TrackRequest = () => {
 
                   {/* Match Score Display */}
                   <div
-                    className="text-right shrink-0 p-3 rounded-2xl min-w-[140px] border border-theme bg-surface"
+                    className="text-right shrink-0 p-3 rounded-2xl min-w-[140px] border border-hairline bg-surface"
                   >
                     <span className="text-[10px] font-bold uppercase tracking-wider block text-muted">Match Score</span>
-                    <span className="text-2xl font-black text-rose-600 dark:text-rose-400 block mt-0.5">{res.matchScore}%</span>
+                    <span className="text-2xl font-black text-primary block mt-0.5">{res.matchScore}%</span>
                     <div className="text-[10px] text-muted mt-1 font-mono">
                       Compat: {res.breakdown?.compatibilityScore} | Geo: {res.breakdown?.geoScore}
                     </div>

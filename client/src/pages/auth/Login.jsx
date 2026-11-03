@@ -1,26 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
+import { useTypewriterFill } from '../../hooks/useTypewriterFill';
 import {
   HeartHandshake,
-  LogIn,
   AlertCircle,
   ShieldCheck,
   Mail,
   Lock,
-  User,
-  ArrowRight,
-  Building2,
-  ShieldAlert,
   Eye,
   EyeOff,
   Sparkles
 } from 'lucide-react';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 import PageTransition from '../../components/common/PageTransition';
-import Button from '../../components/common/Button';
 
 const Login = () => {
   const { login } = useAuth();
@@ -35,8 +30,31 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Element refs for typewriter focus & pulse effects
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const submitButtonRef = useRef(null);
+
+  // Typewriter demo account filler hook
+  const {
+    activeRole,
+    isTyping,
+    activeField,
+    pulsingField,
+    liveMessage,
+    startTypewriter,
+    cancelTypewriter,
+  } = useTypewriterFill({
+    setEmail,
+    setPassword,
+    emailInputRef,
+    passwordInputRef,
+    submitButtonRef,
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    cancelTypewriter();
     setError('');
     setLoading(true);
 
@@ -68,87 +86,97 @@ const Login = () => {
     }
   };
 
-  const loadDemoUser = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-  };
-
   return (
     <PageTransition className="min-h-[80vh] flex items-center justify-center p-3 sm:p-6 py-6 sm:py-10">
-      <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-glass shadow-elevated">
-        {/* Left Visual Branding Panel (Visible on Desktop / Tablet) */}
+      {/* Visually hidden live region for screen readers during typewriter demo fill */}
+      <div className="sr-only" aria-live="polite" role="status">
+        {liveMessage}
+      </div>
+
+      <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated">
+        {/* Left Visual Branding Panel (Midnight Navy Foundation with subtle harmonic glows) */}
         <div
-          className="md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-glass"
+          className="dark md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-[#0A0F1C]"
           style={{
-            background: 'linear-gradient(135deg, rgba(7,11,20,0.95) 0%, rgba(13,22,41,0.92) 50%, rgba(20,31,54,0.95) 100%)',
+            background: 'linear-gradient(150deg, #0A0F1C 0%, #111A2E 45%, #18233D 75%, #0A0F1C 100%)',
           }}
         >
-          {/* Decorative glowing orb */}
+          {/* Harmonic orbs inside panel */}
           <div
-            className="absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-30 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.7) 0%, transparent 70%)' }}
+            className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-60 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(43,76,140,0.30) 0%, transparent 68%)' }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-45 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(165,216,255,0.20) 0%, transparent 68%)' }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full opacity-30 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(209,52,56,0.12) 0%, transparent 68%)' }}
             aria-hidden="true"
           />
 
           <div className="relative z-10 space-y-6">
             <Link to="/" className="inline-flex items-center space-x-3 group cursor-pointer">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-brand group-hover:scale-105 transition-transform bg-gradient-to-br from-brand-500 to-brand-700">
-                <HeartHandshake className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform bg-danger text-white">
+                <HeartHandshake className="w-6 h-6" />
               </div>
               <span className="text-xl font-black tracking-tight text-white font-heading">
-                Life<span className="gradient-text-brand">Link</span>
+                Life<span className="text-[#E5484D]">Link</span>
               </span>
             </Link>
 
             <div className="space-y-3 pt-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-brand-500/10 border border-brand-500/20 text-brand-400">
-                <Sparkles className="w-3 h-3 text-brand-400" />
-                <span>Life-Saving Network</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#1D6FD6]/20 border border-[#60A5FA]/30 text-[#A5D8FF] shadow-sm">
+                <Sparkles className="w-3 h-3 text-[#A5D8FF]" />
+                <span className="text-[#A5D8FF]">Life-Saving Network</span>
               </div>
               <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-white">
                 Access Your <br />
-                <span className="gradient-text-brand">Emergency Portal</span>
+                <span className="text-white">Emergency Portal</span>
               </h2>
-              <p className="text-xs leading-relaxed text-slate-300">
+              <p className="text-xs leading-relaxed text-[#9DAAC6]">
                 Connect to real-time emergency requests, live hospital blood inventory, and automated donor matching.
               </p>
             </div>
           </div>
 
-          <div className="space-y-3 relative z-10 pt-8 border-t border-glass">
-            <div className="flex items-center space-x-3 text-xs font-semibold text-slate-200">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-teal-400" />
-              <span>Encrypted Firebase Security</span>
+          <div className="space-y-3 relative z-10 pt-8 border-t border-hairline">
+            <div className="flex items-center space-x-3 text-xs font-semibold text-white">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-success" />
+              <span className="text-[#E8EEF9]">Encrypted Firebase Security</span>
             </div>
-            <div className="flex items-center space-x-3 text-xs font-semibold text-slate-200">
-              <HeartHandshake className="w-4 h-4 shrink-0 text-brand-400" />
-              <span>Real-Time Standby Network</span>
+            <div className="flex items-center space-x-3 text-xs font-semibold text-[#E8EEF9]">
+              <HeartHandshake className="w-4 h-4 shrink-0 text-[#60A5FA]" />
+              <span className="text-[#E8EEF9]">Real-Time Standby Network</span>
             </div>
           </div>
         </div>
 
         {/* Right Form Panel */}
-        <div className="w-full md:w-7/12 p-6 sm:p-10 relative bg-surface/70 backdrop-blur-xl">
-          {/* Mobile Top Brand Bar (Visible on 375px - 767px) */}
-          <div className="md:hidden flex items-center justify-between pb-6 mb-6 border-b border-theme">
+        <div className="w-full md:w-7/12 p-6 sm:p-10 relative bg-surface backdrop-blur-xl">
+          {/* Mobile Top Brand Bar */}
+          <div className="md:hidden flex items-center justify-between pb-6 mb-6 border-b border-hairline">
             <Link to="/" className="inline-flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-danger shadow-glow-danger">
                 <HeartHandshake className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-black tracking-tight text-primary font-heading">
-                Life<span className="gradient-text-brand">Link</span>
+                Life<span className="text-danger">Link</span>
               </span>
             </Link>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-info/10 text-info border border-info/30">
               Sign In
             </span>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex items-center space-x-6 mb-6 pb-px border-b border-theme">
+          {/* Tab Navigation (Crimson reserved for active pill) */}
+          <div className="flex items-center space-x-6 mb-6 pb-px border-b border-hairline">
             <Link
               to="/login"
-              className="pb-3 text-brand-500 font-extrabold text-xs sm:text-sm border-b-2 border-brand-500 transition-colors"
+              className="pb-3 text-primary font-extrabold text-xs sm:text-sm border-b-2 border-danger transition-colors"
             >
               Sign In
             </Link>
@@ -173,9 +201,9 @@ const Login = () => {
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3.5 rounded-2xl text-xs font-semibold flex items-center bg-brand-500/10 border border-brand-500/30 text-brand-400"
+              className="mb-5 p-3.5 rounded-2xl text-xs font-semibold flex items-center bg-danger/10 border border-danger/30 text-danger"
             >
-              <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+              <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-danger" />
               <span>{error}</span>
             </motion.div>
           )}
@@ -185,15 +213,13 @@ const Login = () => {
             <GoogleLoginButton redirect={redirect} label="Sign in with Google" />
           </div>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-theme" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="px-3 bg-surface/90 text-muted font-extrabold text-[10px] tracking-wider">
-                Or continue with email
-              </span>
-            </div>
+          {/* Divider */}
+          <div className="relative flex items-center my-6">
+            <div className="flex-grow border-t border-hairline" />
+            <span className="shrink-0 px-3 text-[10px] font-extrabold uppercase tracking-widest text-muted">
+              Or continue with email
+            </span>
+            <div className="flex-grow border-t border-hairline" />
           </div>
 
           {/* Form */}
@@ -210,13 +236,22 @@ const Login = () => {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  ref={emailInputRef}
                   id="login-email"
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  aria-busy={isTyping && activeField === 'email'}
+                  onChange={(e) => {
+                    cancelTypewriter();
+                    setEmail(e.target.value);
+                  }}
                   placeholder="user@lifelink.com"
-                  className="glass-input w-full pl-10 text-xs sm:text-sm px-3.5 py-3"
+                  className={`glass-input w-full pl-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150 ${
+                    pulsingField === 'email'
+                      ? 'border-info ring-2 ring-info/30 shadow-[0_0_12px_rgba(96,165,250,0.30)]'
+                      : ''
+                  } ${activeField === 'email' ? 'border-info/70' : ''}`}
                 />
               </div>
             </div>
@@ -231,7 +266,7 @@ const Login = () => {
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-[10px] font-bold text-brand-400 hover:underline"
+                  className="text-[10px] font-bold text-info hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -241,13 +276,22 @@ const Login = () => {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  ref={passwordInputRef}
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  aria-busy={isTyping && activeField === 'password'}
+                  onChange={(e) => {
+                    cancelTypewriter();
+                    setPassword(e.target.value);
+                  }}
                   placeholder="••••••••"
-                  className="glass-input w-full pl-10 pr-10 text-xs sm:text-sm px-3.5 py-3"
+                  className={`glass-input w-full pl-10 pr-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150 ${
+                    pulsingField === 'password'
+                      ? 'border-info ring-2 ring-info/30 shadow-[0_0_12px_rgba(96,165,250,0.30)]'
+                      : ''
+                  } ${activeField === 'password' ? 'border-info/70' : ''}`}
                 />
                 <button
                   type="button"
@@ -260,47 +304,71 @@ const Login = () => {
               </div>
             </div>
 
-            <Button
+            <button
+              ref={submitButtonRef}
               type="submit"
-              variant="primary"
-              loading={loading}
-              className="w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold shadow-glow-brand"
+              disabled={loading}
+              className="btn-primary w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold shadow-glow-danger"
             >
-              Sign In to Dashboard
-            </Button>
+              {loading ? 'Signing in...' : 'Sign In to Dashboard'}
+            </button>
           </form>
 
-          {/* Quick Access Demo Accounts Selection (Local Dev Only) */}
+          {/* Quick Access Demo Accounts Selection */}
           {import.meta.env.DEV && (
-            <div className="mt-8 pt-6 border-t border-theme">
+            <div className="mt-8 pt-6 border-t border-hairline">
               <p className="text-[10px] font-extrabold uppercase tracking-wider mb-2.5 text-center text-muted">
                 Demo Accounts
               </p>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => loadDemoUser('user@lifelink.com', 'user123')}
-                  className="p-2 sm:p-2.5 rounded-xl text-left transition-colors bg-brand-500/10 hover:bg-brand-500/15 border border-brand-500/20 cursor-pointer"
+                  onClick={() => startTypewriter('donor', 'Donor', 'user@lifelink.com', 'user123')}
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
+                    activeRole === 'donor'
+                      ? 'border-info shadow-sm bg-info/15'
+                      : 'border-hairline bg-surface/60 hover:border-info/40'
+                  }`}
+                  style={{ backdropFilter: 'blur(16px)' }}
+                  aria-pressed={activeRole === 'donor'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-brand-400">Donor</span>
+                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                    Donor
+                  </span>
                   <span className="text-[9px] text-muted">O− Universal</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => loadDemoUser('hospital@lifelink.com', 'hospital123')}
-                  className="p-2 sm:p-2.5 rounded-xl text-left transition-colors bg-sky-500/10 hover:bg-sky-500/15 border border-sky-500/20 cursor-pointer"
+                  onClick={() => startTypewriter('hospital', 'Hospital', 'hospital@lifelink.com', 'hospital123')}
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
+                    activeRole === 'hospital'
+                      ? 'border-success shadow-sm bg-success/15'
+                      : 'border-hairline bg-surface/60 hover:border-success/40'
+                  }`}
+                  style={{ backdropFilter: 'blur(16px)' }}
+                  aria-pressed={activeRole === 'hospital'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-sky-400">Hospital</span>
+                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                    Hospital
+                  </span>
                   <span className="text-[9px] text-muted">Emergency Hub</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => loadDemoUser('admin@lifelink.com', 'admin123')}
-                  className="p-2 sm:p-2.5 rounded-xl text-left transition-colors bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 cursor-pointer"
+                  onClick={() => startTypewriter('admin', 'Admin', 'admin@lifelink.com', 'admin123')}
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
+                    activeRole === 'admin'
+                      ? 'border-warning shadow-sm bg-warning/15'
+                      : 'border-hairline bg-surface/60 hover:border-warning/40'
+                  }`}
+                  style={{ backdropFilter: 'blur(16px)' }}
+                  aria-pressed={activeRole === 'admin'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-amber-400">Admin</span>
+                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                    Admin
+                  </span>
                   <span className="text-[9px] text-muted">Full Control</span>
                 </button>
               </div>

@@ -36,8 +36,8 @@ const GlassCheckbox = ({
         <div
           className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-200 ${
             checked
-              ? 'bg-gradient-to-br from-brand-500 to-brand-600 border-brand-400 text-white shadow-glow-brand'
-              : 'bg-surface/60 border-glass group-hover:border-brand-500/40 text-transparent'
+              ? 'bg-info border-info text-white shadow-sm'
+              : 'bg-surface/60 border-hairline group-hover:border-info/40 text-transparent'
           }`}
         >
           {checked && (

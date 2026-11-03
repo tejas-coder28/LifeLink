@@ -66,6 +66,9 @@ export const getStatusBadgeClass = (status) => {
     medium: 'badge-medium',
     low: 'badge-low',
     verified: 'badge-verified',
+    active: 'badge-verified',
+    online: 'badge-verified',
+    offline: 'badge-cancelled',
     legacy: 'badge-low',
   };
   return map[normalized] || 'badge-low';

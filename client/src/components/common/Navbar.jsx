@@ -23,8 +23,13 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    let lastState = window.scrollY > 20;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const isScrolled = window.scrollY > 20;
+      if (isScrolled !== lastState) {
+        lastState = isScrolled;
+        setScrolled(isScrolled);
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -61,7 +66,7 @@ const Navbar = () => {
         } px-3 sm:px-6`}
       >
         <nav
-          className={`pointer-events-auto w-full transition-all duration-300 rounded-2xl sm:rounded-full border border-glass shadow-spatial-raised backdrop-blur-2xl liquid-lens ${
+          className={`pointer-events-auto w-full transition-all duration-300 rounded-2xl sm:rounded-full border border-hairline shadow-spatial-raised backdrop-blur-2xl liquid-lens ${
             scrolled
               ? 'max-w-6xl py-2 sm:py-2.5 px-4 sm:px-6 bg-surface/90 shadow-spatial-floating'
               : 'max-w-7xl py-2.5 sm:py-3.5 px-4 sm:px-7 bg-surface/80'
@@ -70,12 +75,12 @@ const Navbar = () => {
           <div className="flex items-center justify-between">
             {/* LEFT: Brand Logo */}
             <Link to="/" className="flex items-center space-x-3 group shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow-brand group-hover:scale-105 transition-transform duration-300">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-danger flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform duration-300">
                 <HeartHandshake className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg sm:text-xl font-black tracking-tight text-primary leading-none font-heading">
-                  Life<span className="gradient-text-brand">Link</span>
+                  Life<span className="text-danger">Link</span>
                 </span>
                 <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted font-bold mt-0.5">
                   Emergency Blood Network
@@ -83,7 +88,7 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {/* CENTER: Navigation Links with Liquid Active Indicator */}
+            {/* CENTER: Navigation Links with Liquid Active Indicator (Crimson Reserved) */}
             <div className="hidden lg:flex items-center justify-center space-x-1.5">
               {navLinks.map((link) => {
                 const active = isActive(link.to);
@@ -98,7 +103,7 @@ const Navbar = () => {
                     {active && (
                       <motion.div
                         layoutId="active-nav-indicator"
-                        className="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/25 shadow-sm"
+                        className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
                         transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                       />
                     )}
@@ -122,7 +127,7 @@ const Navbar = () => {
                       {(isActive('/donor') || isActive('/individual')) && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/25 shadow-sm"
+                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -141,7 +146,7 @@ const Navbar = () => {
                       {isActive('/hospital') && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/25 shadow-sm"
+                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -160,7 +165,7 @@ const Navbar = () => {
                       {isActive('/admin') && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/25 shadow-sm"
+                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -170,10 +175,10 @@ const Navbar = () => {
                 </>
               )}
 
-              {/* Emergency CTA in nav */}
+              {/* Emergency CTA in nav (Rule 1: Crimson reserved for primary CTA) */}
               <Link
                 to="/emergency-request"
-                className="emergency-pulse ml-2 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/30 transition-all hover:scale-105"
+                className="emergency-pulse ml-2 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold text-white bg-danger-solid hover:bg-danger-hover shadow-glow-danger transition-all hover:scale-105"
               >
                 <Activity className="w-3.5 h-3.5 text-white animate-pulse" />
                 <span>Emergency Request</span>
@@ -185,8 +190,8 @@ const Navbar = () => {
               <ThemeToggle />
 
               {user ? (
-                <div className="flex items-center space-x-3 px-3 py-1.5 rounded-full border border-theme bg-surface/60 backdrop-blur-md">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white font-black text-xs flex items-center justify-center shadow-glow-brand">
+                <div className="flex items-center space-x-3 px-3 py-1.5 rounded-full border border-hairline bg-surface/60 backdrop-blur-md">
+                  <div className="w-8 h-8 rounded-full bg-info/10 text-primary font-black text-xs flex items-center justify-center border border-info/30">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="text-left hidden xl:block">
@@ -196,7 +201,7 @@ const Navbar = () => {
                   <button
                     onClick={handleLogout}
                     title="Sign Out"
-                    className="p-1.5 text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors ml-1 cursor-pointer"
+                    className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-full transition-colors ml-1 cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -205,7 +210,7 @@ const Navbar = () => {
                 <div className="flex items-center space-x-2">
                   <Link
                     to="/login"
-                    className="text-xs font-bold text-secondary hover:text-rose-600 dark:hover:text-white px-4 py-2 rounded-full transition-colors"
+                    className="text-xs font-bold text-secondary hover:text-info px-4 py-2 rounded-full transition-colors"
                   >
                     Sign In
                   </Link>
@@ -254,11 +259,11 @@ const Navbar = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="fixed inset-y-0 right-0 w-full sm:w-80 z-10 flex flex-col glass-modal border-l border-glass shadow-spatial-overlay"
+              className="fixed inset-y-0 right-0 w-full sm:w-80 z-10 flex flex-col glass-modal border-l border-hairline shadow-spatial-overlay"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-theme bg-surface/90">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-hairline bg-surface/90">
                 <span className="text-base font-extrabold text-primary font-heading">
-                  Life<span className="gradient-text-brand">Link</span>
+                  Life<span className="text-danger">Link</span>
                 </span>
                 <div className="flex items-center space-x-2">
                   <ThemeToggle />
@@ -279,7 +284,7 @@ const Navbar = () => {
                       key={to}
                       to={to}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-sm font-bold text-secondary hover:text-rose-600 dark:hover:text-white flex items-center justify-between py-3 px-3 rounded-xl hover:bg-surface transition-colors"
+                      className="text-sm font-bold text-secondary hover:text-info flex items-center justify-between py-3 px-3 rounded-xl hover:bg-surface transition-colors"
                     >
                       <span>{label}</span>
                       <ChevronRight className="w-4 h-4 text-muted" />
@@ -289,18 +294,18 @@ const Navbar = () => {
                   <Link
                     to="/emergency-request"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-extrabold text-rose-600 dark:text-rose-400 flex items-center justify-between py-3 px-3 rounded-xl border border-rose-500/30 mt-2 bg-rose-500/10"
+                    className="text-sm font-extrabold text-white bg-danger-solid hover:bg-danger-hover flex items-center justify-between py-3 px-3 rounded-xl shadow-glow-danger mt-2"
                   >
                     <span className="flex items-center">
-                      <Activity className="w-4 h-4 mr-2 text-rose-600 dark:text-rose-400 animate-pulse" />
+                      <Activity className="w-4 h-4 mr-2 text-white animate-pulse" />
                       Emergency Blood Request
                     </span>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4 text-white" />
                   </Link>
                 </div>
 
                 {user && (
-                  <div className="pt-6 space-y-1 border-t border-theme">
+                  <div className="pt-6 space-y-1 border-t border-hairline">
                     <span className="text-[10px] font-extrabold tracking-wider text-muted uppercase px-3">
                       Your Portal
                     </span>
@@ -336,11 +341,11 @@ const Navbar = () => {
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-6 border-t border-theme bg-surface/90">
+              <div className="p-6 border-t border-hairline bg-surface/90">
                 {user ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white font-black flex items-center justify-center shadow-glow-brand">
+                      <div className="w-10 h-10 rounded-2xl bg-info/10 text-primary font-black flex items-center justify-center border border-info/30">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -350,7 +355,7 @@ const Navbar = () => {
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="p-2 text-muted hover:text-red-600 dark:hover:text-red-400 rounded-xl border border-theme hover:border-red-500/30 transition-colors cursor-pointer"
+                      className="p-2 text-muted hover:text-danger rounded-xl border border-hairline hover:border-danger/30 transition-colors cursor-pointer"
                       aria-label="Sign out"
                     >
                       <LogOut className="w-5 h-5" />

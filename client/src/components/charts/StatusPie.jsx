@@ -4,7 +4,21 @@ import useChartTheme from '../../hooks/useChartTheme';
 
 const StatusPie = ({ data = [] }) => {
   const { tooltipStyle, colors } = useChartTheme();
-  const PIE_COLORS = [colors.amber, colors.sky, colors.teal, colors.rose, colors.slate];
+
+  const getColorForUrgency = (entry, index) => {
+    const key = (entry?.urgency || entry?.status || '').toLowerCase();
+    if (key.includes('critical') || key.includes('emergency') || key.includes('shortage')) {
+      return colors.crimson;
+    }
+    if (key.includes('urgent') || key.includes('high') || key.includes('warning') || key.includes('pending')) {
+      return colors.warning;
+    }
+    if (key.includes('complete') || key.includes('fulfilled') || key.includes('verified')) {
+      return colors.teal;
+    }
+    const defaultSeries = [colors.info, colors.ice, colors.teal, colors.silver];
+    return defaultSeries[index % defaultSeries.length];
+  };
 
   return (
     <div className="w-full h-72">
@@ -21,7 +35,7 @@ const StatusPie = ({ data = [] }) => {
             nameKey="urgency"
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+              <Cell key={`cell-${index}`} fill={getColorForUrgency(entry, index)} stroke={colors.gridStroke} strokeWidth={1} />
             ))}
           </Pie>
           <Tooltip contentStyle={tooltipStyle} />

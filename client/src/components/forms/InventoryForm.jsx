@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import Button from '../common/Button';
 import { Plus, Minus, Save } from 'lucide-react';
-import { BLOOD_GROUPS } from '../../utils/bloodCompatibility';
 
-const InventoryForm = ({ initialInventory = [], onSubmit, loading }) => {
-  const initializeItems = (inv) => {
-    const map = Object.fromEntries((inv || []).map((item) => [item.bloodGroup, item.units]));
-    return BLOOD_GROUPS.map((bg) => ({ bloodGroup: bg, units: map[bg] !== undefined ? map[bg] : 5 }));
-  };
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-  const [items, setItems] = useState(initializeItems(initialInventory));
+const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
+  const [items, setItems] = useState(() => {
+    return BLOOD_GROUPS.map((bg) => {
+      const found = initialData.find((d) => d.bloodGroup === bg);
+      return { bloodGroup: bg, units: found ? found.units : 0 };
+    });
+  });
 
-  useEffect(() => {
-    if (initialInventory && initialInventory.length > 0) {
-      setItems(initializeItems(initialInventory));
-    }
-  }, [initialInventory]);
-
-  const handleUnitChange = (bg, delta) => {
+  const handleUnitChange = (bloodGroup, delta) => {
     setItems((prev) =>
-      prev.map((item) => item.bloodGroup === bg
-        ? { ...item, units: Math.max(0, item.units + delta) }
-        : item
-      )
+      prev.map((item) => {
+        if (item.bloodGroup === bloodGroup) {
+          return { ...item, units: Math.max(0, item.units + delta) };
+        }
+        return item;
+      })
     );
   };
 
@@ -34,15 +32,18 @@ const InventoryForm = ({ initialInventory = [], onSubmit, loading }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {items.map((item) => {
-          const isLow = item.units <= 2;
+          const isCritical = item.units === 0;
+          const isLow = item.units > 0 && item.units <= 2;
           const bgKey = item.bloodGroup.replace('+', 'p').replace('-', 'm');
           return (
             <div
               key={item.bloodGroup}
               className={`p-4 rounded-2xl flex flex-col items-center justify-between space-y-3 transition-all ${
-                isLow
-                  ? 'bg-rose-500/10 border-2 border-rose-500/50 shadow-sm'
-                  : 'glass-card border-theme'
+                isCritical
+                  ? 'bg-danger/10 border-2 border-danger/50 shadow-sm'
+                  : isLow
+                  ? 'bg-warning/10 border-2 border-warning/50 shadow-sm'
+                  : 'glass-card border-hairline'
               }`}
             >
               <span className={`blood-pill blood-${bgKey}`}>
@@ -52,14 +53,14 @@ const InventoryForm = ({ initialInventory = [], onSubmit, loading }) => {
                 <button
                   type="button"
                   onClick={() => handleUnitChange(item.bloodGroup, -1)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-surface border border-theme text-primary hover:border-brand-500/40 transition-all shadow-sm cursor-pointer"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-surface border border-hairline text-primary hover:border-info/40 transition-all shadow-sm cursor-pointer"
                   title="Decrease units"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span
                   className={`text-2xl font-black min-w-[32px] text-center tabular-nums ${
-                    isLow ? 'text-brand-500' : 'text-primary'
+                    isCritical ? 'text-danger' : isLow ? 'text-warning' : 'text-primary'
                   }`}
                 >
                   {item.units}
@@ -75,24 +76,26 @@ const InventoryForm = ({ initialInventory = [], onSubmit, loading }) => {
               </div>
               <span
                 className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                  isLow ? 'text-brand-500 font-black' : 'text-muted'
+                  isCritical ? 'text-danger dark:text-[#FF6166] font-black' : isLow ? 'text-warning dark:text-[#FCD34D] font-black' : 'text-muted'
                 }`}
               >
-                {isLow ? '⚠️ Low Stock' : 'Reserve Units'}
+                {isCritical ? '🚨 Critical Deficit' : isLow ? '⚠️ Low Stock' : 'Reserve Units'}
               </span>
             </div>
           );
         })}
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-primary w-full py-3.5 rounded-xl text-xs justify-center cursor-pointer"
-      >
-        <Save className="w-4 h-4" />
-        <span>{loading ? 'Saving Blood Inventory...' : 'Save Hospital Inventory'}</span>
-      </button>
+      <div className="flex justify-end pt-4 border-t border-hairline">
+        <Button
+          type="submit"
+          variant="primary"
+          loading={loading}
+          icon={Save}
+        >
+          Save Inventory Changes
+        </Button>
+      </div>
     </form>
   );
 };

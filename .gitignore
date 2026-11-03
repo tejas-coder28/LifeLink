@@ -30,9 +30,10 @@ client/.env.*
 service-account*.json
 serviceAccountKey.json
 
-# ── Test Coverage ─────────────────────────────────────────────────────────────
+# ── Test Coverage & Visual Audits ─────────────────────────────────────────────
 coverage/
 .nyc_output/
+scripts/screenshots/
 
 # ── IDE & Editor ─────────────────────────────────────────────────────────────
 .vscode/

@@ -15,15 +15,15 @@ const ForgotPassword = () => {
 
   return (
     <PageTransition className="min-h-[75vh] flex items-center justify-center p-3 sm:p-6 py-8">
-      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 glass-modal border border-glass shadow-elevated">
+      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 glass-modal border border-hairline shadow-elevated">
         {/* Header */}
         <div className="text-center space-y-3">
           <Link to="/" className="inline-flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-white bg-danger shadow-glow-danger">
               <HeartHandshake className="w-5 h-5" />
             </div>
             <span className="text-xl font-black text-primary font-heading">
-              Life<span className="gradient-text-brand">Link</span>
+              Life<span className="text-danger">Link</span>
             </span>
           </Link>
           <h1 className="text-xl font-black text-primary tracking-tight pt-1 font-heading">
@@ -35,14 +35,14 @@ const ForgotPassword = () => {
         </div>
 
         {submitted ? (
-          <div className="p-4 rounded-2xl text-xs font-semibold space-y-3 bg-teal-500/10 border border-teal-500/30 text-teal-400">
+          <div className="p-4 rounded-2xl text-xs font-semibold space-y-3 bg-surface border border-hairline text-primary">
             <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-teal-400" />
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-success" />
               <span>Instructions sent! Check your inbox for <b className="text-primary">{email}</b>.</span>
             </div>
             <Link
               to="/login"
-              className="inline-block font-bold hover:underline text-xs text-brand-400"
+              className="inline-block font-bold hover:underline text-xs text-info"
             >
               Return to Sign In →
             </Link>
@@ -69,7 +69,7 @@ const ForgotPassword = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="primary" className="w-full py-3 rounded-xl text-xs font-bold shadow-glow-brand">
+            <Button type="submit" variant="primary" className="w-full py-3 rounded-xl text-xs font-bold shadow-glow-danger">
               Send Reset Link
             </Button>
           </form>
