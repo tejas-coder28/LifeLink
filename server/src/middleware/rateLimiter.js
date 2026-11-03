@@ -1,12 +1,18 @@
 const rateLimit = require('express-rate-limit');
 
+const shouldSkip = () =>
+  process.env.NODE_ENV === 'test' ||
+  process.env.NODE_ENV === 'development' ||
+  process.env.DISABLE_RATE_LIMIT === 'true' ||
+  !process.env.NODE_ENV;
+
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200, // limit each IP to 200 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: shouldSkip,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again after 15 minutes.',
@@ -19,7 +25,7 @@ const aiLimiter = rateLimit({
   max: 30, // max 30 AI insights requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: shouldSkip,
   message: {
     success: false,
     message: 'AI Service rate limit exceeded. Please wait a few minutes before generating more insights.',
@@ -32,7 +38,7 @@ const authLimiter = rateLimit({
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: shouldSkip,
   message: {
     success: false,
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.',

@@ -118,11 +118,11 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
         id="google-signin-btn"
         onClick={handleGoogleClick}
         disabled={loading}
-        className="w-full flex items-center justify-center space-x-3 py-3 px-4 rounded-xl text-xs font-bold transition-all border border-slate-300 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        className="btn-secondary w-full py-3 px-4 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-info" />
             <span>Connecting to Google...</span>
           </>
         ) : (
@@ -137,36 +137,36 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div
-            className="w-full max-w-md rounded-2xl p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl relative"
+            className="w-full max-w-md rounded-2xl p-6 sm:p-8 bg-surface border border-hairline shadow-2xl relative"
           >
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:text-primary transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="mb-6">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-3">
-                <Droplet className="w-5 h-5 text-rose-500" />
+              <div className="w-10 h-10 rounded-xl bg-info/10 border border-info/25 flex items-center justify-center mb-3">
+                <Droplet className="w-5 h-5 text-info" />
               </div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white font-heading">
+              <h2 className="text-lg font-black text-primary font-heading">
                 Complete Donor Profile
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-secondary mt-1">
                 Hi {pendingName}! To connect you with emergency blood requests, please specify your blood group.
               </p>
             </div>
 
             <form onSubmit={handleModalSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-slate-600 dark:text-slate-400">
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-secondary">
                   Blood Group *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-rose-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-info">
                     <Droplet className="h-4 w-4" />
                   </div>
                   <select
@@ -174,11 +174,12 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
                     required
                     value={bloodGroup}
                     onChange={(e) => setBloodGroup(e.target.value)}
-                    className="glass-select w-full pl-10 text-xs px-3.5 py-3 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    className="glass-select w-full pl-10 text-xs px-3.5 py-3 rounded-xl border border-theme bg-surface text-primary"
+                    style={{ colorScheme: 'light dark' }}
                   >
-                    <option value="" disabled>Select your blood group</option>
+                    <option value="" disabled className="bg-surface text-muted">Select your blood group</option>
                     {BLOOD_GROUPS.map((bg) => (
-                      <option key={bg} value={bg} className="bg-slate-900 text-white">
+                      <option key={bg} value={bg} className="bg-surface text-primary">
                         {bg}
                       </option>
                     ))}
@@ -187,11 +188,11 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
               </div>
 
               <div>
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-slate-600 dark:text-slate-400">
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5 text-secondary">
                   Phone Number (Optional)
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
                     <Phone className="h-4 w-4" />
                   </div>
                   <input
@@ -200,7 +201,8 @@ export const GoogleLoginButton = ({ redirect = '/', label = 'Continue with Googl
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 9876543210"
-                    className="glass-input w-full pl-10 text-xs px-3.5 py-3 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    className="glass-input w-full pl-10 text-xs px-3.5 py-3 rounded-xl border border-theme bg-surface text-primary"
+                    style={{ colorScheme: 'light dark' }}
                   />
                 </div>
               </div>

@@ -30,10 +30,10 @@ app.get('/api/health', (req, res) => {
   const { getProjectId } = require('./config/db');
   res.status(200).json({
     success: true,
-    status: 'operational',
+    status: 'connected',
     dbType: 'firestore',
-    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink',
-    message: 'LifeLink API Gateway is operational',
+    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink-f6f3b',
+    message: 'LifeLink API Gateway is operational and connected to Firestore',
     timestamp: new Date().toISOString(),
   });
 });
@@ -57,12 +57,31 @@ app.use((req, res) => {
   });
 });
 
-// Global Error Handler
+// Central Global Error Handler: preserves full error visibility, extracts index links, returns 500 JSON
 app.use((err, req, res, next) => {
-  console.error('Unhandled Server Error:', err);
-  res.status(err.status || 500).json({
+  const isFirestoreIndexError = err.message && (err.message.includes('FAILED_PRECONDITION') || err.message.includes('requires an index'));
+  
+  if (isFirestoreIndexError) {
+    const linkMatch = err.message.match(/https:\/\/[^\s]+/);
+    console.error('========================================================================');
+    console.error(`❌ [Firestore Missing Index Error] [${req.method} ${req.originalUrl}]`);
+    console.error(`Message: ${err.message}`);
+    if (linkMatch) {
+      console.error(`Firebase Console Index Link: ${linkMatch[0]}`);
+    }
+    console.error('========================================================================');
+  } else {
+    console.error(`Unhandled Server Error [${req.method} ${req.originalUrl}]:`, err);
+  }
+
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
     success: false,
     message: err.message || 'Internal Server Error',
+    ...(isFirestoreIndexError && {
+      code: 'MISSING_FIRESTORE_INDEX',
+      indexLink: err.message.match(/https:\/\/[^\s]+/)?.[0] || null,
+    }),
   });
 });
 

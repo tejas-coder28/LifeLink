@@ -1,21 +1,23 @@
 const notificationService = require('../services/notification.service');
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler');
 
-const getMyNotifications = async (req, res) => {
+const getMyNotifications = async (req, res, next) => {
   try {
     const notifications = await notificationService.getUserNotifications(req.user._id);
     return sendSuccess(res, 'User notifications retrieved', notifications);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
-const markRead = async (req, res) => {
+const markRead = async (req, res, next) => {
   try {
     const notification = await notificationService.markAsRead(req.params.id, req.user._id);
     return sendSuccess(res, 'Notification marked as read', notification);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 

@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import PageTransition from '../../components/common/PageTransition';
 import {
   Cpu,
   MapPin,
@@ -118,14 +119,14 @@ const MatchingDonorsPage = () => {
   if (!data) return <EmptyState title="Request Not Found" description="Could not load candidate donor matches." />;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6 page-enter">
+    <PageTransition className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <Link to="/hospital/dashboard" className="inline-flex items-center text-xs font-bold text-muted hover:text-primary transition-colors">
         <ArrowLeft className="w-3.5 h-3.5 mr-1" />
         <span>Back to Hospital Portal</span>
       </Link>
 
       {/* Header Bar */}
-      <div className="hero-glass-card relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="hero-glass-card p-6 sm:p-8 rounded-3xl relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-glass shadow-card">
         <div className="flex items-center space-x-3 relative z-10">
           <Badge bloodGroup={data.request.bloodGroup} />
           <div>
@@ -134,7 +135,7 @@ const MatchingDonorsPage = () => {
           </div>
         </div>
         <div className="flex items-center space-x-2 relative z-10">
-          <Badge status={data.request.urgency} />
+          <Badge urgency={data.request.urgency} />
           <Badge status={data.request.status} />
         </div>
       </div>
@@ -143,7 +144,7 @@ const MatchingDonorsPage = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Cpu className="w-5 h-5 text-rose-500 animate-pulse" />
+            <Cpu className="w-5 h-5 text-info animate-pulse" />
             <h2 className="text-lg sm:text-xl font-black text-primary font-heading">Smart Matching Donor Rankings</h2>
           </div>
           <span className="text-xs font-semibold text-secondary">
@@ -152,8 +153,8 @@ const MatchingDonorsPage = () => {
         </div>
 
         {(isFulfilled || !canSeekDonors(data?.request)) ? (
-          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-center space-y-3">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+          <div className="p-6 rounded-2xl bg-surface border border-hairline text-center space-y-3">
+            <CheckCircle2 className="w-10 h-10 text-success mx-auto" />
             <h3 className="text-base font-extrabold text-primary font-heading">Blood Request is Fulfilled</h3>
             <p className="text-xs text-secondary max-w-md mx-auto">
               {fulfilledMessage || 'This emergency blood request is already fulfilled. Donor seeking is closed and contact actions are disabled.'}
@@ -162,7 +163,7 @@ const MatchingDonorsPage = () => {
               <button
                 type="button"
                 disabled
-                className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-slate-500 font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-surface border border-hairline text-muted font-bold text-xs cursor-not-allowed inline-flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Contact Donor (Disabled - Request Fulfilled)</span>
@@ -181,10 +182,7 @@ const MatchingDonorsPage = () => {
               return (
                 <Card key={index} hover={false} className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
-                      style={{ background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#fb7185' }}
-                    >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-info/10 border border-info/25 text-info">
                       #{index + 1}
                     </div>
 
@@ -197,8 +195,8 @@ const MatchingDonorsPage = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-xs text-secondary">
-                        <span className="font-semibold text-rose-600 dark:text-rose-400 flex items-center font-mono">
-                          <MapPin className="w-3.5 h-3.5 mr-1" /> {item.distanceKm} km away
+                        <span className="font-semibold text-info flex items-center font-mono">
+                          <MapPin className="w-3.5 h-3.5 mr-1 text-muted" /> {item.distanceKm} km away
                         </span>
                         {item.donor?.age && (
                           <>
@@ -209,7 +207,7 @@ const MatchingDonorsPage = () => {
                         {item.donor?.user?.phone && (
                           <>
                             <span>•</span>
-                            <span className="font-bold text-teal-600 dark:text-teal-400 flex items-center font-mono">
+                            <span className="font-bold text-secondary flex items-center font-mono">
                               <Phone className="w-3.5 h-3.5 mr-1" /> {item.donor.user.phone}
                             </span>
                           </>
@@ -220,7 +218,7 @@ const MatchingDonorsPage = () => {
                         {item.rationale.map((r, rIdx) => (
                           <span
                             key={rIdx}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-surface border border-theme text-secondary"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-surface border border-hairline text-secondary"
                           >
                             {r}
                           </span>
@@ -231,11 +229,9 @@ const MatchingDonorsPage = () => {
 
                   {/* Actions & Score */}
                   <div className="flex flex-row md:flex-col items-end justify-between w-full md:w-auto gap-3 shrink-0">
-                    <div
-                      className="text-right p-2.5 rounded-xl border border-theme bg-surface min-w-[120px]"
-                    >
+                    <div className="text-right p-2.5 rounded-xl border border-hairline bg-surface min-w-[120px]">
                       <span className="text-[10px] font-bold uppercase tracking-wider block text-muted">Match Score</span>
-                      <span className="text-lg font-black text-rose-600 dark:text-rose-400 block">{item.matchScore}%</span>
+                      <span className="text-lg font-black text-primary block">{item.matchScore}%</span>
                     </div>
 
                     {/* Ping Status / Contact Controls */}
@@ -250,20 +246,20 @@ const MatchingDonorsPage = () => {
                           <span>{isNotifying ? 'Pinging...' : 'Contact Donor'}</span>
                         </button>
                       ) : ping.status === 'pending' ? (
-                        <span className="px-3 py-1.5 rounded-xl bg-amber-400/10 text-amber-300 font-bold border border-amber-400/30 text-xs flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                        <span className="px-3 py-1.5 rounded-xl bg-surface text-secondary font-bold border border-hairline text-xs flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 animate-spin text-muted" />
                           <span>Pending Response</span>
                         </span>
                       ) : ping.status === 'accepted' ? (
                         <div className="flex items-center space-x-2">
-                          <span className="px-3 py-1.5 rounded-xl bg-emerald-400/10 text-teal-300 font-bold border border-emerald-400/30 text-xs flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                          <span className="px-3 py-1.5 rounded-xl bg-success/10 text-success font-bold border border-success/30 text-xs flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                             <span>Accepted</span>
                           </span>
                           {data.request.status !== 'fulfilled' && (
                             <button
                               onClick={() => handleConfirmDonation(donorUserId)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                              className="btn-primary text-xs px-3 py-1.5"
                             >
                               Confirm Donation
                             </button>
@@ -271,8 +267,8 @@ const MatchingDonorsPage = () => {
                         </div>
                       ) : (
                         <div className="flex items-center space-x-2">
-                          <span className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-300 font-bold border border-rose-500/30 text-xs flex items-center gap-1.5">
-                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                          <span className="px-3 py-1.5 rounded-xl bg-danger/10 text-danger font-bold border border-danger/30 text-xs flex items-center gap-1.5">
+                            <XCircle className="w-3.5 h-3.5 text-danger" />
                             <span>Declined</span>
                           </span>
                           <button
@@ -292,7 +288,7 @@ const MatchingDonorsPage = () => {
           </div>
         )}
       </div>
-    </div>
+    </PageTransition>
   );
 };
 

@@ -4,10 +4,10 @@ import { BLOOD_GROUPS } from '../../utils/bloodCompatibility';
 import { hospitalApi } from '../../api/hospitalApi';
 
 const URGENCY_LEVELS = [
-  { id: 'critical', label: 'Critical', sub: 'Trauma / Surgery — now (15m response window)', borderCol: 'rgba(224,21,21,0.55)', bgCol: 'rgba(224,21,21,0.15)', textCol: '#ff6b6b' },
-  { id: 'high',     label: 'High',     sub: 'Required within 12–24h',  borderCol: 'rgba(243,112,32,0.50)', bgCol: 'rgba(243,112,32,0.12)', textCol: '#ffa05a' },
-  { id: 'medium',   label: 'Medium',   sub: 'Standard urgency',         borderCol: 'rgba(59,158,255,0.45)', bgCol: 'rgba(59,158,255,0.12)', textCol: '#7fc3ff' },
-  { id: 'low',      label: 'Low',      sub: 'Scheduled / planned',      borderCol: 'rgba(100,116,139,0.35)', bgCol: 'rgba(100,116,139,0.10)', textCol: '#94a3b8' },
+  { id: 'critical', label: 'Critical', sub: 'Trauma / Surgery — now (15m response window)' },
+  { id: 'high',     label: 'High',     sub: 'Required within 12–24h' },
+  { id: 'medium',   label: 'Medium',   sub: 'Standard urgency' },
+  { id: 'low',      label: 'Low',      sub: 'Scheduled / planned' },
 ];
 
 /* Shared field label */
@@ -112,8 +112,8 @@ const RequestForm = ({ onSubmit, loading, initialData = {} }) => {
         </div>
 
         {selectedHospitalObj && (
-          <div className="mt-2.5 p-3 rounded-xl bg-slate-100/90 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-start gap-2.5 text-xs text-secondary">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="mt-2.5 p-3 rounded-xl bg-surface border border-hairline flex items-start gap-2.5 text-xs text-secondary">
+            <ShieldCheck className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <span className="font-extrabold text-primary block">{selectedHospitalObj.name} (Verified)</span>
               <p className="text-[11px] text-muted flex items-center gap-1">
@@ -184,7 +184,7 @@ const RequestForm = ({ onSubmit, loading, initialData = {} }) => {
           ))}
         </select>
         {validationError && (
-          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5">
+          <p className="mt-2 text-xs text-danger font-semibold flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" />
             {validationError}
           </p>
@@ -194,25 +194,40 @@ const RequestForm = ({ onSubmit, loading, initialData = {} }) => {
       {/* Urgency Selector */}
       <div>
         <FieldLabel>Urgency Level</FieldLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {URGENCY_LEVELS.map((u) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => setUrgency(u.id)}
-              className="p-3 rounded-xl text-left transition-all cursor-pointer"
-              style={urgency === u.id
-                ? { background: u.bgCol, border: `1.5px solid ${u.borderCol}` }
-                : { background: 'var(--surface)', border: '1px solid var(--border)' }
-              }
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-primary">{u.label}</span>
-                {urgency === u.id && <Activity className="w-3.5 h-3.5 animate-pulse text-rose-600 dark:text-rose-400" />}
-              </div>
-              <span className="text-[10px] mt-0.5 block text-muted">{u.sub}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {URGENCY_LEVELS.map((u) => {
+            const isSelected = urgency === u.id;
+            const isUrgent = u.id === 'critical' || u.id === 'high';
+            const isMedium = u.id === 'medium';
+            return (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => setUrgency(u.id)}
+                className={`p-3 rounded-2xl text-left transition-all cursor-pointer border ${
+                  isSelected
+                    ? isUrgent
+                      ? 'bg-danger/15 border-danger shadow-glow-danger'
+                      : isMedium
+                      ? 'bg-warning/15 border-warning shadow-sm'
+                      : 'bg-info/15 border-info shadow-sm'
+                    : 'bg-surface/60 border-hairline hover:bg-surface text-secondary'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-primary">{u.label}</span>
+                  {isSelected && (
+                    <Activity
+                      className={`w-3.5 h-3.5 animate-pulse ${
+                        isUrgent ? 'text-danger' : isMedium ? 'text-warning' : 'text-info'
+                      }`}
+                    />
+                  )}
+                </div>
+                <span className="text-[10px] mt-1 block text-muted">{u.sub}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

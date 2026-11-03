@@ -1,22 +1,24 @@
 const aiService = require('../services/ai.service');
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler');
 
-const generateInsight = async (req, res) => {
+const generateInsight = async (req, res, next) => {
   try {
     const { prompt } = req.body;
     const insight = await aiService.generateSystemInsight(prompt);
     return sendSuccess(res, 'AI Insight generated successfully', insight, 201);
   } catch (error) {
-    return sendError(res, error.message, 500);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 500);
   }
 };
 
-const getInsights = async (req, res) => {
+const getInsights = async (req, res, next) => {
   try {
     const insights = await aiService.getLatestInsights();
     return sendSuccess(res, 'AI Insights history fetched', insights);
   } catch (error) {
-    return sendError(res, error.message, 500);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 500);
   }
 };
 

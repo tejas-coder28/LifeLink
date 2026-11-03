@@ -5,8 +5,24 @@ import { formatStatusLabel, getStatusBadgeClass } from '../../utils/statusHelper
  * Badge — renders role, status, blood group, or plain text pills.
  * Props are unchanged from the original; only visual styling updated.
  */
-const Badge = ({ role, accountType, status, bloodGroup, text, size = 'normal' }) => {
+const Badge = ({ role, accountType, status, bloodGroup, urgency, text, size = 'normal', className = '' }) => {
   const type = accountType || role;
+
+  /* ── Urgency badges ── */
+  if (urgency) {
+    const urgencyClass = {
+      critical: 'badge-critical',
+      high:     'badge-high',
+      medium:   'badge-medium',
+      low:      'badge-low',
+    }[urgency.toLowerCase()] || 'badge-low';
+
+    return (
+      <span className={`badge-base ${urgencyClass} ${className}`}>
+        {text || urgency.toUpperCase()}
+      </span>
+    );
+  }
 
   /* ── Role badges ── */
   if (type) {

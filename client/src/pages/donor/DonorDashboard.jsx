@@ -16,6 +16,9 @@ import Modal from '../../components/common/Modal';
 import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
+import PageTransition from '../../components/common/PageTransition';
+import SlidingTabs from '../../components/common/SlidingTabs';
+import Skeleton from '../../components/common/Skeleton';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 
@@ -247,14 +250,24 @@ const DonorDashboard = () => {
       .map((d) => (d.request?._id || d.request)?.toString())
   );
 
+  const donorTabs = [
+    { id: 'overview',       icon: Activity,  label: 'Overview' },
+    { id: 'requests',       icon: Heart,     label: 'Requests', count: liveRequests.length },
+    { id: 'pings',          icon: Send,      label: 'For You', count: pendingPings.length },
+    { id: 'profile',        icon: User,      label: 'Profile & Health' },
+    { id: 'history',        icon: Clock,     label: 'History', count: donationHistory.length },
+    { id: 'notifications',  icon: Bell,      label: 'Alerts', count: notifications.filter(n => !n.isRead).length },
+    { id: 'camps',          icon: Building2, label: 'Hospitals' },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
       {/* Banner Header */}
-      <div className="hero-glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="glass-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-glass shadow-card">
         <div className="space-y-2">
           <div className="flex items-center flex-wrap gap-3">
-            <h1 className="text-3xl font-black text-primary font-heading">Donor Portal</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading">Donor Portal</h1>
             <Badge accountType="donor" />
             {profile?.bloodGroup && <Badge bloodGroup={profile.bloodGroup} />}
           </div>
@@ -266,20 +279,20 @@ const DonorDashboard = () => {
         {/* Availability Controls */}
         <div className="flex flex-wrap items-center gap-3">
           {profile && (
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-2xl bg-surface border border-hairline">
               <div>
                 <span className="text-[10px] font-bold block text-muted">Standby Status</span>
-                <span className="text-xs font-black text-teal-600 dark:text-teal-400">
+                <span className={`text-xs font-black ${profile.isAvailable ? 'text-success' : 'text-muted'}`}>
                   {profile.isAvailable ? '● ONLINE (ACTIVE)' : '○ OFFLINE'}
                 </span>
               </div>
               <button
                 onClick={handleToggleAvailability}
-                className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all"
-                style={profile.isAvailable
-                  ? { background: 'rgba(34,200,160,0.20)', color: 'var(--teal-500)', border: '1px solid rgba(34,200,160,0.40)' }
-                  : { background: 'rgba(100,116,139,0.12)', color: 'var(--text-secondary)', border: '1px solid rgba(100,116,139,0.25)' }
-                }
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  profile.isAvailable
+                    ? 'bg-success text-white dark:text-[#0A0F1C] shadow-glow-success'
+                    : 'bg-surface text-secondary border border-hairline hover:bg-surface/80'
+                }`}
               >
                 Toggle Status
               </button>
@@ -290,15 +303,12 @@ const DonorDashboard = () => {
 
       {/* One-time Blood Group Confirmation Banner for Unconfirmed Accounts */}
       {profile && !profile.bloodGroupConfirmed && !dismissedConfirmBanner && (
-        <div
-          className="p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-          style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#fcd34d' }}
-        >
+        <div className="p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-warning/10 border border-warning/30 text-primary">
           <div className="flex items-center space-x-3">
-            <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
+            <AlertCircle className="w-5 h-5 shrink-0 text-warning" />
             <div>
-              <span className="font-extrabold text-sm text-amber-300 block">Please confirm your blood group</span>
-              <span className="text-xs text-amber-200/80">Your profile blood group was set by default. Please verify your exact blood group so medical matches are accurate.</span>
+              <span className="font-extrabold text-sm text-primary block">Please confirm your blood group</span>
+              <span className="text-xs text-secondary">Your profile blood group was set by default. Please verify your exact blood group so medical matches are accurate.</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -310,7 +320,7 @@ const DonorDashboard = () => {
             </button>
             <button
               onClick={() => setDismissedConfirmBanner(true)}
-              className="text-xs px-2.5 py-1.5 rounded-xl text-muted hover:text-primary transition-colors"
+              className="text-xs px-2.5 py-1.5 rounded-xl text-muted hover:text-primary transition-colors cursor-pointer"
             >
               Dismiss
             </button>
@@ -318,39 +328,22 @@ const DonorDashboard = () => {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="tab-list overflow-x-auto flex-nowrap">
-        {[
-          { id: 'overview',       icon: Activity,  label: 'Overview' },
-          { id: 'requests',       icon: Heart,     label: `Requests (${liveRequests.length})` },
-          { id: 'pings',          icon: Send,      label: `For You (${pendingPings.length})`, badge: pendingPings.length > 0 },
-          { id: 'profile',        icon: User,      label: 'Profile & Health' },
-          { id: 'history',        icon: Clock,     label: `History (${donationHistory.length})` },
-          { id: 'notifications',  icon: Bell,      label: `Alerts (${notifications.filter(n => !n.isRead).length})` },
-          { id: 'camps',          icon: Building2, label: 'Hospitals' },
-        ].map(({ id, icon: Icon, label, badge }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`tab-item whitespace-nowrap relative ${activeTab === id ? 'active' : ''}`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            <span>{label}</span>
-            {badge && <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping absolute -top-0.5 -right-0.5" />}
-          </button>
-        ))}
-      </div>
+      {/* Animated Sliding Tabs Navigation */}
+      <SlidingTabs
+        tabs={donorTabs}
+        activeTab={activeTab}
+        onChange={setTab}
+        className="w-full"
+      />
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-8">
           {/* Pending Pings Callout Banner */}
           {pendingPings.length > 0 && (
-            <div className="p-6 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 emergency-pulse-amber"
-              style={{ background: 'rgba(245,158,11,0.10)', border: '2px solid rgba(245,158,11,0.40)' }}>
+            <div className="p-6 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 emergency-pulse bg-danger/10 border-2 border-danger/40">
               <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-black shrink-0 shadow-md"
-                  style={{ background: 'rgba(245,158,11,0.25)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.40)' }}>
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-black shrink-0 shadow-md bg-danger/20 text-danger border border-danger/40">
                   <Send className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
@@ -358,7 +351,7 @@ const DonorDashboard = () => {
                     {pendingPings.length} Direct Emergency Ping{pendingPings.length > 1 ? 's' : ''} for You!
                   </h3>
                   <p className="text-xs mt-1 text-secondary">
-                    A hospital matched your <span className="font-bold text-amber-600 dark:text-amber-400">{profile?.bloodGroup || ''}</span> blood group for an emergency patient.
+                    A hospital matched your <span className="font-bold text-primary font-mono">{profile?.bloodGroup || ''}</span> blood group for an emergency patient.
                   </p>
                 </div>
               </div>
@@ -403,10 +396,10 @@ const DonorDashboard = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-primary flex items-center font-heading">
-                <Activity className="w-5 h-5 mr-2 animate-pulse text-rose-600 dark:text-rose-400" />
+                <Activity className="w-5 h-5 mr-2 animate-pulse text-danger" />
                 Live Emergency Blood Needs
               </h2>
-              <button onClick={() => setTab('requests')} className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline transition-colors cursor-pointer">
+              <button onClick={() => setTab('requests')} className="text-xs font-bold text-info hover:underline transition-colors cursor-pointer">
                 View All →
               </button>
             </div>
@@ -513,7 +506,7 @@ const DonorDashboard = () => {
               {donationHistory.map((item) => (
                 <div
                   key={item._id}
-                  className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-slate-300 dark:hover:border-white/20 transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-brand-500/40 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <div className="space-y-3 flex-1 min-w-0">
                     <div className="flex items-center flex-wrap gap-2.5">
@@ -525,18 +518,18 @@ const DonorDashboard = () => {
                     </div>
                     <div className="text-xs space-y-1.5 text-secondary">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
+                        <MapPin className="w-4 h-4 shrink-0 text-muted" />
                         <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 shrink-0 text-sky-500" />
+                        <Calendar className="w-4 h-4 shrink-0 text-muted" />
                         <span className="font-mono text-[11px]">Pledged on: {new Date(item.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/80 dark:border-white/10 w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-rose-500/5 dark:bg-rose-500/10 px-4 py-2.5 rounded-xl border border-rose-500/15">
-                    <span className="text-base font-black text-rose-600 dark:text-rose-400 block tracking-tight">
+                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
+                    <span className="text-base font-black text-success block tracking-tight">
                       {item.unitsDonated} Unit(s)
                     </span>
                     <span className="text-[11px] text-muted block font-mono mt-0.5">
@@ -567,16 +560,16 @@ const DonorDashboard = () => {
               {notifications.map((notif) => (
                 <div
                   key={notif._id}
-                  className="p-4 rounded-2xl border transition-all flex items-start justify-between gap-4"
-                  style={notif.isRead
-                    ? { background: 'rgba(15,23,42,0.02)', borderColor: 'var(--border)' }
-                    : { background: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.25)' }
-                  }
+                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                    notif.isRead
+                      ? 'bg-surface/50 border-hairline'
+                      : 'bg-info/10 border-info/25'
+                  }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
                       <h4 className="text-sm font-bold text-primary">{notif.title}</h4>
-                      {!notif.isRead && <span className="w-2 h-2 rounded-full bg-rose-500 inline-block animate-pulse" />}
+                      {!notif.isRead && <span className="w-2 h-2 rounded-full bg-info inline-block animate-pulse" />}
                     </div>
                     <p className="text-xs leading-relaxed text-secondary">{notif.message}</p>
                     <span className="text-[10px] block text-muted">
@@ -587,7 +580,7 @@ const DonorDashboard = () => {
                   {!notif.isRead && (
                     <button
                       onClick={() => handleMarkNotifRead(notif._id)}
-                      className="text-xs font-bold flex items-center shrink-0 transition-colors text-secondary hover:text-primary"
+                      className="text-xs font-bold flex items-center shrink-0 transition-colors text-info hover:text-ice cursor-pointer"
                     >
                       <Check className="w-4 h-4 mr-1" />
                       <span>Mark Read</span>
@@ -610,10 +603,10 @@ const DonorDashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {hospitals.map((hosp) => (
-              <div key={hosp._id} className="glass-card glass-card-hover p-5 sm:p-6 rounded-2xl flex flex-col space-y-3 border-theme">
+              <div key={hosp._id} className="glass-card glass-card-hover p-5 sm:p-6 rounded-2xl flex flex-col space-y-3 border-hairline">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-sky-500/15 border border-sky-500/30 text-sky-600 dark:text-sky-300">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-info/10 border border-info/20 text-info">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
@@ -624,13 +617,13 @@ const DonorDashboard = () => {
                   <Badge status={hosp.isVerified ? 'verified' : 'pending'} text={hosp.isVerified ? 'VERIFIED' : 'PENDING'} />
                 </div>
 
-                <div className="space-y-1.5 text-xs pt-3 border-t border-slate-200/80 dark:border-white/10 text-secondary">
+                <div className="space-y-1.5 text-xs pt-3 border-t border-hairline text-secondary">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-muted" />
                     <span>{hosp.address || 'Delhi NCR'}</span>
                   </div>
                   {hosp.phone && (
-                    <div className="flex items-center gap-1.5 font-bold text-teal-600 dark:text-teal-400">
+                    <div className="flex items-center gap-1.5 font-bold text-secondary">
                       <Phone className="w-3.5 h-3.5 shrink-0" />
                       <span>{hosp.phone}</span>
                     </div>
@@ -648,7 +641,7 @@ const DonorDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-black text-primary flex items-center gap-2 font-heading">
-                <Send className="w-5 h-5 animate-bounce text-amber-500" />
+                <Send className="w-5 h-5 animate-bounce text-danger" />
                 Emergency Requests For You
               </h2>
               <p className="text-xs mt-1 text-secondary">
@@ -675,7 +668,7 @@ const DonorDashboard = () => {
                 return (
                   <div
                     key={ping._id}
-                    className="glass-card flex flex-col justify-between rounded-2xl overflow-hidden border border-amber-500/40 bg-amber-500/5 transition-all duration-200"
+                    className="glass-card flex flex-col justify-between rounded-2xl overflow-hidden border border-danger/30 bg-danger/5 transition-all duration-200"
                   >
                     {/* Header */}
                     <div className="p-5 sm:p-6 pb-4 sm:pb-5">
@@ -688,7 +681,7 @@ const DonorDashboard = () => {
                             <h3 className="text-base font-extrabold text-primary font-heading truncate">
                               {req.patientName || 'Emergency Patient'}
                             </h3>
-                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block mt-0.5">
+                            <span className="text-xs font-bold text-info block mt-0.5">
                               Requested by {hosp.name || 'Medical Center'}
                             </span>
                           </div>
@@ -700,7 +693,7 @@ const DonorDashboard = () => {
                     </div>
 
                     {/* Full width divider */}
-                    <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+                    <div className="w-full border-t border-hairline" />
 
                     {/* Details */}
                     <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-2.5 text-xs text-secondary">
@@ -711,14 +704,14 @@ const DonorDashboard = () => {
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-muted shrink-0">Location:</span>
                         <span className="font-medium flex items-center gap-1 truncate text-secondary">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                          <MapPin className="w-3.5 h-3.5 shrink-0 text-muted" />
                           <span className="truncate">{req.address}</span>
                         </span>
                       </div>
                       {hosp.phone && (
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-muted">Hospital Hotline:</span>
-                          <span className="font-bold flex items-center gap-1 text-teal-600 dark:text-teal-400">
+                          <span className="font-bold flex items-center gap-1 text-secondary">
                             <Phone className="w-3.5 h-3.5" /> {hosp.phone}
                           </span>
                         </div>
@@ -732,7 +725,7 @@ const DonorDashboard = () => {
                     </div>
 
                     {/* Full width divider */}
-                    <div className="w-full border-t border-slate-200/80 dark:border-white/10" />
+                    <div className="w-full border-t border-theme" />
 
                     {/* Footer */}
                     <div className="p-5 sm:p-6 pt-4 sm:pt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
@@ -741,14 +734,14 @@ const DonorDashboard = () => {
                         disabled={isResponding}
                         className="btn-secondary w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
                       >
-                        <XCircle className="w-4 h-4 text-slate-400" />
+                        <XCircle className="w-4 h-4 text-muted" />
                         <span>Decline</span>
                       </button>
 
                       <button
                         onClick={() => handleRespondPing(ping._id, 'accepted')}
                         disabled={isResponding}
-                        className="btn-primary w-full sm:w-auto px-5 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-teal-600 hover:bg-teal-500"
+                        className="btn-primary w-full sm:w-auto px-5 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
                       >
                         <CheckCircle2 className={`w-4 h-4 ${isResponding ? 'animate-spin' : ''}`} />
                         <span>{isResponding ? 'Responding...' : 'Accept & Donate'}</span>
@@ -770,7 +763,7 @@ const DonorDashboard = () => {
       >
         {selectedRequest && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-white/10">
+            <div className="flex items-center justify-between pb-4 border-b border-theme">
               <div className="flex items-center space-x-3">
                 <Badge bloodGroup={selectedRequest.bloodGroup} />
                 <div>
@@ -795,7 +788,7 @@ const DonorDashboard = () => {
                 <span className="font-bold text-primary text-sm">{selectedRequest.address}</span>
               </div>
               {selectedRequest.notes && (
-                <div className="col-span-2 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10">
+                <div className="col-span-2 p-3 rounded-xl bg-surface border border-theme">
                   <span className="block font-semibold mb-0.5 text-muted">Medical Notes</span>
                   <p className="text-xs italic mt-1 text-secondary">"{selectedRequest.notes}"</p>
                 </div>
@@ -807,7 +800,7 @@ const DonorDashboard = () => {
               return (
                 <div className="space-y-2">
                   {!isComp && (
-                    <p className="text-xs text-amber-400 font-semibold text-center p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-xs text-danger font-semibold text-center p-2 rounded-xl bg-danger/10 border border-danger/30">
                       Your blood group ({profile?.bloodGroup}) is not compatible with patient need ({selectedRequest.bloodGroup}).
                     </p>
                   )}
@@ -816,11 +809,11 @@ const DonorDashboard = () => {
                     disabled={pledgingId === selectedRequest._id || !isComp}
                     className={`w-full py-3.5 rounded-xl text-xs justify-center flex items-center gap-2 transition-all ${
                       !isComp
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        ? 'bg-surface text-muted cursor-not-allowed border border-hairline'
                         : 'btn-primary'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-slate-500'}`} />
+                    <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-muted'}`} />
                     <span>
                       {pledgingId === selectedRequest._id
                         ? 'Pledging...'
@@ -835,7 +828,7 @@ const DonorDashboard = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </PageTransition>
   );
 };
 

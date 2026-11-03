@@ -216,7 +216,7 @@ const IndividualDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 page-enter">
       {/* Header Banner */}
       <div className="hero-glass-card relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-rose-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-info/10 blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center space-x-3">
             <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
@@ -242,11 +242,11 @@ const IndividualDashboard = () => {
 
           {profile && (
             <div
-              className="flex items-center space-x-3 px-4 py-2 rounded-2xl border border-theme bg-surface-glass"
+              className="flex items-center space-x-3 px-4 py-2 rounded-2xl border border-hairline bg-surface"
             >
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider block text-muted">Standby Availability</span>
-                <span className={`text-xs font-black ${profile.isAvailable ? 'text-teal-600 dark:text-teal-400' : 'text-muted'}`}>
+                <span className={`text-xs font-black ${profile.isAvailable ? 'text-success' : 'text-muted'}`}>
                   {profile.isAvailable ? 'ONLINE (ACTIVE)' : 'OFFLINE'}
                 </span>
               </div>
@@ -254,8 +254,8 @@ const IndividualDashboard = () => {
                 onClick={handleToggleAvailability}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   profile.isAvailable
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
-                    : 'bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-secondary'
+                    ? 'bg-success text-white dark:text-[#0A0F1C] shadow-glow-success'
+                    : 'btn-secondary text-xs'
                 }`}
               >
                 Toggle
@@ -266,12 +266,12 @@ const IndividualDashboard = () => {
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="flex items-center space-x-2 border-b border-theme pb-3 overflow-x-auto">
+      <div className="flex items-center space-x-2 border-b border-hairline pb-3 overflow-x-auto">
         <button
           onClick={() => setTab('overview')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -283,16 +283,16 @@ const IndividualDashboard = () => {
           onClick={() => setTab('pings')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap relative cursor-pointer ${
             activeTab === 'pings'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : pendingPings.length > 0
-              ? 'bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-400/30 hover:bg-amber-400/20'
+              ? 'bg-surface text-secondary border border-hairline hover:bg-surface/80'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
-          <Send className={`w-4 h-4 ${pendingPings.length > 0 ? 'text-amber-500 animate-pulse' : ''}`} />
+          <Send className={`w-4 h-4 ${pendingPings.length > 0 ? 'text-danger animate-pulse' : ''}`} />
           <span>Requests For You ({pendingPings.length})</span>
           {pendingPings.length > 0 && (
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping absolute -top-1 -right-1" />
+            <span className="w-2 h-2 rounded-full bg-danger animate-ping absolute -top-1 -right-1" />
           )}
         </button>
 
@@ -300,7 +300,7 @@ const IndividualDashboard = () => {
           onClick={() => setTab('donor-profile')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'donor-profile'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -312,7 +312,7 @@ const IndividualDashboard = () => {
           onClick={() => setTab('my-requests')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'my-requests'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -324,7 +324,7 @@ const IndividualDashboard = () => {
           onClick={() => setTab('history')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'history'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
+              ? 'bg-surface text-primary border border-hairline shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -338,9 +338,9 @@ const IndividualDashboard = () => {
         <div className="space-y-8">
           {/* Pending Pings Callout Banner */}
           {pendingPings.length > 0 && (
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 border-2 border-amber-400/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-6 rounded-3xl bg-danger/10 border-2 border-danger/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0 mt-0.5 shadow-md">
+                <div className="w-10 h-10 rounded-2xl bg-danger-solid text-white flex items-center justify-center font-black shrink-0 mt-0.5 shadow-md">
                   <Send className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
@@ -354,7 +354,7 @@ const IndividualDashboard = () => {
               </div>
               <button
                 onClick={() => setTab('pings')}
-                className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-md shrink-0 flex items-center space-x-1"
+                className="btn-primary text-xs px-5 py-2.5 rounded-xl shrink-0 flex items-center space-x-1"
               >
                 <span>Review Requests ({pendingPings.length})</span>
                 <ChevronRight className="w-4 h-4" />
@@ -362,8 +362,8 @@ const IndividualDashboard = () => {
             </div>
           )}
           {pledgeMsg && (
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center">
-              <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
+            <div className="p-4 bg-success/10 border border-success/30 rounded-2xl text-success text-sm font-semibold flex items-center">
+              <CheckCircle2 className="w-5 h-5 mr-2 shrink-0 text-success" />
               {pledgeMsg}
             </div>
           )}
@@ -372,7 +372,7 @@ const IndividualDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card hover={false}>
               <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Blood Group</span>
-              <span className="text-2xl font-black text-rose-500 block mt-2">{profile?.bloodGroup || 'Not Set'}</span>
+              <span className="text-2xl font-black text-primary font-mono block mt-2">{profile?.bloodGroup || 'Not Set'}</span>
             </Card>
 
             <Card hover={false}>
@@ -384,7 +384,7 @@ const IndividualDashboard = () => {
 
             <Card hover={false}>
               <span className="text-xs font-semibold text-muted uppercase tracking-wider block">My Emergency Requests</span>
-              <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 block mt-2">{myRequests.length}</span>
+              <span className="text-2xl font-black text-primary block mt-2">{myRequests.length}</span>
             </Card>
 
             <Card hover={false}>
@@ -399,7 +399,7 @@ const IndividualDashboard = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-primary flex items-center font-heading">
-                <Activity className="w-5 h-5 mr-2 text-rose-500 animate-pulse" />
+                <Activity className="w-5 h-5 mr-2 text-danger animate-pulse" />
                 Live Emergency Requests Feed
               </h2>
               <span className="text-xs text-secondary">Matching nearby donor & patient needs</span>
@@ -446,8 +446,8 @@ const IndividualDashboard = () => {
           </div>
 
           {profileMsg && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-300 text-sm font-semibold flex items-center">
-              <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
+            <div className="p-4 bg-success/10 border border-success/30 rounded-2xl text-success text-sm font-semibold flex items-center">
+              <CheckCircle2 className="w-5 h-5 mr-2 shrink-0 text-success" />
               {profileMsg}
             </div>
           )}
@@ -534,18 +534,18 @@ const IndividualDashboard = () => {
                     </div>
                     <div className="text-xs space-y-1.5 text-secondary">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
+                        <MapPin className="w-4 h-4 shrink-0 text-muted" />
                         <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 shrink-0 text-sky-500" />
+                        <Calendar className="w-4 h-4 shrink-0 text-muted" />
                         <span className="font-mono text-[11px]">Pledged on: {new Date(item.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/80 dark:border-white/10 w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-rose-500/5 dark:bg-rose-500/10 px-4 py-2.5 rounded-xl border border-rose-500/15">
-                    <span className="text-base font-black text-rose-600 dark:text-rose-400 block tracking-tight">
+                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
+                    <span className="text-base font-black text-success block tracking-tight">
                       {item.unitsDonated} Unit(s)
                     </span>
                     <span className="text-[11px] text-muted block font-mono mt-0.5">
@@ -564,7 +564,7 @@ const IndividualDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-black text-primary flex items-center font-heading tracking-tight">
-                <Send className="w-5 h-5 mr-2 text-rose-500 animate-bounce" />
+                <Send className="w-5 h-5 mr-2 text-danger animate-bounce" />
                 Emergency Requests Specifically For You
               </h2>
               <p className="text-xs mt-1 text-secondary">
@@ -592,8 +592,7 @@ const IndividualDashboard = () => {
                   <Card
                     key={ping._id}
                     hover={false}
-                    className="flex flex-col justify-between border"
-                    style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.30)' }}
+                    className="flex flex-col justify-between border border-danger/30 bg-danger/5"
                   >
                     <div className="space-y-4">
                       {/* Header */}
@@ -602,7 +601,7 @@ const IndividualDashboard = () => {
                           <Badge bloodGroup={req.bloodGroup} />
                           <div>
                             <h3 className="text-base font-bold text-primary">{req.patientName || 'Emergency Patient'}</h3>
-                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                            <span className="text-xs font-bold text-info">
                               Requested by {hosp.name || 'Medical Center'}
                             </span>
                           </div>
@@ -612,7 +611,7 @@ const IndividualDashboard = () => {
 
                       {/* Info lines */}
                       <div
-                        className="space-y-2 text-xs p-3.5 rounded-2xl border border-theme bg-surface"
+                        className="space-y-2 text-xs p-3.5 rounded-2xl border border-hairline bg-surface"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-muted">Units Required:</span>
@@ -621,14 +620,14 @@ const IndividualDashboard = () => {
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-muted">Delivery Address:</span>
                           <span className="font-medium text-secondary truncate max-w-[200px] flex items-center">
-                            <MapPin className="w-3.5 h-3.5 mr-1 text-rose-500 shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 mr-1 text-muted shrink-0" />
                             {req.address}
                           </span>
                         </div>
                         {hosp.phone && (
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-muted">Hospital Hotline:</span>
-                            <span className="font-bold text-teal-600 dark:text-teal-400 flex items-center font-mono">
+                            <span className="font-bold text-secondary flex items-center font-mono">
                               <Phone className="w-3.5 h-3.5 mr-1" /> {hosp.phone}
                             </span>
                           </div>
@@ -641,7 +640,7 @@ const IndividualDashboard = () => {
                     </div>
 
                     {/* Action buttons: Accept vs Decline */}
-                    <div className="pt-4 mt-4 border-t border-theme flex items-center justify-end space-x-3">
+                    <div className="pt-4 mt-4 border-t border-hairline flex items-center justify-end space-x-3">
                       <button
                         onClick={() => handleRespondPing(ping._id, 'rejected')}
                         disabled={isResponding}
@@ -654,7 +653,7 @@ const IndividualDashboard = () => {
                       <button
                         onClick={() => handleRespondPing(ping._id, 'accepted')}
                         disabled={isResponding}
-                        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition flex items-center space-x-1.5 cursor-pointer"
+                        className="btn-primary text-xs px-5 py-2.5 rounded-xl transition flex items-center space-x-1.5 cursor-pointer"
                       >
                         <CheckCircle2 className={`w-4 h-4 ${isResponding ? 'animate-spin' : ''}`} />
                         <span>{isResponding ? 'Responding...' : 'Accept & Donate'}</span>

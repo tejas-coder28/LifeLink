@@ -10,6 +10,8 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import PageTransition from '../../components/common/PageTransition';
+import SlidingTabs from '../../components/common/SlidingTabs';
 import StatCard from '../../components/cards/StatCard';
 import UserManagement from './UserManagement';
 import RequestManagement from './RequestManagement';
@@ -68,11 +70,19 @@ const AdminDashboard = () => {
     setSearchParams({ tab: tabName });
   };
 
+  const adminTabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'users', label: 'Donors & Hospitals', icon: Users },
+    { id: 'requests', label: 'Blood Request Master', icon: FileText },
+    { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
+    { id: 'ai-insights', label: 'AI Insights', icon: Sparkles, count: aiInsights.length },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 page-enter">
+    <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Header Banner */}
       <div className="hero-glass-card relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-rose-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-info/10 blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center space-x-3">
             <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
@@ -87,67 +97,12 @@ const AdminDashboard = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center space-x-2 border-b border-theme pb-3 overflow-x-auto">
-        <button
-          onClick={() => setTab('overview')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          <span>Overview</span>
-        </button>
-
-        <button
-          onClick={() => setTab('users')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'users'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Donors & Hospitals</span>
-        </button>
-
-        <button
-          onClick={() => setTab('requests')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'requests'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>Blood Request Master</span>
-        </button>
-
-        <button
-          onClick={() => setTab('analytics')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'analytics'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>Platform Analytics</span>
-        </button>
-
-        <button
-          onClick={() => setTab('ai-insights')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'ai-insights'
-              ? 'bg-rose-600/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 shadow-glow-brand'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>AI Insights ({aiInsights.length})</span>
-        </button>
-      </div>
+      <SlidingTabs
+        tabs={adminTabs}
+        activeTab={activeTab}
+        onChange={(id) => setTab(id)}
+        layoutId="admin-dashboard-tabs"
+      />
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
@@ -188,7 +143,7 @@ const AdminDashboard = () => {
           {aiInsights.length > 0 && (
             <Card title="Latest Regional AI Insight" icon={Sparkles} hover={false}>
               <div className="space-y-3">
-                <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">{aiInsights[0].title}</h3>
+                <h3 className="text-base font-bold text-primary">{aiInsights[0].title}</h3>
                 <p className="text-xs leading-relaxed text-secondary">
                   {aiInsights[0].summary}
                 </p>
@@ -200,7 +155,7 @@ const AdminDashboard = () => {
                     <ul className="space-y-1 text-xs font-medium text-secondary">
                       {aiInsights[0].recommendations.map((rec, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="text-rose-500 mr-2">•</span> {rec}
+                          <span className="text-info mr-2">•</span> {rec}
                         </li>
                       ))}
                     </ul>
@@ -250,7 +205,7 @@ const AdminDashboard = () => {
 
       {/* TAB 5: AI INSIGHTS */}
       {activeTab === 'ai-insights' && <AIInsightsPanel insights={aiInsights} setInsights={setAiInsights} />}
-    </div>
+    </PageTransition>
   );
 };
 

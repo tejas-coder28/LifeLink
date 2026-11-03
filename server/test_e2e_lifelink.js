@@ -23,7 +23,7 @@ async function req(method, path, body = null, token = null) {
 async function runE2ETests() {
   if (!process.env.ALLOW_E2E_MUTATION) {
     console.warn('⚠️  E2E mutation script blocked to protect real database from test records.');
-    console.warn('   Unit & integration tests ("npm test") run safely in-memory via mongodb-memory-server.');
+    console.warn('   Unit & integration tests ("npm test") run safely in test isolation.');
     console.warn('   To run this against a local test instance, explicitly pass ALLOW_E2E_MUTATION=true.');
     process.exit(0);
   }

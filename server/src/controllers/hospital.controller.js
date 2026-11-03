@@ -1,55 +1,60 @@
 const hospitalService = require('../services/hospital.service');
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler');
 
-const getProfile = async (req, res) => {
+const getProfile = async (req, res, next) => {
   try {
     const hospital = await hospitalService.getHospitalByUserId(req.user._id);
     return sendSuccess(res, 'Hospital profile fetched', hospital);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
-const updateInventory = async (req, res) => {
+const updateInventory = async (req, res, next) => {
   try {
     const hospital = await hospitalService.updateInventoryByUserId(req.user._id, req.body.inventory);
     return sendSuccess(res, 'Inventory updated successfully', hospital);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
-const getAllHospitals = async (req, res) => {
+const getAllHospitals = async (req, res, next) => {
   try {
     const hospitals = await hospitalService.getAllHospitals();
     return sendSuccess(res, 'All hospitals fetched', hospitals);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
-const getVerifiedHospitals = async (req, res) => {
+const getVerifiedHospitals = async (req, res, next) => {
   try {
     const hospitals = await hospitalService.getVerifiedHospitals();
     return sendSuccess(res, 'Verified hospitals fetched', hospitals);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
-const getInventoryTransactions = async (req, res) => {
+const getInventoryTransactions = async (req, res, next) => {
   try {
     const hospital = await hospitalService.getHospitalByUserId(req.user._id);
     const transactions = await hospitalService.getInventoryTransactions(hospital._id);
     return sendSuccess(res, 'Inventory transactions fetched', transactions);
   } catch (error) {
-    return sendError(res, error.message, 400);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
   }
 };
 
 // Admin: approve or reject a hospital
 // PATCH /api/hospitals/:id/verify   body: { isVerified: true|false }
-const verifyHospital = async (req, res) => {
+const verifyHospital = async (req, res, next) => {
   try {
     const { isVerified } = req.body;
     if (typeof isVerified !== 'boolean') {
@@ -59,18 +64,20 @@ const verifyHospital = async (req, res) => {
     const msg = isVerified ? 'Hospital approved and verified' : 'Hospital verification revoked';
     return sendSuccess(res, msg, hospital);
   } catch (error) {
-    return sendError(res, error.message, 404);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 404);
   }
 };
 
 // Admin: delete a hospital record
 // DELETE /api/hospitals/:id
-const deleteHospitalAdmin = async (req, res) => {
+const deleteHospitalAdmin = async (req, res, next) => {
   try {
     await hospitalService.deleteHospital(req.params.id);
     return sendSuccess(res, 'Hospital record deleted');
   } catch (error) {
-    return sendError(res, error.message, 404);
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 404);
   }
 };
 
@@ -83,4 +90,3 @@ module.exports = {
   verifyHospital,
   deleteHospitalAdmin,
 };
-

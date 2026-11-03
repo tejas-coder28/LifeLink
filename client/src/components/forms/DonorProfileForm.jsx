@@ -11,8 +11,8 @@ const HEALTH_FLAGS_OPTIONS = [
 ];
 
 const FieldLabel = ({ children, icon: Icon }) => (
-  <label className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
-    {Icon && <Icon className="w-3.5 h-3.5" style={{ color: '#fb7185' }} />}
+  <label className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider mb-2 text-secondary">
+    {Icon && <Icon className="w-3.5 h-3.5 text-info" />}
     {children}
   </label>
 );
@@ -103,9 +103,9 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Availability toggle */}
+      {/* Availability toggle (ONLINE -> success state) */}
       <div
-        className="p-4 rounded-2xl flex items-center justify-between border border-theme bg-surface"
+        className="p-4 rounded-2xl flex items-center justify-between border border-hairline bg-surface/70 backdrop-blur-md"
       >
         <div>
           <span className="text-xs font-extrabold text-primary block">Standby Availability Status</span>
@@ -118,8 +118,8 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
           onClick={() => setIsAvailable(!isAvailable)}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
             isAvailable
-              ? 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
-              : 'bg-slate-200 dark:bg-white/10 text-secondary border border-theme'
+              ? 'bg-success text-white dark:text-[#0A0F1C] shadow-sm'
+              : 'bg-surface text-secondary border border-hairline'
           }`}
         >
           {isAvailable ? '● ONLINE' : '○ OFFLINE'}
@@ -131,26 +131,30 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
         <div>
           <FieldLabel>Blood Group</FieldLabel>
           <div className="grid grid-cols-4 gap-2">
-            {BLOOD_GROUPS.map((bg) => (
-              <button
-                key={bg} type="button" onClick={() => setBloodGroup(bg)}
-                className={`py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
-                  bloodGroup === bg
-                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/50 shadow-sm'
-                    : 'bg-surface text-secondary border-theme hover:border-slate-400'
-                }`}
-              >
-                {bg}
-              </button>
-            ))}
+            {BLOOD_GROUPS.map((bg) => {
+              return (
+                <button
+                  key={bg}
+                  type="button"
+                  onClick={() => setBloodGroup(bg)}
+                  className={`py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                    bloodGroup === bg
+                      ? 'bg-surface text-primary border-info ring-1 ring-info/30 shadow-sm'
+                      : 'bg-surface text-secondary border-hairline hover:border-info/40'
+                  }`}
+                >
+                  {bg}
+                </button>
+              );
+            })}
           </div>
 
           {bloodGroup && (
-            <div className="mt-2.5 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-theme text-xs space-y-1.5">
+            <div className="mt-2.5 p-3 rounded-xl bg-surface/60 border border-hairline text-xs space-y-1.5">
               <div className="flex items-center flex-wrap gap-1.5">
                 <span className="text-muted font-semibold text-[10px]">You can donate to:</span>
                 {compatibleRecipientGroups(bloodGroup).map((bg) => (
-                  <span key={bg} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30">
+                  <span key={bg} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-info/10 text-info border border-info/30">
                     {bg}
                   </span>
                 ))}
@@ -158,7 +162,7 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
               <div className="flex items-center flex-wrap gap-1.5">
                 <span className="text-muted font-semibold text-[10px]">You can receive from:</span>
                 {compatibleDonorGroups(bloodGroup).map((bg) => (
-                  <span key={bg} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+                  <span key={bg} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface border border-hairline text-secondary">
                     {bg}
                   </span>
                 ))}
@@ -171,11 +175,17 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
         <div>
           <FieldLabel>Contact Number</FieldLabel>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style={{ color: 'var(--text-muted)' }}>
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
               <Phone className="w-4 h-4" />
             </div>
-            <input type="text" required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)}
-              placeholder="+91 9876543210" className="glass-input w-full pl-10 text-xs px-3.5 py-3" />
+            <input
+              type="text"
+              required
+              value={contactNumber}
+              onChange={(e) => setContactNumber(e.target.value)}
+              placeholder="+91 9876543210"
+              className="glass-input w-full pl-10 text-xs px-3.5 py-3"
+            />
           </div>
         </div>
       </div>
@@ -184,25 +194,40 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
         {/* Age */}
         <div>
           <FieldLabel>Age (Years)</FieldLabel>
-          <input type="number" min={18} max={65} value={age} onChange={(e) => setAge(e.target.value)}
-            className="glass-input w-full text-xs px-3.5 py-3" />
+          <input
+            type="number"
+            min={18}
+            max={65}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            className="glass-input w-full text-xs px-3.5 py-3"
+          />
         </div>
 
         {/* Gender */}
         <div>
           <FieldLabel>Gender</FieldLabel>
-          <select value={gender} onChange={(e) => setGender(e.target.value)} className="glass-select w-full text-xs px-3.5 py-3">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="glass-select w-full text-xs px-3.5 py-3 rounded-xl border border-hairline bg-surface text-primary"
+            style={{ colorScheme: 'light dark' }}
+          >
+            <option value="male" className="bg-surface text-primary">Male</option>
+            <option value="female" className="bg-surface text-primary">Female</option>
+            <option value="other" className="bg-surface text-primary">Other</option>
           </select>
         </div>
 
         {/* Last Donation Date */}
         <div>
           <FieldLabel>Last Donation Date</FieldLabel>
-          <input type="date" value={lastDonationDate} onChange={(e) => setLastDonationDate(e.target.value)}
-            className="glass-input w-full text-xs px-3.5 py-3" />
+          <input
+            type="date"
+            value={lastDonationDate}
+            onChange={(e) => setLastDonationDate(e.target.value)}
+            className="glass-input w-full text-xs px-3.5 py-3"
+          />
         </div>
       </div>
 
@@ -210,52 +235,78 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
       <div>
         <FieldLabel>Primary City / Region Address</FieldLabel>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style={{ color: 'var(--text-muted)' }}>
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
             <MapPin className="w-4 h-4" />
           </div>
-          <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)}
+          <input
+            type="text"
+            required
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             placeholder="Connaught Place, New Delhi"
-            className="glass-input w-full pl-10 text-xs px-3.5 py-3" />
+            className="glass-input w-full pl-10 text-xs px-3.5 py-3"
+          />
         </div>
       </div>
 
       {/* Health Flags */}
       <div>
         <FieldLabel icon={ShieldAlert}>Medical &amp; Eligibility Health Flags</FieldLabel>
-        <div className="space-y-2 p-4 rounded-2xl bg-surface-glass border border-theme">
-          {HEALTH_FLAGS_OPTIONS.map((opt) => (
-            <label key={opt.id} className="flex items-center space-x-3 cursor-pointer">
-              <div
-                className="w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all"
-                style={healthFlags.includes(opt.id)
-                  ? { background: 'rgba(220,38,38,0.25)', border: '1.5px solid rgba(220,38,38,0.55)' }
-                  : { background: 'var(--surface-glass)', border: '1.5px solid var(--border)' }
-                }
-                onClick={() => handleFlagToggle(opt.id)}
-              >
-                {healthFlags.includes(opt.id) && (
-                  <svg className="w-2.5 h-2.5" style={{ color: '#fb7185' }} fill="currentColor" viewBox="0 0 12 12">
-                    <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  </svg>
-                )}
-              </div>
-              <input type="checkbox" checked={healthFlags.includes(opt.id)} onChange={() => handleFlagToggle(opt.id)} className="sr-only" />
-              <span className="text-xs font-medium" style={{ color: healthFlags.includes(opt.id) ? '#fb7185' : 'var(--text-secondary)' }}>
-                {opt.label}
-              </span>
-            </label>
-          ))}
+        <div className="space-y-2.5 p-4 rounded-2xl bg-surface/70 border border-hairline">
+          {HEALTH_FLAGS_OPTIONS.map((opt) => {
+            const isChecked = healthFlags.includes(opt.id);
+            const isNone = opt.id === 'none';
+            return (
+              <label key={opt.id} className="flex items-center space-x-3 cursor-pointer group">
+                <div
+                  className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all ${
+                    isChecked
+                      ? isNone
+                        ? 'bg-success/20 border-1.5 border-success text-success'
+                        : 'bg-warning/20 border-1.5 border-warning text-warning'
+                      : 'bg-surface border border-hairline group-hover:border-info/40 text-transparent'
+                  }`}
+                  onClick={() => handleFlagToggle(opt.id)}
+                >
+                  {isChecked && (
+                    <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 12 12">
+                      <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    </svg>
+                  )}
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => handleFlagToggle(opt.id)}
+                  className="sr-only"
+                />
+                <span
+                  className={`text-xs font-medium transition-colors ${
+                    isChecked
+                      ? 'text-primary font-semibold'
+                      : 'text-secondary group-hover:text-primary'
+                  }`}
+                >
+                  {opt.label}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
       {formError && (
-        <div className="p-3.5 rounded-xl text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center gap-2">
+        <div className="p-3.5 rounded-xl text-xs font-semibold bg-danger/10 border border-danger/30 text-danger flex items-center gap-2">
           <span>⚠️ {formError}</span>
         </div>
       )}
 
-      <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 rounded-xl text-xs justify-center cursor-pointer">
-        <Heart className="w-4 h-4" />
+      <button
+        type="submit"
+        disabled={loading}
+        className="btn-primary w-full py-3.5 rounded-xl text-xs justify-center cursor-pointer"
+      >
+        <Heart className="w-4 h-4 fill-white" />
         <span>{loading ? 'Saving Profile...' : 'Update Donor Profile'}</span>
       </button>
     </form>

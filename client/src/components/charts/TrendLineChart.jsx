@@ -9,39 +9,36 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import useChartTheme from '../../hooks/useChartTheme';
 
 const TrendLineChart = ({ data = [] }) => {
+  const { gridStroke, axisStroke, tooltipStyle, colors } = useChartTheme();
+
   return (
     <div className="w-full h-72">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-          <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} />
-          <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#0f172a',
-              borderColor: '#334155',
-              borderRadius: '0.75rem',
-              color: '#f8fafc',
-            }}
-          />
-          <Legend wrapperStyle={{ paddingTop: '10px' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+          <XAxis dataKey="month" stroke={axisStroke} fontSize={12} tickLine={false} />
+          <YAxis stroke={axisStroke} fontSize={12} tickLine={false} />
+          <Tooltip contentStyle={tooltipStyle} />
+          <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
           <Line
             type="monotone"
             dataKey="donations"
             name="Donations Completed"
-            stroke="#10b981"
+            stroke={colors.info}
             strokeWidth={3}
-            dot={{ r: 4, fill: '#10b981' }}
+            dot={{ r: 4, fill: colors.info }}
           />
           <Line
             type="monotone"
             dataKey="requests"
             name="Requests Logged"
-            stroke="#fb7185"
-            strokeWidth={3}
-            dot={{ r: 4, fill: '#fb7185' }}
+            stroke={colors.silver}
+            strokeWidth={2.5}
+            strokeDasharray="5 5"
+            dot={{ r: 4, fill: colors.silver }}
           />
         </LineChart>
       </ResponsiveContainer>

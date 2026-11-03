@@ -1,13 +1,9 @@
 /**
- * server/src/config/inMemoryFirestore.js
+ * server/tests/helpers/inMemoryFirestore.js
  *
- * Lightning-fast In-Memory Firestore implementation for local testing.
- * Implements the exact Firestore API surfaces used by BaseRepository and services:
- * - collection(name), doc(id)
- * - get(), set(), update(), delete()
- * - where(), orderBy(), limit()
- * - runTransaction(), batch()
- * - reset() for instantaneous isolation between tests
+ * Isolated In-Memory Firestore & Auth Test Double for Jest automated tests.
+ * STRICTLY restricted to testing (NODE_ENV === 'test').
+ * Completely isolated from real Firebase credentials to guarantee tests never write to cloud.
  */
 
 const crypto = require('crypto');

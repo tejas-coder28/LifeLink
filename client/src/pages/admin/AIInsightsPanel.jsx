@@ -3,6 +3,7 @@ import { aiApi } from '../../api/aiApi';
 import InsightCard from '../../components/ai/InsightCard';
 import Card from '../../components/common/Card';
 import Loader from '../../components/common/Loader';
+import PageTransition from '../../components/common/PageTransition';
 import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 
 const AIInsightsPanel = () => {
@@ -49,14 +50,14 @@ const AIInsightsPanel = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <div className="hero-glass-card rounded-3xl p-6 sm:p-8 border border-theme flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <PageTransition className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="hero-glass-card rounded-3xl p-6 sm:p-8 border border-glass shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center space-x-2 text-rose-500 mb-1">
+          <div className="flex items-center space-x-2 text-brand-500 mb-1">
             <Sparkles className="w-5 h-5 animate-pulse" />
             <span className="text-xs font-bold uppercase tracking-wider">AI Service Layer • Predictive Intelligence</span>
           </div>
-          <h1 className="text-3xl font-black text-primary">AI Medical Logistics Insights</h1>
+          <h1 className="text-3xl font-black text-primary font-heading">AI Medical Logistics Insights</h1>
           <p className="text-secondary text-sm mt-1">
             Synthesizes live network demand, rare blood group shortages, and fulfillment analytics into actionable narrative reports.
           </p>
@@ -65,7 +66,7 @@ const AIInsightsPanel = () => {
         <button
           onClick={() => handleGenerateNew()}
           disabled={generating}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition-all flex items-center space-x-2 shrink-0 cursor-pointer"
+          className="btn-primary text-xs px-6 py-3 rounded-2xl flex items-center space-x-2 shrink-0 cursor-pointer shadow-glow-brand"
         >
           <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
           <span>{generating ? 'Synthesizing Insight...' : 'Generate Fresh Insight'}</span>
@@ -73,7 +74,7 @@ const AIInsightsPanel = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-400 text-sm flex items-center">
+        <div className="p-4 bg-danger/10 border border-danger/30 rounded-2xl text-danger text-sm flex items-center">
           <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
           {error}
         </div>
@@ -87,12 +88,12 @@ const AIInsightsPanel = () => {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="e.g. Focus analysis on rare blood group deficit risks for emergency surgical reserves..."
-            className="flex-1 bg-surface text-primary text-sm px-4 py-2.5 rounded-xl border border-theme focus:border-rose-500 focus:outline-none"
+            className="flex-1 glass-input text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-theme text-primary focus:border-brand-500 focus:outline-none"
           />
           <button
             type="submit"
             disabled={generating}
-            className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-600/30 transition-all"
+            className="btn-primary text-xs px-5 py-2.5 rounded-xl cursor-pointer"
           >
             Submit Prompt
           </button>
@@ -104,7 +105,7 @@ const AIInsightsPanel = () => {
         <Loader text="Aggregating database stats & generating narrative insights..." />
       ) : insights.length === 0 ? (
         <Card hover={false} className="text-center py-12">
-          <p className="text-black text-sm">No insights generated yet. Click above to generate your first AI report.</p>
+          <p className="text-secondary text-sm">No insights generated yet. Click above to generate your first AI report.</p>
         </Card>
       ) : (
         <div className="space-y-6">
@@ -113,7 +114,7 @@ const AIInsightsPanel = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageTransition>
   );
 };
 

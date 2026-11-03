@@ -45,8 +45,9 @@ describe('Firebase Firestore & Auth Verification Suite', () => {
       const res = await request(app).get('/api/health');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.status).toBe('operational');
+      expect(res.body.status).toBe('connected');
       expect(res.body.dbType).toBe('firestore');
+      expect(res.body.projectId).toBeDefined();
       expect(res.body.timestamp).toBeDefined();
     });
   });

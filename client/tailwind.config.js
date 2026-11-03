@@ -7,104 +7,147 @@ export default {
   ],
   theme: {
     extend: {
-      // ─── Color Palette ─────────────────────────────────────────────────
+      // ─── "Midnight Navy + Crimson + Ice" Semantic Tokens ─────────────────
       colors: {
-        // Semantic Theme Tokens (Light/Dark adaptive)
+        // Base backgrounds & surfaces
+        canvas: 'var(--canvas)',
+        surface: 'var(--surface)',
+        raised: 'var(--raised)',
+        overlay: 'var(--overlay)',
+
+        // Typography
         primary: 'var(--text-primary)',
         secondary: 'var(--text-secondary)',
         muted: 'var(--text-muted)',
-        'surface-card': 'var(--surface)',
+        hairline: 'var(--hairline)',
+
+        // Semantic states
+        danger: {
+          DEFAULT: 'var(--danger)',
+          solid: 'var(--danger-solid)',
+          hover: 'var(--danger-hover)',
+          pressed: 'var(--danger-pressed)',
+          text: 'var(--red-text)',
+        },
+        success: {
+          DEFAULT: 'var(--success)',
+        },
+        warning: {
+          DEFAULT: 'var(--warning)',
+        },
+        info: {
+          DEFAULT: 'var(--info)',
+        },
+        ice: {
+          DEFAULT: 'var(--ice)',
+        },
+        focus: 'var(--focus)',
+
+        // Backward compatibility mappings
+        crimson: {
+          DEFAULT: 'var(--danger)',
+          solid: 'var(--danger-solid)',
+          hover: 'var(--danger-hover)',
+          pressed: 'var(--danger-pressed)',
+          50:  'rgba(229, 72, 77, 0.06)',
+          100: 'rgba(229, 72, 77, 0.12)',
+          200: 'rgba(229, 72, 77, 0.20)',
+          300: 'rgba(229, 72, 77, 0.35)',
+          400: 'var(--red-text)',
+          500: 'var(--danger)',
+          600: 'var(--danger-pressed)',
+          700: 'var(--danger-pressed)',
+        },
+        'crimson-text': 'var(--red-text)',
+        'red-text': 'var(--red-text)',
+        'surface-card': 'var(--surface-card)',
         'surface-glass': 'var(--surface-glass)',
 
-        // Brand / Crimson-Rose
         brand: {
-          50:   '#fff1f2',
-          100:  '#ffe4e6',
-          200:  '#fecdd3',
-          300:  '#fda4af',
-          400:  '#fb7185',
-          500:  '#FF3352',   // glow / hover
-          600:  '#DC2626',   // primary CTA
-          700:  '#b91c1c',
-          800:  '#991b1b',
-          900:  '#7f1d1d',
-          DEFAULT: '#DC2626',
+          DEFAULT: 'var(--danger)',
+          solid: 'var(--danger-solid)',
+          50:   'rgba(229, 72, 77, 0.06)',
+          100:  'rgba(229, 72, 77, 0.12)',
+          200:  'rgba(229, 72, 77, 0.20)',
+          300:  'rgba(229, 72, 77, 0.35)',
+          400:  'var(--red-text)',
+          500:  'var(--danger)',
+          600:  'var(--danger-pressed)',
         },
-        // Dark surface layers (navy → midnight)
-        surface: {
-          DEFAULT: 'var(--surface)',
-          950: '#080D18',   // body background
-          900: '#0F1729',   // section background
-          800: '#182235',   // card background
-          700: '#1E2D44',   // elevated card / dropdown
-          600: '#243551',   // input / subtle
+
+        midnight: {
+          DEFAULT: '#0A0F1C',
+          950: '#0A0F1C',
+          900: '#111A2E',
+          850: '#18233D',
+          800: '#1F2C4A',
         },
-        // Teal — available / success states
-        teal: {
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#22C8A0',
-          600: '#0d9488',
-          700: '#0f766e',
+
+        obsidian: {
+          DEFAULT: 'var(--canvas)',
+          950: 'var(--canvas)',
+          900: 'var(--surface)',
+          800: 'var(--raised)',
         },
-        // Amber — warning / high urgency
-        amber: {
-          400: '#fbbf24',
-          500: '#F59E0B',
-          600: '#d97706',
+
+        silver: {
+          DEFAULT: 'var(--text-muted)',
+          50:  'rgba(147, 161, 189, 0.05)',
+          100: 'rgba(147, 161, 189, 0.10)',
+          200: 'rgba(147, 161, 189, 0.18)',
+          300: 'rgba(147, 161, 189, 0.30)',
+          400: 'var(--text-muted)',
+          500: 'var(--text-muted)',
+          600: 'var(--text-secondary)',
+          700: 'var(--text-secondary)',
         },
-        // Sky — info / medium urgency
-        sky: {
-          400: '#38bdf8',
-          500: '#3B9EFF',
-          600: '#0284c7',
-        },
-        // Urgency system
+
+        // Urgency mapping
         urgency: {
-          critical: '#E01515',
-          high:     '#F37020',
-          medium:   '#3B9EFF',
-          low:      '#64748b',
-        },
-        // Legacy aliases so existing pages still compile
-        lightbg: {
-          DEFAULT: '#f8fafc',
-          card:    '#ffffff',
-          hover:   '#f1f5f9',
-          border:  '#e2e8f0',
+          critical: 'var(--danger)',
+          high:     'var(--danger)',
+          medium:   'var(--warning)',
+          low:      'var(--info)',
         },
       },
 
       // ─── Typography ────────────────────────────────────────────────────
       fontFamily: {
-        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+        heading: ['"Plus Jakarta Sans"', 'Sora', 'sans-serif'],
+        sora:    ['Sora', 'sans-serif'],
         sans:    ['Inter', 'sans-serif'],
       },
 
-      // ─── Shadows ───────────────────────────────────────────────────────
+      // ─── Shadows & Glows ───────────────────────────────────────────────
       boxShadow: {
-        // Card depth on the dark background
-        'card':          '0 4px 24px rgba(0,0,0,0.40)',
-        'card-hover':    '0 8px 40px rgba(0,0,0,0.55)',
-        'elevated':      '0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)',
-        // Coloured glows
-        'glow-brand':    '0 0 32px -4px rgba(220,38,38,0.55)',
-        'glow-brand-lg': '0 0 55px -6px rgba(220,38,38,0.60)',
-        'glow-teal':     '0 0 28px -4px rgba(34,200,160,0.50)',
-        'glow-amber':    '0 0 28px -4px rgba(245,158,11,0.50)',
-        'glow-sky':      '0 0 24px -4px rgba(59,158,255,0.45)',
-        // Urgency badges
-        'urgency-critical': '0 0 14px rgba(224,21,21,0.75)',
-        'urgency-high':     '0 0 10px rgba(243,112,32,0.55)',
-        // Inner highlight for glass
-        'glass-inset':   'inset 0 1px 0 rgba(255,255,255,0.07)',
+        'elevation-canvas':   'none',
+        'elevation-base':     'var(--shadow-card)',
+        'elevation-raised':   'var(--shadow-card-hover)',
+        'elevation-floating': 'var(--shadow-elevated)',
+        'elevation-overlay':  '0 24px 64px -8px rgba(10, 15, 28, 0.85), var(--glass-specular)',
+
+        card:          'var(--shadow-card)',
+        'card-hover':  'var(--shadow-card-hover)',
+        elevated:      'var(--shadow-elevated)',
+
+        'glow-crimson':  '0 0 24px -4px rgba(229, 72, 77, 0.45)',
+        'glow-danger':   '0 0 24px -4px rgba(229, 72, 77, 0.45)',
+        'glow-info':     '0 0 24px -4px rgba(96, 165, 250, 0.35)',
+        'glow-ice':      '0 0 24px -4px rgba(165, 216, 255, 0.30)',
+        'glow-success':  '0 0 24px -4px rgba(52, 211, 153, 0.35)',
+        'glow-warning':  '0 0 24px -4px rgba(251, 191, 36, 0.35)',
+
+        'glass-inset':   'var(--glass-inset)',
+        'glass-specular': 'var(--glass-specular)',
       },
 
-      // ─── Border colours ────────────────────────────────────────────────
+      // ─── Border colors ─────────────────────────────────────────────────
       borderColor: {
-        glass:      'rgba(255,255,255,0.07)',
-        'glass-md': 'rgba(255,255,255,0.12)',
-        'glass-lg': 'rgba(255,255,255,0.18)',
+        glass:       'var(--hairline)',
+        hairline:    'var(--hairline)',
+        'glass-md':  'var(--border-strong)',
+        'glass-lg':  'var(--border-strong)',
+        'glass-top': 'var(--glass-border-highlight)',
       },
 
       // ─── Backdrop blur ─────────────────────────────────────────────────
@@ -114,102 +157,78 @@ export default {
         md:   '12px',
         lg:   '16px',
         xl:   '20px',
-        '2xl': '28px',
+        '2xl': '26px',
+        '3xl': '32px',
       },
 
-      // ─── Animations ────────────────────────────────────────────────────
+      // ─── Keyframe Animations ───────────────────────────────────────────
       animation: {
-        // Existing (kept for backward-compat)
-        'spin-slow':         'spin 12s linear infinite',
-        'spin-reverse-slow': 'spin-reverse 15s linear infinite',
-        'flip-y':            'flipY 4s ease-in-out infinite',
-        // New design-system animations
-        'fade-in':           'fadeIn 0.4s ease-out both',
-        'fade-in-up':        'fadeInUp 0.45s ease-out both',
-        'fade-in-down':      'fadeInDown 0.35s ease-out both',
+        'fade-in':           'fadeIn 0.3s ease-out both',
+        'fade-in-up':        'fadeInUp 0.4s ease-out both',
         'slide-in-right':    'slideInRight 0.35s ease-out both',
-        'scale-in':          'scaleIn 0.3s ease-out both',
-        'pulse-glow':        'pulseGlow 2s ease-in-out infinite',
-        'pulse-glow-amber':  'pulseGlowAmber 2.2s ease-in-out infinite',
-        'blob-drift':        'blobDrift 18s ease-in-out infinite alternate',
-        'blob-drift-2':      'blobDrift2 22s ease-in-out infinite alternate',
-        'blob-drift-3':      'blobDrift3 26s ease-in-out infinite alternate',
+        'scale-in':          'scaleIn 0.25s ease-out both',
+        'pulse-glow':        'pulseGlowDanger 2s ease-in-out infinite',
+        'blob-drift':        'blobDrift 40s ease-in-out infinite alternate',
+        'blob-drift-2':      'blobDrift2 48s ease-in-out infinite alternate',
+        'blob-drift-3':      'blobDrift3 42s ease-in-out infinite alternate',
+        'blob-drift-4':      'blobDrift4 35s ease-in-out infinite alternate',
         'shimmer':           'shimmer 2s linear infinite',
         'float':             'float 6s ease-in-out infinite',
       },
 
       keyframes: {
-        // Existing
-        'spin-reverse': {
-          '0%':   { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(-360deg)' },
-        },
-        flipY: {
-          '0%, 100%': { transform: 'rotateY(0deg)' },
-          '50%':      { transform: 'rotateY(180deg)' },
-        },
-        // Entrance animations
         fadeIn: {
-          from: { opacity: '0' },
-          to:   { opacity: '1' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
         fadeInUp: {
-          from: { opacity: '0', transform: 'translateY(18px)' },
-          to:   { opacity: '1', transform: 'translateY(0)' },
-        },
-        fadeInDown: {
-          from: { opacity: '0', transform: 'translateY(-12px)' },
-          to:   { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideInRight: {
-          from: { opacity: '0', transform: 'translateX(24px)' },
-          to:   { opacity: '1', transform: 'translateX(0)' },
+          '0%': { opacity: '0', transform: 'translateX(18px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         scaleIn: {
-          from: { opacity: '0', transform: 'scale(0.93)' },
-          to:   { opacity: '1', transform: 'scale(1)' },
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
-        // Glow pulses (emergency / critical)
-        pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 16px rgba(220,38,38,0.55)' },
-          '50%':      { boxShadow: '0 0 36px rgba(220,38,38,0.90), 0 0 60px rgba(220,38,38,0.30)' },
+        pulseGlowDanger: {
+          '0%, 100%': {
+            boxShadow: '0 0 16px rgba(229, 72, 77, 0.40)',
+          },
+          '50%': {
+            boxShadow: '0 0 28px rgba(229, 72, 77, 0.65), 0 0 40px rgba(229, 72, 77, 0.20)',
+          },
         },
-        pulseGlowAmber: {
-          '0%, 100%': { boxShadow: '0 0 12px rgba(245,158,11,0.40)' },
-          '50%':      { boxShadow: '0 0 28px rgba(245,158,11,0.75)' },
-        },
-        // Background blob drift (very subtle)
         blobDrift: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(40px, -30px) scale(1.08)' },
-          '100%': { transform: 'translate(-20px, 20px) scale(0.96)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px)' },
+          '50%':  { transform: 'translate3d(40px, -30px, 0px)' },
+          '100%': { transform: 'translate3d(-25px, 25px, 0px)' },
         },
         blobDrift2: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(-50px, 35px) scale(1.05)' },
-          '100%': { transform: 'translate(30px, -25px) scale(0.98)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px)' },
+          '50%':  { transform: 'translate3d(-45px, 35px, 0px)' },
+          '100%': { transform: 'translate3d(30px, -25px, 0px)' },
         },
         blobDrift3: {
-          '0%':   { transform: 'translate(0px, 0px) scale(1)' },
-          '50%':  { transform: 'translate(25px, 45px) scale(1.06)' },
-          '100%': { transform: 'translate(-35px, -20px) scale(0.97)' },
+          '0%':   { transform: 'translate3d(0px, 0px, 0px)' },
+          '50%':  { transform: 'translate3d(25px, 40px, 0px)' },
+          '100%': { transform: 'translate3d(-35px, -20px, 0px)' },
         },
-        // Skeleton shimmer
+        blobDrift4: {
+          '0%':   { transform: 'translate3d(0px, 0px, 0px)' },
+          '50%':  { transform: 'translate3d(-30px, -40px, 0px)' },
+          '100%': { transform: 'translate3d(35px, 30px, 0px)' },
+        },
         shimmer: {
           '0%':   { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        // Floating card
         float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%':      { transform: 'translateY(-8px)' },
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-6px)' },
         },
-      },
-
-      // ─── Misc ──────────────────────────────────────────────────────────
-      borderRadius: {
-        'card':  '1rem',    // 16px — standard card
-        'panel': '1.5rem',  // 24px — modals, hero
       },
     },
   },
