@@ -13,6 +13,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import AIChatWidget from './components/ai/AIChatWidget';
+import KineticGrid from './components/ui/kinetic-grid';
 
 // Public Pages
 import Home from './pages/public/Home';
@@ -106,34 +107,22 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
-            <div className="flex flex-col min-h-screen text-primary font-sans selection:bg-brand-500/30 selection:text-white transition-colors duration-250">
-              {/* Isolated hardware-accelerated ambient background */}
-              <div
-                className="fixed inset-0 pointer-events-none overflow-hidden z-[-1]"
-                style={{ contain: 'strict' }}
-                aria-hidden="true"
-              >
-                <div className="bg-noise" />
-                <div className="bg-vignette" />
-                <div className="bg-orb bg-orb-1" />
-                <div className="bg-orb bg-orb-2" />
-                <div className="bg-orb bg-orb-3" />
-                <div className="bg-orb bg-orb-4" />
+            <KineticGrid className="min-h-screen">
+              <div className="flex flex-col min-h-screen text-primary font-sans selection:bg-brand-500/30 selection:text-white transition-colors duration-250">
+                <Navbar />
+                <main className="flex-1 pt-24 sm:pt-28 pb-12">
+                  <ErrorBoundary>
+                    <AnimatedRoutes />
+                  </ErrorBoundary>
+                </main>
+                <AIChatWidget />
+                <Footer />
               </div>
-
-              <Navbar />
-            <main className="flex-1 pt-24 sm:pt-28 pb-12">
-              <ErrorBoundary>
-                <AnimatedRoutes />
-              </ErrorBoundary>
-            </main>
-            <AIChatWidget />
-            <Footer />
-          </div>
-        </Router>
-      </ToastProvider>
-    </AuthProvider>
-  </ThemeProvider>
+            </KineticGrid>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
