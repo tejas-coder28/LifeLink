@@ -150,3 +150,4 @@ describe('Gemini Service & Fallback (Phase 4)', () => {
     expect(res.actions.length).toBeGreaterThan(0);
   });
 });
+

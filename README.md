@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-177_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-231_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -236,11 +236,11 @@ LifeLink includes a rigorous automated testing and accessibility assurance suite
 
 ### Backend Automated Tests (Jest + Supertest)
 ```bash
-# Run 177 automated backend tests
+# Run 231 automated backend tests
 cd server
 npm test
 ```
-- **10 Test Suites / 177 Tests**: 100% pass rate.
+- **15 Test Suites / 231 Tests**: 100% pass rate.
 - Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, transaction integrity, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit
@@ -291,7 +291,79 @@ Seeded automatically by `npm run seed`:
 | `/api/hospitals/:id/approve`| `PUT` | `admin` | Approve registered hospital |
 | `/api/analytics` | `GET` | `admin` | Aggregate platform donation metrics and trends |
 | `/api/ai/insights` | `GET` | `admin` | Predictive regional blood supply insights |
+| `/api/ai/chat` | `POST` | Public / Auth | Role-aware, data-aware AI Assistant powered by Google Gemini |
 | `/api/health` | `GET` | Public | Backend health check and Firestore connection status |
+
+---
+
+## 🤖 LifeLink AI Assistant (Google Gemini + Keyword Router Fallback)
+
+LifeLink includes an embedded, role-aware, data-aware, and navigation-aware assistant powered by **Google Gemini** with a deterministic **Keyword Router Fallback (Provider A)**:
+
+- **Strict App-Only Scope**: The assistant exclusively answers questions relating to LifeLink (blood requests, standby donors, blood bank inventory, cooldown eligibility, and platform navigation). Any off-topic query (weather, sports, politics, math, general programming, recipes, entertainment) immediately returns a fixed, polite refusal:
+  > *"I can only help with LifeLink: blood requests, donors, inventory and finding your way around the app."*
+- **Role-Scoped Read-Only Tools**:
+  - `user` / `donor`: `getMyProfile`, `getEligibility` (90-day cooldown calculation), `getOpenRequestsForMe`, `getMyRequests`, `getMyDonationHistory`, `getMyAlerts`.
+  - `hospital`: `getInventory` (all 8 RBC groups, total, low stock $\le 3$, critical $= 0$), `getIncomingDemands`, `getActiveRequests`, `getPendingPledges`, `getMatchingDonors(requestId)`, `getMyVerificationStatus`.
+  - `admin`: `getPlatformStats`, `getPendingHospitals`, `getShortageAlerts`, `getRequestOverview`.
+  - `shared`: `getHowToGuide(topic)` (returns navigation instructions and one-click deep-link action buttons).
+- **Security & Data Isolation**:
+  - Identity parameters (`userId`, `donorId`, `hospitalId`) cannot be spoofed by the client or model; the server always injects identity directly from the verified JWT `req.user`.
+  - Hospital A cannot query requests or matching donors belonging to Hospital B (fails closed).
+  - Donors cannot see other users' contact information or exact coordinates.
+- **Immediate Greeting Shortcut**: Simple greetings ("hi", "hello", "thanks", "help") bypass external LLM calls and return an immediate role-specific greeting with 3 suggestion chips.
+- **Zero-Downtime Fallback Guarantee**: If `AI_PROVIDER=keyword`, `AI_API_KEY` is omitted, the network fails, or the request times out ($\ge 8000\text{ms}$), the server logs a single structured warning (with zero secrets) and seamlessly fulfills the user query via the rule-based keyword router (Provider A).
+
+### Chat Endpoint Reference (`POST /api/ai/chat`)
+
+- **Authentication**: Optional. If `Authorization: Bearer <token>` is provided, the session inherits the user's role and data scope; otherwise it runs in `public` mode.
+- **Rate Limit**: 20 requests per minute per IP / user session. Returns `429 Too Many Requests` when exceeded.
+- **Request Payload**:
+  ```json
+  {
+    "message": "What is our blood bank inventory?",
+    "history": [
+      { "role": "user", "content": "hello" },
+      { "role": "assistant", "content": "Welcome to LifeLink Hospital Support..." }
+    ],
+    "currentPath": "/hospital/dashboard"
+  }
+  ```
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "message": "Chat response generated",
+    "data": {
+      "reply": "Total stock: 12 units. Critical (0 units): AB-, O-. Low (1-3 units): A-.",
+      "actions": [
+        {
+          "type": "navigate",
+          "label": "Inventory Reserves",
+          "path": "/hospital/dashboard",
+          "tab": "inventory"
+        }
+      ],
+      "suggestions": [
+        "Review incoming demands",
+        "View active blood requests",
+        "Check verification status"
+      ],
+      "provider": "gemini"
+    }
+  }
+  ```
+
+### Environment Configuration
+
+Configure in `server/.env`:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AI_PROVIDER` | `gemini` | `gemini` (primary) or `keyword` (fallback-only mode) |
+| `AI_API_KEY` | None | Google Gemini API key (or `GEMINI_API_KEY`) |
+| `AI_MODEL` | `gemini-2.5-flash` | Official Google GenAI model ID |
+| `AI_TIMEOUT_MS` | `8000` | Timeout in milliseconds before falling back to Provider A |
 
 ---
 

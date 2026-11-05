@@ -86,3 +86,4 @@ describe('AI Tools Registry & Role Security', () => {
     expect(res).toHaveProperty('isEligible');
   });
 });
+
