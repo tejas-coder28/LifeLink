@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const aiService = require('../services/ai.service');
+const { generateChatReply } = require('../services/geminiService');
 const { isGreeting, handleGreeting, routeWithKeywords } = require('../services/keywordRouter');
 const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler');
 
@@ -72,15 +73,8 @@ const chat = async (req, res, next) => {
       return sendSuccess(res, 'Chat response generated', greetingResponse);
     }
 
-    // 2. Dispatch to Provider:
-    // In Phase 3: Provider A (keyword router).
-    // In Phase 4: Google Gemini (Provider B) with seamless fallback to Provider A.
-    let response;
-    if (aiService.generateChatReply) {
-      response = await aiService.generateChatReply(message, history, userContext);
-    } else {
-      response = await routeWithKeywords(message, userContext);
-    }
+    // 2. Dispatch to Provider (Google Gemini with seamless keyword router fallback)
+    const response = await generateChatReply(message, history, userContext);
 
     return sendSuccess(res, 'Chat response generated', response);
   } catch (error) {
