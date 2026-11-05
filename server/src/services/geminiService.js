@@ -10,7 +10,17 @@ const {
 } = require('./keywordRouter');
 
 const DEFAULT_TIMEOUT_MS = 8000;
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+
+/**
+ * Model fallback chain — tried in order on HTTP 429 (quota exceeded).
+ * Any other error skips directly to Provider A.
+ */
+const MODEL_CHAIN = [
+  'gemini-3.8-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+];
 
 /**
  * Resolves AI configuration and provider status.
@@ -20,14 +30,20 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
 function getAiConfig() {
   const provider = (process.env.AI_PROVIDER || 'gemini').trim().toLowerCase();
   const rawKey = (process.env.AI_API_KEY || process.env.GEMINI_API_KEY || '').trim();
-  const model = process.env.AI_MODEL || DEFAULT_MODEL;
   const timeoutMs = Number(process.env.AI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+
+  // Allow AI_MODEL to override only the primary model in the chain
+  const primaryOverride = process.env.AI_MODEL;
+  const modelChain =
+    primaryOverride && primaryOverride !== 'gemini-2.5-flash'
+      ? [primaryOverride, ...MODEL_CHAIN.filter((m) => m !== primaryOverride)]
+      : [...MODEL_CHAIN];
 
   if (provider === 'keyword') {
     return {
       enabled: false,
       provider: 'keyword',
-      model,
+      modelChain,
       timeoutMs,
       reason: 'disabled',
     };
@@ -37,7 +53,7 @@ function getAiConfig() {
     return {
       enabled: false,
       provider: 'keyword',
-      model,
+      modelChain,
       timeoutMs,
       reason: 'key missing',
     };
@@ -47,7 +63,7 @@ function getAiConfig() {
     return {
       enabled: false,
       provider: 'keyword',
-      model,
+      modelChain,
       timeoutMs,
       reason: 'placeholder',
     };
@@ -57,7 +73,7 @@ function getAiConfig() {
     enabled: true,
     provider: 'gemini',
     apiKey: rawKey,
-    model,
+    modelChain,
     timeoutMs,
     reason: null,
   };
@@ -69,7 +85,9 @@ function getAiConfig() {
 function logStartupProvider() {
   const config = getAiConfig();
   if (config.enabled) {
-    console.log(`AI provider: gemini (model ${config.model})`);
+    console.log(
+      `AI provider: gemini (model chain: ${config.modelChain.join(' → ')})`
+    );
   } else {
     console.log(`AI provider: keyword-only (${config.reason})`);
   }
@@ -123,160 +141,170 @@ async function generateChatReply(message, history = [], userContext = {}) {
     return await routeWithKeywords(message, userContext, { fallbackReason: config.reason });
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey: config.apiKey });
-    const toolDeclarations = getToolDeclarationsForRole(role);
-    const systemInstruction = buildSystemInstruction(userContext);
+  const ai = new GoogleGenAI({ apiKey: config.apiKey });
+  const toolDeclarations = getToolDeclarationsForRole(role);
+  const systemInstruction = buildSystemInstruction(userContext);
 
-    // Prepare contents
-    const contents = formatHistoryForGemini(history);
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }],
-    });
+  // 2. Iterate over model chain; advance only on HTTP 429 (quota exceeded)
+  for (let modelIndex = 0; modelIndex < config.modelChain.length; modelIndex++) {
+    const currentModel = config.modelChain[modelIndex];
 
-    const collectedActions = [];
-    let replyText = '';
-    let rounds = 0;
-    const maxRounds = 3;
+    try {
+      // Prepare contents fresh for each model attempt
+      const contents = formatHistoryForGemini(history);
+      contents.push({ role: 'user', parts: [{ text: message }] });
 
-    while (rounds < maxRounds) {
-      rounds++;
+      const collectedActions = [];
+      let replyText = '';
+      let rounds = 0;
+      const maxRounds = 3;
 
-      let timeoutHandle;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutHandle = setTimeout(
-          () => reject(new Error(`Gemini request timed out after ${config.timeoutMs}ms`)),
-          config.timeoutMs
-        );
-      });
+      while (rounds < maxRounds) {
+        rounds++;
 
-      const generatePromise = ai.models.generateContent({
-        model: config.model,
-        contents,
-        config: {
-          systemInstruction,
-          tools: toolDeclarations.length > 0 ? [{ functionDeclarations: toolDeclarations }] : undefined,
-          temperature: 0.1,
-        },
-      });
-
-      let response;
-      try {
-        response = await Promise.race([generatePromise, timeoutPromise]);
-      } finally {
-        clearTimeout(timeoutHandle);
-      }
-
-      const functionCalls = response.functionCalls;
-
-      if (functionCalls && functionCalls.length > 0) {
-        // Record model turn in conversation history
-        contents.push({
-          role: 'model',
-          parts: functionCalls.map((fc) => ({
-            functionCall: {
-              name: fc.name,
-              args: fc.args || {},
-            },
-          })),
+        let timeoutHandle;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(new Error(`Gemini request timed out after ${config.timeoutMs}ms`)),
+            config.timeoutMs
+          );
         });
 
-        // Execute function calls sequentially
-        const functionResponseParts = [];
-        for (const fc of functionCalls) {
-          try {
-            const toolResult = await executeTool(fc.name, fc.args || {}, userContext);
+        const generatePromise = ai.models.generateContent({
+          model: currentModel,
+          contents,
+          config: {
+            systemInstruction,
+            tools: toolDeclarations.length > 0 ? [{ functionDeclarations: toolDeclarations }] : undefined,
+            temperature: 0.1,
+          },
+        });
 
-            // Collect any navigation actions generated by tools
-            if (toolResult && toolResult.action) {
-              collectedActions.push(toolResult.action);
-            } else if (fc.name === 'getInventory') {
-              const act = buildAction('hospital-inventory');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getIncomingDemands') {
-              const act = buildAction('hospital-demands');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getActiveRequests') {
-              const act = buildAction('hospital-active-requests');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getEligibility' || fc.name === 'getMyProfile') {
-              const act = buildAction('donor-profile');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getOpenRequestsForMe') {
-              const act = buildAction('donor-requests');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getMyDonationHistory') {
-              const act = buildAction('donor-history');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getPlatformStats') {
-              const act = buildAction('admin-analytics');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getPendingHospitals') {
-              const act = buildAction('admin-users');
-              if (act) collectedActions.push(act);
-            } else if (fc.name === 'getShortageAlerts') {
-              const act = buildAction('admin-ai-insights');
-              if (act) collectedActions.push(act);
-            }
-
-            functionResponseParts.push({
-              functionResponse: {
-                name: fc.name,
-                response: { output: toolResult },
-              },
-            });
-          } catch (toolErr) {
-            functionResponseParts.push({
-              functionResponse: {
-                name: fc.name,
-                response: { error: toolErr.message || 'Tool execution failed' },
-              },
-            });
-          }
+        let response;
+        try {
+          response = await Promise.race([generatePromise, timeoutPromise]);
+        } finally {
+          clearTimeout(timeoutHandle);
         }
 
-        // Send function responses back to Gemini
-        contents.push({
-          role: 'user',
-          parts: functionResponseParts,
-        });
-      } else {
-        replyText = response.text || '';
-        break;
+        const functionCalls = response.functionCalls;
+
+        if (functionCalls && functionCalls.length > 0) {
+          // Record model turn in conversation history
+          contents.push({
+            role: 'model',
+            parts: functionCalls.map((fc) => ({
+              functionCall: { name: fc.name, args: fc.args || {} },
+            })),
+          });
+
+          // Execute function calls sequentially
+          const functionResponseParts = [];
+          for (const fc of functionCalls) {
+            try {
+              const toolResult = await executeTool(fc.name, fc.args || {}, userContext);
+
+              // Collect any navigation actions generated by tools
+              if (toolResult && toolResult.action) {
+                collectedActions.push(toolResult.action);
+              } else if (fc.name === 'getInventory') {
+                const act = buildAction('hospital-inventory');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getIncomingDemands') {
+                const act = buildAction('hospital-demands');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getActiveRequests') {
+                const act = buildAction('hospital-active-requests');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getEligibility' || fc.name === 'getMyProfile') {
+                const act = buildAction('donor-profile');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getOpenRequestsForMe') {
+                const act = buildAction('donor-requests');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getMyDonationHistory') {
+                const act = buildAction('donor-history');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getPlatformStats') {
+                const act = buildAction('admin-analytics');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getPendingHospitals') {
+                const act = buildAction('admin-users');
+                if (act) collectedActions.push(act);
+              } else if (fc.name === 'getShortageAlerts') {
+                const act = buildAction('admin-ai-insights');
+                if (act) collectedActions.push(act);
+              }
+
+              functionResponseParts.push({
+                functionResponse: {
+                  name: fc.name,
+                  response: { output: toolResult },
+                },
+              });
+            } catch (toolErr) {
+              functionResponseParts.push({
+                functionResponse: {
+                  name: fc.name,
+                  response: { error: toolErr.message || 'Tool execution failed' },
+                },
+              });
+            }
+          }
+
+          // Send function responses back to Gemini
+          contents.push({ role: 'user', parts: functionResponseParts });
+        } else {
+          replyText = response.text || '';
+          break;
+        }
       }
+
+      // Defensive reply validation
+      if (!replyText || typeof replyText !== 'string' || replyText.trim().length === 0) {
+        return await routeWithKeywords(message, userContext, { fallbackReason: 'empty reply' });
+      }
+
+      const trimmedReply = replyText.slice(0, 2000).trim();
+      const isRefusal = trimmedReply.includes('I can only help with LifeLink');
+      const finalActions = isRefusal ? [] : deduplicateActions(collectedActions);
+
+      return {
+        reply: trimmedReply,
+        actions: finalActions,
+        suggestions: getSuggestionsForRole(role),
+        provider: 'gemini',
+        fallbackReason: null,
+      };
+    } catch (err) {
+      const errorClass = err.constructor?.name || err.name || 'Error';
+      const statusRaw =
+        err.status ||
+        err.statusCode ||
+        (err.message && err.message.match(/\b(400|401|403|404|429|500|503)\b/)?.[0]) ||
+        'unknown';
+      const status = Number(statusRaw) || statusRaw;
+
+      if (status === 429) {
+        // Quota exceeded — try next model in chain
+        console.warn(
+          `[LifeLink AI] Quota exceeded on ${currentModel}, trying next model`
+        );
+        continue; // advance to next model
+      }
+
+      // Any other error — immediately fall back to Provider A
+      console.warn(`[LifeLink AI] Gemini failed (${errorClass} ${status})`);
+      const fallbackReason = `gemini failure (${errorClass} ${status})`;
+      return await routeWithKeywords(message, userContext, { fallbackReason });
     }
-
-    // Defensive reply validation
-    if (!replyText || typeof replyText !== 'string' || replyText.trim().length === 0) {
-      return await routeWithKeywords(message, userContext, { fallbackReason: 'empty reply' });
-    }
-
-    const trimmedReply = replyText.slice(0, 2000).trim();
-    const isRefusal = trimmedReply.includes('I can only help with LifeLink');
-    const finalActions = isRefusal ? [] : deduplicateActions(collectedActions);
-
-    return {
-      reply: trimmedReply,
-      actions: finalActions,
-      suggestions: getSuggestionsForRole(role),
-      provider: 'gemini',
-      fallbackReason: null,
-    };
-  } catch (err) {
-    // Log ONLY error class and HTTP status code - never message text or key
-    const errorClass = err.constructor?.name || err.name || 'Error';
-    const status =
-      err.status ||
-      err.statusCode ||
-      (err.message && err.message.match(/\b(400|401|403|404|429|500|503)\b/)?.[0]) ||
-      'unknown';
-
-    console.warn(`[LifeLink AI] Gemini failed (${errorClass} ${status})`);
-
-    const fallbackReason = `gemini failure (${errorClass} ${status})`;
-    return await routeWithKeywords(message, userContext, { fallbackReason });
   }
+
+  // All models in chain exhausted due to quota
+  console.warn('[LifeLink AI] All models quota exhausted, falling back to keyword router');
+  return await routeWithKeywords(message, userContext, {
+    fallbackReason: 'all models quota exhausted',
+  });
 }
 
 /**

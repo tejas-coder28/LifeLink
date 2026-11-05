@@ -82,8 +82,11 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
 
       process.env.AI_API_KEY = 'valid-key';
       process.env.AI_PROVIDER = 'gemini';
+      delete process.env.AI_MODEL; // ensure default chain is used
       logStartupProvider();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('AI provider: gemini (model gemini-2.5-flash)'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('AI provider: gemini (model chain: gemini-3.8-flash → gemini-3.6-flash → gemini-3.5-flash-lite → gemini-3.1-flash-lite)')
+      );
 
       process.env.AI_API_KEY = 'PASTE_YOUR_KEY_HERE';
       logStartupProvider();
@@ -179,6 +182,95 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       expect(res.provider).toBe('keyword');
       expect(res.fallbackReason).toContain('403');
       expect(res.actions.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Model Fallback Chain (429 Quota Handling)', () => {
+    test('HTTP 429 on first model retries second model and returns gemini provider', async () => {
+      process.env.AI_API_KEY = 'mock-key';
+      process.env.AI_PROVIDER = 'gemini';
+      delete process.env.AI_MODEL;
+
+      const quotaError = new Error('429 quota exceeded');
+      quotaError.status = 429;
+
+      const mockGenerateContent = jest.fn();
+      // First call (gemini-3.8-flash) → quota exceeded
+      mockGenerateContent.mockRejectedValueOnce(quotaError);
+      // Second call (gemini-3.6-flash) → success
+      mockGenerateContent.mockResolvedValueOnce({
+        functionCalls: null,
+        text: 'Here is your inventory data.',
+      });
+
+      GoogleGenAI.mockImplementation(() => ({
+        models: { generateContent: mockGenerateContent },
+      }));
+
+      const res = await generateChatReply('How much O+ blood do we have?', [], {
+        role: 'hospital',
+        userId: 'hosp-456',
+      });
+
+      expect(res.provider).toBe('gemini');
+      expect(res.reply).toContain('inventory');
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    });
+
+    test('HTTP 429 on ALL models falls back to keyword router with correct fallbackReason', async () => {
+      process.env.AI_API_KEY = 'mock-key';
+      process.env.AI_PROVIDER = 'gemini';
+      delete process.env.AI_MODEL;
+
+      const quotaError = new Error('429 quota exceeded');
+      quotaError.status = 429;
+
+      const mockGenerateContent = jest.fn().mockRejectedValue(quotaError);
+
+      GoogleGenAI.mockImplementation(() => ({
+        models: { generateContent: mockGenerateContent },
+      }));
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const res = await generateChatReply('How many donors are online?', [], {
+        role: 'admin',
+      });
+
+      expect(res.provider).toBe('keyword');
+      expect(res.fallbackReason).toBe('all models quota exhausted');
+      // 4 models in chain → 4 attempts
+      expect(mockGenerateContent).toHaveBeenCalledTimes(4);
+
+      warnSpy.mockRestore();
+    });
+
+    test('non-429 error on first model immediately falls back to keyword (no retry)', async () => {
+      process.env.AI_API_KEY = 'mock-key';
+      process.env.AI_PROVIDER = 'gemini';
+      delete process.env.AI_MODEL;
+
+      const forbiddenError = new Error('403 Forbidden: bad key');
+      forbiddenError.status = 403;
+
+      const mockGenerateContent = jest.fn().mockRejectedValue(forbiddenError);
+
+      GoogleGenAI.mockImplementation(() => ({
+        models: { generateContent: mockGenerateContent },
+      }));
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const res = await generateChatReply('Where is the inventory tab?', [], {
+        role: 'hospital',
+      });
+
+      expect(res.provider).toBe('keyword');
+      expect(res.fallbackReason).toContain('403');
+      // Should only have tried once — no retry on non-429
+      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+
+      warnSpy.mockRestore();
     });
   });
 
