@@ -144,7 +144,10 @@ const getLatestInsights = async (limit = 10) => {
   return insights;
 };
 
+const { generateChatReply } = require('./geminiService');
+
 module.exports = {
   generateSystemInsight,
   getLatestInsights,
+  generateChatReply,
 };
