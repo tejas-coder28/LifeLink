@@ -66,9 +66,12 @@ function initFirebase() {
     process.exit(1);
   }
 
-  const resolvedPath = path.isAbsolute(serviceAccountPath)
-    ? serviceAccountPath
-    : path.resolve(process.cwd(), serviceAccountPath);
+  const candidatePaths = [
+    path.isAbsolute(serviceAccountPath) ? serviceAccountPath : path.resolve(process.cwd(), serviceAccountPath),
+    path.resolve(__dirname, '../../', serviceAccountPath),
+    path.resolve(__dirname, '../', serviceAccountPath),
+  ];
+  const resolvedPath = candidatePaths.find((p) => fs.existsSync(p)) || candidatePaths[0];
 
   if (!fs.existsSync(resolvedPath)) {
     console.error('========================================================================');

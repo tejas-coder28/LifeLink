@@ -6,6 +6,8 @@
  * The entry-point (index.js) handles listen() and DB connection.
  */
 
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 require('dotenv').config();
 
 const express = require('express');

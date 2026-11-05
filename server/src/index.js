@@ -1,3 +1,6 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+// Fallback to default cwd .env if not found above
 require('dotenv').config();
 const connectDB = require('./config/db');
 const User = require('./repositories/user.repository');
