@@ -45,8 +45,29 @@ const authLimiter = rateLimit({
   },
 });
 
+// Role & IP aware rate limiter for AI Assistant chat endpoint (20 req/min)
+const aiChatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    if (req.user && (req.user._id || req.user.id)) {
+      return `user_${req.user._id || req.user.id}`;
+    }
+    return req.ip || 'public_ip';
+  },
+  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true' || (process.env.NODE_ENV === 'test' && process.env.TEST_RATE_LIMIT !== 'true'),
+  statusCode: 429,
+  message: {
+    success: false,
+    message: 'Rate limit exceeded: maximum 20 chat requests per minute.',
+  },
+});
+
 module.exports = {
   apiLimiter,
   aiLimiter,
   authLimiter,
+  aiChatLimiter,
 };
