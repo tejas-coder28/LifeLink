@@ -26,11 +26,17 @@ describe('AI Chat Endpoint & Provider A (Phase 3)', () => {
       expect(isGreeting('hi')).toBe(true);
       expect(isGreeting('Hello!')).toBe(true);
       expect(isGreeting('hey')).toBe(true);
+      expect(isGreeting('yo')).toBe(true);
+      expect(isGreeting('yoo')).toBe(true);
+      expect(isGreeting('sup')).toBe(true);
       expect(isGreeting('thanks')).toBe(true);
       expect(isGreeting('Thank you so much')).toBe(true);
-      expect(isGreeting('help')).toBe(true);
-      expect(isGreeting('what can you do?')).toBe(true);
+      expect(isGreeting('ok')).toBe(true);
+      expect(isGreeting('okay')).toBe(true);
+      expect(isGreeting('hey there')).toBe(true);
+      expect(isGreeting('this is which hospital')).toBe(false);
       expect(isGreeting('how many units of O+ do we have?')).toBe(false);
+      expect(isGreeting('today virat kohli birthday??')).toBe(false);
     });
 
     test('isOffTopic identifies non-LifeLink queries', () => {

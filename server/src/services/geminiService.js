@@ -13,6 +13,69 @@ const DEFAULT_TIMEOUT_MS = 8000;
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /**
+ * Resolves AI configuration and provider status.
+ * Accepts AI_API_KEY or GEMINI_API_KEY.
+ * Treats literal 'PASTE_YOUR_KEY_HERE' and empty keys as unconfigured.
+ */
+function getAiConfig() {
+  const provider = (process.env.AI_PROVIDER || 'gemini').trim().toLowerCase();
+  const rawKey = (process.env.AI_API_KEY || process.env.GEMINI_API_KEY || '').trim();
+  const model = process.env.AI_MODEL || DEFAULT_MODEL;
+  const timeoutMs = Number(process.env.AI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+
+  if (provider === 'keyword') {
+    return {
+      enabled: false,
+      provider: 'keyword',
+      model,
+      timeoutMs,
+      reason: 'disabled',
+    };
+  }
+
+  if (!rawKey) {
+    return {
+      enabled: false,
+      provider: 'keyword',
+      model,
+      timeoutMs,
+      reason: 'key missing',
+    };
+  }
+
+  if (rawKey === 'PASTE_YOUR_KEY_HERE') {
+    return {
+      enabled: false,
+      provider: 'keyword',
+      model,
+      timeoutMs,
+      reason: 'placeholder',
+    };
+  }
+
+  return {
+    enabled: true,
+    provider: 'gemini',
+    apiKey: rawKey,
+    model,
+    timeoutMs,
+    reason: null,
+  };
+}
+
+/**
+ * Startup log line - logs exactly one line on server initialization.
+ */
+function logStartupProvider() {
+  const config = getAiConfig();
+  if (config.enabled) {
+    console.log(`AI provider: gemini (model ${config.model})`);
+  } else {
+    console.log(`AI provider: keyword-only (${config.reason})`);
+  }
+}
+
+/**
  * Builds the strict LifeLink system instruction for Gemini.
  */
 function buildSystemInstruction(userContext = {}) {
@@ -52,24 +115,16 @@ function formatHistoryForGemini(history = []) {
  * Primary Gemini chat generator with role-scoped tool calling loop and Provider A fallback.
  */
 async function generateChatReply(message, history = [], userContext = {}) {
-  const providerConfig = process.env.AI_PROVIDER || 'gemini';
-  const apiKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY;
-  const timeoutMs = Number(process.env.AI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
-  const modelName = process.env.AI_MODEL || DEFAULT_MODEL;
+  const config = getAiConfig();
+  const role = userContext.role || 'public';
 
-  // 1. Off-topic check (fast failsafe)
-  if (isOffTopic(message)) {
-    return handleOffTopic(userContext);
-  }
-
-  // 2. Fallback if Gemini is disabled or API key is not configured
-  if (providerConfig === 'keyword' || !apiKey) {
-    return await routeWithKeywords(message, userContext);
+  // 1. If Gemini is not configured or disabled, immediately route via Provider A
+  if (!config.enabled) {
+    return await routeWithKeywords(message, userContext, { fallbackReason: config.reason });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const role = userContext.role || 'public';
+    const ai = new GoogleGenAI({ apiKey: config.apiKey });
     const toolDeclarations = getToolDeclarationsForRole(role);
     const systemInstruction = buildSystemInstruction(userContext);
 
@@ -88,8 +143,16 @@ async function generateChatReply(message, history = [], userContext = {}) {
     while (rounds < maxRounds) {
       rounds++;
 
+      let timeoutHandle;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error(`Gemini request timed out after ${config.timeoutMs}ms`)),
+          config.timeoutMs
+        );
+      });
+
       const generatePromise = ai.models.generateContent({
-        model: modelName,
+        model: config.model,
         contents,
         config: {
           systemInstruction,
@@ -98,17 +161,13 @@ async function generateChatReply(message, history = [], userContext = {}) {
         },
       });
 
-      let timeoutHandle;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error(`Gemini request timed out after ${timeoutMs}ms`)), timeoutMs);
-      });
-
       let response;
       try {
         response = await Promise.race([generatePromise, timeoutPromise]);
       } finally {
         clearTimeout(timeoutHandle);
       }
+
       const functionCalls = response.functionCalls;
 
       if (functionCalls && functionCalls.length > 0) {
@@ -190,13 +249,10 @@ async function generateChatReply(message, history = [], userContext = {}) {
 
     // Defensive reply validation
     if (!replyText || typeof replyText !== 'string' || replyText.trim().length === 0) {
-      // If model produced no final text, fallback to Provider A
-      return await routeWithKeywords(message, userContext);
+      return await routeWithKeywords(message, userContext, { fallbackReason: 'empty reply' });
     }
 
     const trimmedReply = replyText.slice(0, 2000).trim();
-
-    // If the model determined it was off-topic and returned the refusal
     const isRefusal = trimmedReply.includes('I can only help with LifeLink');
     const finalActions = isRefusal ? [] : deduplicateActions(collectedActions);
 
@@ -205,13 +261,21 @@ async function generateChatReply(message, history = [], userContext = {}) {
       actions: finalActions,
       suggestions: getSuggestionsForRole(role),
       provider: 'gemini',
+      fallbackReason: null,
     };
   } catch (err) {
-    // Structured warning log with NO SECRETS
-    console.warn(
-      `[LifeLink AI] Gemini provider error (${err.name || 'Error'}): ${err.message}. Seamlessly falling back to Provider A (keyword router).`
-    );
-    return await routeWithKeywords(message, userContext);
+    // Log ONLY error class and HTTP status code - never message text or key
+    const errorClass = err.constructor?.name || err.name || 'Error';
+    const status =
+      err.status ||
+      err.statusCode ||
+      (err.message && err.message.match(/\b(400|401|403|404|429|500|503)\b/)?.[0]) ||
+      'unknown';
+
+    console.warn(`[LifeLink AI] Gemini failed (${errorClass} ${status})`);
+
+    const fallbackReason = `gemini failure (${errorClass} ${status})`;
+    return await routeWithKeywords(message, userContext, { fallbackReason });
   }
 }
 
@@ -233,6 +297,8 @@ function deduplicateActions(actions = []) {
 }
 
 module.exports = {
+  getAiConfig,
+  logStartupProvider,
   generateChatReply,
   buildSystemInstruction,
   formatHistoryForGemini,

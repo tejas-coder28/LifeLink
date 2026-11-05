@@ -34,14 +34,74 @@ function getSuggestionsForRole(role) {
   return ROLE_SUGGESTIONS[norm] || ROLE_SUGGESTIONS.public;
 }
 
-const GREETING_REGEX = /^(hi|hello|hey|hiya|greetings|good\s+(morning|afternoon|evening)|thanks(\s+(a\s+lot|very\s+much))?|thank\s+you(\s+(so\s+much|very\s+much))?|thx|help|what\s+can\s+you\s+do)[\s!.,?]*$/i;
+// Single-word recognized greetings (whole-word only)
+const GREETING_WORDS = new Set([
+  'hi',
+  'hello',
+  'hey',
+  'yo',
+  'yoo',
+  'sup',
+  'thanks',
+  'thank',
+  'thx',
+  'ok',
+  'okay',
+]);
+
+// Multi-word recognized greeting phrases (up to 4 words)
+const GREETING_PHRASES = new Set([
+  'thank you',
+  'thank u',
+  'thanks a lot',
+  'thank you so much',
+  'thank you very much',
+  'hey there',
+  'hello there',
+  'good morning',
+  'good afternoon',
+  'good evening',
+  'ok thanks',
+  'okay thanks',
+]);
 
 /**
- * Check if the input is a simple greeting, thank you, or general help query.
+ * Check if the input is a recognized greeting/thanks.
+ * Enforces: Whole-word, case-insensitive, messages of 4 words or fewer only.
+ * No substring matching ("hi" inside "this"/"which").
  */
 function isGreeting(message) {
-  if (!message) return false;
-  return GREETING_REGEX.test(message.trim());
+  if (!message || typeof message !== 'string') return false;
+  const trimmed = message.trim();
+  if (!trimmed) return false;
+
+  const rawWords = trimmed.split(/\s+/);
+  if (rawWords.length > 4) return false;
+
+  // Clean each word by stripping leading and trailing punctuation
+  const cleanWords = rawWords
+    .map((w) => w.toLowerCase().replace(/^[^\w]+|[^\w]+$/g, ''))
+    .filter(Boolean);
+
+  if (cleanWords.length === 0) return false;
+
+  const phrase = cleanWords.join(' ');
+  if (GREETING_PHRASES.has(phrase)) return true;
+
+  if (cleanWords.length === 1 && GREETING_WORDS.has(cleanWords[0])) {
+    return true;
+  }
+
+  // 2-word variations starting with a greeting word
+  if (cleanWords.length === 2 && GREETING_WORDS.has(cleanWords[0])) {
+    const secondWord = cleanWords[1];
+    const allowedSecond = ['there', 'team', 'lifelink', 'bot', 'assistant', 'everyone', 'all', 'you', 'u', 'thanks'];
+    if (allowedSecond.includes(secondWord)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -76,15 +136,62 @@ function handleGreeting(userContext = {}) {
  */
 const OUT_OF_SCOPE_PATTERNS = [
   /\b(weather|forecast|rain|temperature|sunny|cloudy)\b/i,
-  /\b(cricket|football|messi|ronaldo|ipl|nba|world cup|fifa|basketball|tennis)\b/i,
+  /\b(cricket|football|messi|ronaldo|ipl|nba|world cup|fifa|basketball|tennis|virat|kohli|dhoni|rohit)\b/i,
   /\b(president|election|biden|trump|modi|politics|parliament|congress|minister)\b/i,
   /\b(calculate|math|calculus|integral|derivative|algebra|\d+\s*[\+\-\*\/]\s*\d+)\b/i,
   /\b(python|javascript|typescript|c\+\+|java\b|react\b|node\b|html\b|css\b|write\s+code|debug\s+code|programming)\b/i,
   /\b(recipe|cook|bake|pasta|pizza|cake|cookie|dinner)\b/i,
-  /\b(movie|cinema|netflix|actor|hollywood|bollywood|song|lyrics|singer|taylor swift)\b/i,
+  /\b(movie|cinema|netflix|actor|hollywood|bollywood|song|lyrics|singer|taylor swift|birthday)\b/i,
   /\b(joke|funny|riddle)\b/i,
   /\b(stock market|crypto|bitcoin|ethereum|forex)\b/i,
 ];
+
+/**
+ * LifeLink term allow-list.
+ * If a message has no tool intent and contains none of these terms, it is refused as off-topic.
+ */
+const LIFELINK_TERMS = [
+  /\bblood\b/i,
+  /\bdonor(s)?\b/i,
+  /\bdonat(e|es|ed|ing|ion|ions)\b/i,
+  /\brequest(s)?\b/i,
+  /\binventory\b/i,
+  /\bstock(s)?\b/i,
+  /\bunit(s)?\b/i,
+  /\bhospital(s)?\b/i,
+  /\bblood\s*bank(s)?\b/i,
+  /\bclinic(s)?\b/i,
+  /\bpledg(e|es|ed|ing)\b/i,
+  /\beligib(le|ility)\b/i,
+  /\bcooldown\b/i,
+  /\bstandby\b/i,
+  /\b(a|b|ab|o)[+-]\b/i,
+  /\b(a|b|ab|o)\s+(positive|negative)\b/i,
+  // Navigation tabs and router targets
+  /\boverview\b/i,
+  /\bincoming\b/i,
+  /\bactive\b/i,
+  /\bmatching\b/i,
+  /\bping(s)?\b/i,
+  /\bfor\s+you\b/i,
+  /\bprofile\b/i,
+  /\bhealth\b/i,
+  /\bhistory\b/i,
+  /\balert(s)?\b/i,
+  /\bnotification(s)?\b/i,
+  /\bcamp(s)?\b/i,
+  /\banalytics\b/i,
+  /\binsight(s)?\b/i,
+  /\bemergency\b/i,
+  /\bpatient(s)?\b/i,
+  /\bfind\s+donor(s)?\b/i,
+  /\b(where\s+is|how\s+(do\s+i|to)|take\s+me\s+to|navigate|guide)\b/i,
+];
+
+function hasLifeLinkTerm(message) {
+  if (!message || typeof message !== 'string') return false;
+  return LIFELINK_TERMS.some((regex) => regex.test(message));
+}
 
 const FIXED_REFUSAL = 'I can only help with LifeLink: blood requests, donors, inventory and finding your way around the app.';
 
@@ -93,38 +200,51 @@ function isOffTopic(message) {
   return OUT_OF_SCOPE_PATTERNS.some((regex) => regex.test(message));
 }
 
-function handleOffTopic(userContext = {}) {
+function handleOffTopic(userContext = {}, options = {}) {
   const role = userContext.role || 'public';
-  return {
+  const response = {
     reply: FIXED_REFUSAL,
     actions: [],
     suggestions: getSuggestionsForRole(role),
     provider: 'keyword',
   };
+  if (options.fallbackReason) {
+    response.fallbackReason = options.fallbackReason;
+  }
+  return response;
 }
 
 /**
  * Provider A: Rule and keyword router for LifeLink queries.
  */
-async function routeWithKeywords(message, userContext = {}) {
+async function routeWithKeywords(message, userContext = {}, options = {}) {
   const lower = (message || '').toLowerCase().trim();
   const role = userContext.role || 'public';
   const isDonorUser = ['user', 'donor', 'individual', 'recipient'].includes(role);
   const isHospital = role === 'hospital';
   const isAdmin = role === 'admin';
   const suggestions = getSuggestionsForRole(role);
+  const fallbackReason = options.fallbackReason || null;
 
-  // 1. Off-topic check
+  // 1. Off-topic check (explicit non-LifeLink keywords)
   if (isOffTopic(lower)) {
-    return handleOffTopic(userContext);
+    return handleOffTopic(userContext, options);
   }
 
   // 2. Greeting check
   if (isGreeting(lower)) {
-    return handleGreeting(userContext);
+    const greetingRes = handleGreeting(userContext);
+    if (fallbackReason) greetingRes.fallbackReason = fallbackReason;
+    return greetingRes;
   }
 
-  // 3. User / Donor specific keywords
+  // 3. LifeLink Term Allow-list Check
+  // If the message contains no LifeLink term and is not a known navigation query, refuse immediately.
+  if (!hasLifeLinkTerm(lower)) {
+    return handleOffTopic(userContext, options);
+  }
+
+  // 4. User / Donor specific keywords
   if (isDonorUser) {
     if (lower.includes('eligible') || lower.includes('cooldown') || lower.includes('can i donate')) {
       const data = await executeTool('getEligibility', {}, userContext);
@@ -135,6 +255,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -156,6 +277,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -168,6 +290,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -180,6 +303,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -192,6 +316,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -204,16 +329,17 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
   }
 
-  // 4. Hospital specific keywords
+  // 5. Hospital specific keywords
   if (isHospital) {
     if (lower.includes('inventory') || lower.includes('stock') || lower.includes('units') || lower.includes('reserves')) {
       const data = await executeTool('getInventory', {}, userContext);
       if (data.error) {
-        return { reply: data.error, actions: [], suggestions, provider: 'keyword' };
+        return { reply: data.error, actions: [], suggestions, provider: 'keyword', fallbackReason };
       }
       const crit = data.criticalGroups.length > 0 ? data.criticalGroups.join(', ') : 'None';
       const low = data.lowStockGroups.length > 0 ? data.lowStockGroups.join(', ') : 'None';
@@ -224,6 +350,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -236,6 +363,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -253,6 +381,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -265,6 +394,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -277,11 +407,12 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
   }
 
-  // 5. Admin specific keywords
+  // 6. Admin specific keywords
   if (isAdmin) {
     if (lower.includes('stat') || lower.includes('analytics') || lower.includes('summary') || lower.includes('metric')) {
       const data = await executeTool('getPlatformStats', {}, userContext);
@@ -292,6 +423,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -304,6 +436,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -317,6 +450,7 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
 
@@ -329,11 +463,12 @@ async function routeWithKeywords(message, userContext = {}) {
         actions: action ? [action] : [],
         suggestions,
         provider: 'keyword',
+        fallbackReason,
       };
     }
   }
 
-  // 6. Navigation / "Where is..." lookup
+  // 7. Navigation / "Where is..." lookup
   const guide = await executeTool('getHowToGuide', { topic: lower }, userContext);
   if (guide.found) {
     return {
@@ -341,22 +476,19 @@ async function routeWithKeywords(message, userContext = {}) {
       actions: guide.action ? [guide.action] : [],
       suggestions,
       provider: 'keyword',
+      fallbackReason,
     };
   }
 
-  // 7. General LifeLink Fallback for unrecognized keywords
-  return {
-    reply: `I can assist you with emergency blood requests, donor eligibility, inventory stock, and platform navigation. What would you like to check?`,
-    actions: [],
-    suggestions,
-    provider: 'keyword',
-  };
+  // 8. If no specific intent matched, return the fixed refusal
+  return handleOffTopic(userContext, options);
 }
 
 module.exports = {
   isGreeting,
   handleGreeting,
   isOffTopic,
+  hasLifeLinkTerm,
   handleOffTopic,
   routeWithKeywords,
   getSuggestionsForRole,

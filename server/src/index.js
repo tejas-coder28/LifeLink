@@ -4,6 +4,7 @@ const User = require('./repositories/user.repository');
 const seedData = require('./seed');
 const app = require('./app');
 const { runIndexSelfCheck } = require('./utils/indexChecker');
+const { logStartupProvider } = require('./services/geminiService');
 
 // Process stability: global unhandled promise rejection handler
 process.on('unhandledRejection', (reason, promise) => {
@@ -83,6 +84,7 @@ const server = app.listen(PORT, () => {
   console.log(`  🚀 LifeLink API Gateway & Services Running on Port ${PORT}`);
   console.log(`  Core Loop: Request → Match → Respond → Donate → AI`);
   console.log(`=======================================================`);
+  logStartupProvider();
 });
 
 server.on('error', (err) => {

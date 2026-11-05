@@ -70,13 +70,31 @@ const chat = async (req, res, next) => {
     // 1. Greeting shortcut: return immediately without model call or data query
     if (isGreeting(message)) {
       const greetingResponse = handleGreeting(userContext);
-      return sendSuccess(res, 'Chat response generated', greetingResponse);
+      const payload = {
+        reply: greetingResponse.reply,
+        actions: greetingResponse.actions || [],
+        suggestions: greetingResponse.suggestions || [],
+      };
+      if (process.env.NODE_ENV !== 'production') {
+        payload.provider = 'keyword';
+        payload.fallbackReason = null;
+      }
+      return sendSuccess(res, 'Chat response generated', payload);
     }
 
     // 2. Dispatch to Provider (Google Gemini with seamless keyword router fallback)
     const response = await generateChatReply(message, history, userContext);
+    const payload = {
+      reply: response.reply,
+      actions: response.actions || [],
+      suggestions: response.suggestions || [],
+    };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.provider = response.provider;
+      payload.fallbackReason = response.fallbackReason || null;
+    }
 
-    return sendSuccess(res, 'Chat response generated', response);
+    return sendSuccess(res, 'Chat response generated', payload);
   } catch (error) {
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
     return sendError(res, error.message, error.statusCode || 500);

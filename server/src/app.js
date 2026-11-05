@@ -6,6 +6,8 @@
  * The entry-point (index.js) handles listen() and DB connection.
  */
 
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const { apiLimiter } = require('./middleware/rateLimiter');

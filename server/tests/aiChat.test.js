@@ -245,6 +245,7 @@ describe('AI Assistant Comprehensive Suite (Phase 6)', () => {
       'Who is the current president?',
       'Can you write a python script to reverse a string?',
       'Tell me a good joke',
+      'today virat kohli birthday??',
     ];
 
     test.each(offTopicMessages)('refuses off-topic message "%s"', async (msg) => {
