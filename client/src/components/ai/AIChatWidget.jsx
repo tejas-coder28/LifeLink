@@ -266,7 +266,10 @@ const AIChatWidget = () => {
 
   const handleActionClick = (action) => {
     if (!action || !action.path) return;
-    const targetUrl = action.path + (action.tab ? `?tab=${encodeURIComponent(action.tab)}` : '');
+    let targetUrl = action.path;
+    if (action.tab && !targetUrl.includes('tab=')) {
+      targetUrl += (targetUrl.includes('?') ? '&' : '?') + `tab=${encodeURIComponent(action.tab)}`;
+    }
     navigate(targetUrl);
     if (window.innerWidth < 640) {
       setIsOpen(false);

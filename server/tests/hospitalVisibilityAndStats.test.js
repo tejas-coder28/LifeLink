@@ -210,6 +210,7 @@ describe('Completed-Only Counting for Total Donations', () => {
       .set('Authorization', `Bearer ${donorRes.token}`)
       .send({
         requestId: reqDoc._id.toString(),
+        units: 1,
         unitsDonated: 1,
       });
 

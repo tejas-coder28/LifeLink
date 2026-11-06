@@ -522,7 +522,7 @@ describe('7. Confirm Donation & Inventory Ledger Isolation', () => {
     const pledgeRes = await request(app)
       .post('/api/donations/pledge')
       .set('Authorization', `Bearer ${donor.token}`)
-      .send({ requestId, unitsDonated: 1 });
+      .send({ requestId, units: 1, unitsDonated: 1 });
 
     expect(pledgeRes.status).toBe(201);
     const donationId = pledgeRes.body.data._id;

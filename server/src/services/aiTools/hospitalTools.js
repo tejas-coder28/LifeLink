@@ -3,6 +3,7 @@ const BloodRequest = require('../../repositories/bloodRequest.repository');
 const Donation = require('../../repositories/donation.repository');
 const { BLOOD_GROUPS } = require('../../utils/bloodCompatibility');
 const { findMatchesForRequestId } = require('../matching.service');
+const { ML_PER_UNIT, formatUnits } = require('../../config/bloodUnits');
 
 /**
  * Returns inventory breakdown for all 8 blood groups, total, low stock (<= 3), and critical (= 0).
@@ -18,12 +19,18 @@ async function getInventory(context) {
     inventoryMap[item.bloodGroup] = Number(item.units) || 0;
   });
 
-  const fullInventory = BLOOD_GROUPS.map((bg) => ({
-    bloodGroup: bg,
-    units: inventoryMap[bg] || 0,
-  }));
+  const fullInventory = BLOOD_GROUPS.map((bg) => {
+    const units = inventoryMap[bg] || 0;
+    return {
+      bloodGroup: bg,
+      units,
+      volumeMl: units * ML_PER_UNIT,
+      formatted: formatUnits(units),
+    };
+  });
 
   const totalUnits = fullInventory.reduce((acc, curr) => acc + curr.units, 0);
+  const totalVolumeMl = totalUnits * ML_PER_UNIT;
   const critical = fullInventory.filter((item) => item.units === 0).map((i) => i.bloodGroup);
   const lowStock = fullInventory.filter((item) => item.units > 0 && item.units <= 3).map((i) => i.bloodGroup);
 
@@ -31,6 +38,8 @@ async function getInventory(context) {
     hospitalName: hospital.name,
     isVerified: !!hospital.isVerified,
     totalUnits,
+    totalVolumeMl,
+    formattedTotal: formatUnits(totalUnits, { useLitres: true }),
     criticalGroups: critical,
     lowStockGroups: lowStock,
     inventory: fullInventory,
@@ -59,6 +68,8 @@ async function getIncomingDemands(context) {
       patientName: req.patientName,
       bloodGroup: req.bloodGroup,
       unitsNeeded: req.unitsNeeded,
+      volumeMlNeeded: req.unitsNeeded * ML_PER_UNIT,
+      formattedUnitsNeeded: formatUnits(req.unitsNeeded),
       urgency: req.urgency,
       address: req.address || '',
       createdAt: req.createdAt ? new Date(req.createdAt).toISOString().split('T')[0] : '',
@@ -102,6 +113,8 @@ async function getActiveRequests(context) {
       patientName: req.patientName,
       bloodGroup: req.bloodGroup,
       unitsNeeded: req.unitsNeeded,
+      volumeMlNeeded: req.unitsNeeded * ML_PER_UNIT,
+      formattedUnitsNeeded: formatUnits(req.unitsNeeded),
       unitsFulfilled: req.unitsFulfilled || 0,
       urgency: req.urgency,
       matchedDonorsCount: req.matchedDonorsCount || 0,
@@ -147,6 +160,8 @@ async function getPendingPledges(context) {
       donorName: p.donor?.name || 'Anonymous Donor',
       donorBloodGroup: p.donorProfile?.bloodGroup || 'Blood Donor',
       unitsDonated: p.unitsDonated || 1,
+      volumeMlDonated: (p.unitsDonated || 1) * ML_PER_UNIT,
+      formattedUnitsDonated: formatUnits(p.unitsDonated || 1),
       pledgedAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
     })),
   };

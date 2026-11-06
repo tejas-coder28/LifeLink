@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-247_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-269_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -25,7 +25,7 @@ LifeLink is an emergency response web application powered by **Google Cloud Fire
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
 - 💎 **Liquid Glass & Spatial UI**: Apple-inspired translucent glass aesthetic with 5 spatial elevation tiers, 4 harmonic drifting atmospheric orbs, dynamic refraction filters, and full light/dark mode support.
 - 📊 **AI Insights & Platform Analytics**: Administrative dashboard with emergency response time indicators, platform health metrics, shortage prediction alerts, and an interactive AI Chatbot assistant.
-- 🧪 **Comprehensive Automated Testing & QA**: 177 automated Jest + Supertest backend tests (10 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 🧪 **Comprehensive Automated Testing & QA**: 269 automated Jest + Supertest backend tests (17 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
 
 ---
 
@@ -79,7 +79,7 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 | **Backend** | Node.js, Express.js 4, `firebase-admin` 14, JWT, bcryptjs, Zod validation |
 | **Database & Cloud** | Google Cloud Firestore (Uniform Repository Architecture), Firebase Auth |
 | **Authentication** | Custom JWT + bcryptjs & Google Login (Firebase Auth ID Token verification) |
-| **Testing & QA** | Jest, Supertest, Playwright, `@axe-core/playwright` (177 automated tests) |
+| **Testing & QA** | Jest, Supertest, Playwright, `@axe-core/playwright` (269 automated tests) |
 
 ---
 
@@ -284,15 +284,42 @@ Seeded automatically by `npm run seed`:
 | `/api/requests` | `POST` | `user`, `hospital` | Create a new emergency blood request |
 | `/api/requests/:id` | `GET` | Authenticated | Retrieve request details with live matched donors |
 | `/api/donors` | `GET` | Public / Auth | Query standby donors by blood group and radius |
-| `/api/donations/pledge` | `POST` | `user` | Pledge donation for an active emergency request |
+| `/api/donations/pledge` | `POST` | `user` | Pledge donation for an active emergency request (requires `{ requestId, units }`) |
 | `/api/donations/:id/fulfill`| `POST` | `hospital`, `admin`| Confirm donation fulfillment and update inventory |
 | `/api/hospitals/inventory` | `GET`, `PUT` | `hospital` | View and update RBC reserve units |
 | `/api/hospitals/pending` | `GET` | `admin` | View hospital accounts awaiting verification |
 | `/api/hospitals/:id/approve`| `PUT` | `admin` | Approve registered hospital |
 | `/api/analytics` | `GET` | `admin` | Aggregate platform donation metrics and trends |
 | `/api/ai/insights` | `GET` | `admin` | Predictive regional blood supply insights |
-| `/api/ai/chat` | `POST` | Public / Auth | Role-aware, data-aware AI Assistant powered by Google Gemini |
+| `/api/ai/chat` | `POST` | Public / Auth | Role-aware, data-aware AI Assistant powered by Google Gemini (strictly read-only) |
 | `/api/health` | `GET` | Public | Backend health check and Firestore connection status |
+
+---
+
+## 🩸 Blood Units & Safe Pledge Flow
+
+LifeLink implements clinical donor safety standards and volume transparency based on hospital and National Blood Transfusion Council (NBTC) guidelines:
+
+- **Shared Blood Unit Configuration (`bloodUnits.js`)**:
+  - `ML_PER_UNIT = 450`: Single whole-blood donation unit equivalent to $\approx 450\text{ ml}$.
+  - `MAX_UNITS_PER_DONOR_PER_PLEDGE = 1`: Standard whole-blood donations are strictly capped at 1 unit per donor per donation to safeguard donor health and prevent post-donation syncope.
+  - `formatUnits(n, options)`: Consistent volumetric display helper used across both server and client:
+    - `"1 unit (≈ 450 ml)"`
+    - `"2 units (≈ 900 ml)"`
+    - `"77 units (≈ 34.7 L)"` (with litres formatting for facility stock reserves $\ge 1000\text{ ml}$)
+- **Pledge Confirmation Dialog (`PledgeModal`)**:
+  - Clicking *"Respond / Pledge"* never triggers a direct API call; it opens an accessible confirmation modal.
+  - **Request Overview**: Displays patient name, medical facility, urgency badge, and units still needed with volume (`"Still needed from donors: 2 units (≈ 900 ml)"`).
+  - **Donor Eligibility Check**: Real-time evaluation of 90-day cooldown and standby availability. Ineligible donors are warned with their remaining cooldown days and next eligible date; confirmation is disabled.
+  - **Unit Selector**: Default and fixed at 1 unit with clear medical guidance.
+  - **Mandatory Health Affirmation**: Checkbox *"I confirm that I am feeling healthy today, am aged 18-65, weigh at least 50 kg, and have not donated whole blood in the last 90 days."* must be checked before confirmation is enabled.
+  - **Safe Submission**: Displays loading spinner, prevents double submission, handles errors inline, and updates card display to `"Pledged: 1 unit (≈ 450 ml)"` with a *"View Pledge"* shortcut.
+- **Strict Server Validation**:
+  - Zod schema `pledgeDonationSchema` enforces required integer `units >= 1`.
+  - Rejects missing units (`400`), units exceeding `MAX_UNITS_PER_DONOR_PER_PLEDGE` (`400`), units exceeding remaining donor shortfall (`400`), ineligible donors in cooldown or offline (`403`), and duplicate active pledges (`409`).
+- **AI Assistant Read-Only Guarantee**:
+  - The AI assistant is strictly informational and read-only; it can **never** trigger or submit a pledge.
+  - Pledge CTAs in chat navigate to `/donor/dashboard?tab=requests&request=<id>&action=pledge` as *"Review & Pledge"*, scrolling to the card and opening the modal for donor review without auto-submitting.
 
 ---
 

@@ -376,14 +376,14 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
 
       expect(res.reply).toMatch(/^Yes, 1 patient is waiting/);
       expect(res.reply).toContain('B+');
-      expect(res.reply).toContain('2 unit(s)');
+      expect(res.reply).toContain('2 units (≈ 900 ml)');
       expect(res.reply).toContain('Apollo Hospital');
       expect(res.reply).toContain('CRITICAL');
       expect(res.actions).toHaveLength(2);
       expect(res.actions[0].label).toBe('View Requests');
       expect(res.actions[0].path).toBe('/donor/dashboard');
       expect(res.actions[0].tab).toBe('requests');
-      expect(res.actions[1].label).toBe('Respond / Pledge');
+      expect(res.actions[1].label).toBe('Review & Pledge');
       expect(res.actions[1].path).toBe('/donor/dashboard');
       expect(res.actions[1].tab).toBe('requests');
 
@@ -418,14 +418,14 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       });
     };
 
-    test('"is there any request ?" -> Yes, 1 patient is waiting with [View Requests] and [Respond / Pledge]', async () => {
+    test('"is there any request ?" -> Yes, 1 patient is waiting with [View Requests] and [Review & Pledge]', async () => {
       const spy = mockDonorRequestTool();
       const res = await routeWithKeywords('is there any request ?', { role: 'donor', userId: 'd-1' });
 
-      expect(res.reply).toBe('Yes, 1 patient is waiting for your blood type: B+ needs 2 unit(s) at City General Hospital (urgency: HIGH).');
+      expect(res.reply).toBe('Yes, 1 patient is waiting for your blood type: B+ needs 2 units (≈ 900 ml) at City General Hospital (urgency: HIGH). One donation gives 1 unit (≈ 450 ml).');
       expect(res.actions).toHaveLength(2);
       expect(res.actions[0].label).toBe('View Requests');
-      expect(res.actions[1].label).toBe('Respond / Pledge');
+      expect(res.actions[1].label).toBe('Review & Pledge');
       expect(spy).toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
       spy.mockRestore();
     });

@@ -6,6 +6,7 @@ const notificationService = require('../notification.service');
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
 const { calculateHaversineDistance } = require('../../utils/geo');
 const { canSeekDonors } = require('../../utils/requestRules');
+const { ML_PER_UNIT, formatUnits } = require('../../config/bloodUnits');
 
 /**
  * Returns donor profile information for the authenticated user.
@@ -105,7 +106,11 @@ async function getOpenRequestsForMe(context) {
         patientName: req.patientName || 'Emergency Patient',
         bloodGroup: req.bloodGroup,
         unitsNeeded: req.unitsNeeded,
+        volumeMlNeeded: req.unitsNeeded * ML_PER_UNIT,
+        formattedUnitsNeeded: formatUnits(req.unitsNeeded),
         unitsFulfilled: req.unitsFulfilled || 0,
+        volumeMlFulfilled: (req.unitsFulfilled || 0) * ML_PER_UNIT,
+        formattedUnitsFulfilled: formatUnits(req.unitsFulfilled || 0),
         urgency: req.urgency,
         hospitalName: req.targetHospital?.name || 'LifeLink Medical Center',
         address: req.address || req.targetHospital?.address || 'City Center',

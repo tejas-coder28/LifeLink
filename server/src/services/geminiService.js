@@ -226,7 +226,12 @@ async function generateChatReply(message, history = [], userContext = {}) {
                   const viewAct = buildAction('donor-requests', { label: 'View Requests' });
                   if (viewAct) collectedActions.push(viewAct);
                   if (toolResult && toolResult.totalMatchingRequests === 1) {
-                    const pledgeAct = buildAction('donor-requests', { label: 'Respond / Pledge' });
+                    const top = toolResult.requests && toolResult.requests[0];
+                    const reqId = top ? (top.id || top._id) : '';
+                    const pledgeAct = buildAction('donor-requests', {
+                      label: 'Review & Pledge',
+                      query: reqId ? { request: reqId, action: 'pledge' } : undefined,
+                    });
                     if (pledgeAct) collectedActions.push(pledgeAct);
                   }
                 } else if (fc.name === 'getMyDonationHistory') {

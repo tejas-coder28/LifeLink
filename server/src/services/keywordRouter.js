@@ -1,4 +1,5 @@
 const { buildAction } = require('../config/aiNavigation');
+const { formatUnits } = require('../config/bloodUnits');
 const aiTools = require('./aiTools');
 
 const ROLE_SUGGESTIONS = {
@@ -421,20 +422,23 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
         const top = (data.requests && data.requests[0]) || {};
         const reqBg = top.bloodGroup || bg;
         const units = top.unitsNeeded || 1;
-        const hospital = top.hospitalName || 'City General Hospital';
+        const hospital = top.hospitalName || 'City General Emergency Hospital';
         const urgency = (top.urgency || 'HIGH').toUpperCase();
-        reply = `Yes, 1 patient is waiting for your blood type: ${reqBg} needs ${units} unit(s) at ${hospital} (urgency: ${urgency}).`;
+        reply = `Yes, 1 patient is waiting for your blood type: ${reqBg} needs ${formatUnits(units)} at ${hospital} (urgency: ${urgency}). One donation gives ${formatUnits(1)}.`;
         const viewAct = buildAction('donor-requests', { label: 'View Requests' });
-        const pledgeAct = buildAction('donor-requests', { label: 'Respond / Pledge' });
+        const pledgeAct = buildAction('donor-requests', {
+          label: 'Review & Pledge',
+          query: { request: top.id || top._id, action: 'pledge' },
+        });
         if (viewAct) actions.push(viewAct);
         if (pledgeAct) actions.push(pledgeAct);
       } else {
         const top = (data.requests && data.requests[0]) || {};
         const reqBg = top.bloodGroup || bg;
         const units = top.unitsNeeded || 1;
-        const hospital = top.hospitalName || 'City General Hospital';
+        const hospital = top.hospitalName || 'City General Emergency Hospital';
         const urgency = (top.urgency || 'HIGH').toUpperCase();
-        reply = `Yes, ${count} patients are waiting for your blood type: ${reqBg} needs ${units} unit(s) at ${hospital} (urgency: ${urgency}).`;
+        reply = `Yes, ${count} patients are waiting for your blood type: ${reqBg} needs ${formatUnits(units)} at ${hospital} (urgency: ${urgency}). One donation gives ${formatUnits(1)}.`;
         const viewAct = buildAction('donor-requests', { label: 'View Requests' });
         if (viewAct) actions.push(viewAct);
       }
@@ -500,7 +504,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
       }
       const crit = data.criticalGroups.length > 0 ? data.criticalGroups.join(', ') : 'None';
       const low = data.lowStockGroups.length > 0 ? data.lowStockGroups.join(', ') : 'None';
-      const reply = `Total stock: ${data.totalUnits} units. Critical (0 units): ${crit}. Low (1-3 units): ${low}.`;
+      const reply = `Total stock: ${formatUnits(data.totalUnits, { useLitres: true })}. Critical (0 units): ${crit}. Low (1-3 units): ${low}.`;
       const action = buildAction('hospital-inventory');
       return {
         reply,
@@ -533,7 +537,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
         reply = `0 active requests. Your hospital has not broadcast any open blood requests to community donors right now.`;
       } else {
         const topList = (data.activeRequests || []).slice(0, 2).map((r) =>
-          `${r.bloodGroup} (${r.unitsNeeded} unit(s), urgency: ${r.urgency})`
+          `${r.bloodGroup} (${formatUnits(r.unitsNeeded)}, urgency: ${r.urgency})`
         ).join('; ');
         reply = `Your hospital has ${data.totalActive} active emergency blood request(s) broadcast to community donors${topList ? ': ' + topList : ''}.`;
       }

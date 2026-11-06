@@ -20,6 +20,7 @@ import InventoryForm from '../../components/forms/InventoryForm';
 import { compatibleDonorGroups } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { createSmartPolling } from '../../utils/networkHealth';
+import { formatUnits } from '../../constants/bloodUnits';
 
 import {
   Building2,
@@ -864,7 +865,7 @@ const HospitalDashboard = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-2xl bg-surface/80 border border-theme">
                       <div>
                         <span className="text-muted block font-semibold text-[10px] uppercase">Units Needed</span>
-                        <span className="font-extrabold text-primary text-sm">{req.unitsNeeded} unit(s)</span>
+                        <span className="font-extrabold text-primary text-sm">{formatUnits(req.unitsNeeded)}</span>
                       </div>
                       <div>
                         <span className="text-muted block font-semibold text-[10px] uppercase">Required By</span>
@@ -942,9 +943,9 @@ const HospitalDashboard = () => {
                     ) : (
                       /* Status details for already reviewed requests */
                       <div className="pt-2 text-xs flex items-center justify-between text-secondary">
-                        <span>Allocated from stock: <strong>{req.unitsFromStock || 0}</strong></span>
-                        <span>Shortfall to donors: <strong>{req.unitsFromDonors || 0}</strong></span>
-                        <span>Fulfilled: <strong>{req.unitsFulfilled || 0}/{req.unitsNeeded}</strong></span>
+                        <span>Allocated from stock: <strong>{formatUnits(req.unitsFromStock || 0)}</strong></span>
+                        <span>Shortfall to donors: <strong>{formatUnits(req.unitsFromDonors || 0)}</strong></span>
+                        <span>Fulfilled: <strong>{formatUnits(req.unitsFulfilled || 0)} / {formatUnits(req.unitsNeeded)}</strong></span>
                       </div>
                     )}
                   </div>

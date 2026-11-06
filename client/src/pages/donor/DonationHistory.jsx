@@ -4,6 +4,7 @@ import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import { Heart, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { requestApi } from '../../api/requestApi';
+import { formatUnits } from '../../constants/bloodUnits';
 
 const DonationHistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -74,8 +75,8 @@ const DonationHistoryPage = () => {
               </div>
 
               <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                <span className="text-base font-black text-success block tracking-tight">
-                  {item.unitsDonated} Unit(s)
+                <span className="text-sm font-black text-success block tracking-tight">
+                  {formatUnits(item.unitsDonated || 1)}
                 </span>
                 <span className="text-[11px] text-muted block font-mono mt-0.5">
                   ID: {item._id.slice(-6)}

@@ -74,7 +74,7 @@ export const AI_NAVIGATION_ENTRIES = [
     title: 'Community Requests',
     path: '/donor/dashboard',
     tab: 'requests',
-    keywords: ['community requests', 'live requests', 'open requests', 'blood requests', 'requests'],
+    keywords: ['community requests', 'live requests', 'open requests', 'blood requests', 'requests', 'request'],
     description: 'Browse live open blood requests from patients and hospitals.',
   },
   {
@@ -265,6 +265,19 @@ export function buildAction(entryId, options = {}) {
 
   if (entry.tab) {
     action.tab = entry.tab;
+  }
+
+  if (options.query) {
+    const queryParams = new URLSearchParams();
+    Object.entries(options.query).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') {
+        queryParams.set(k, v);
+      }
+    });
+    const qs = queryParams.toString();
+    if (qs) {
+      action.query = qs;
+    }
   }
 
   return action;
