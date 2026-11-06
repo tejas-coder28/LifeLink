@@ -1,4 +1,5 @@
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { ML_PER_UNIT, MAX_UNITS_PER_DONOR_PER_PLEDGE, formatUnits } = require('../config/bloodUnits');
 const Donation = require('../repositories/donation.repository');
 const DonorProfile = require('../repositories/donorProfile.repository');
 const BloodRequest = require('../repositories/bloodRequest.repository');
@@ -9,7 +10,21 @@ const { getDb } = require('../config/db');
 
 const COOLDOWN_DAYS = DONATION_COOLDOWN_DAYS;
 
-const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
+const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
+  // Validate units
+  const pledgeUnits = Number(unitsDonated);
+  if (!unitsDonated || isNaN(pledgeUnits) || pledgeUnits < 1 || !Number.isInteger(pledgeUnits)) {
+    const err = new Error('Pledge units is required and must be an integer greater than or equal to 1');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (pledgeUnits > MAX_UNITS_PER_DONOR_PER_PLEDGE) {
+    const err = new Error(`Maximum allowed donation per pledge is ${MAX_UNITS_PER_DONOR_PER_PLEDGE} unit(s).`);
+    err.statusCode = 400;
+    throw err;
+  }
+
   const request = await BloodRequest.findById(requestId);
   if (!request) {
     const err = new Error('Blood request not found');
@@ -20,6 +35,22 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
   // Only open, matching, or partially_fulfilled requests can accept pledges
   if (!['open', 'matching', 'partially_fulfilled'].includes(request.status)) {
     const err = new Error(`Cannot pledge to blood request with status '${request.status}'`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Calculate remaining units needed from donors
+  const totalNeeded = Number(request.unitsNeeded || request.unitsRequired || request.units || 1);
+  const fromStock = Number(request.unitsFromStock || 0);
+  const neededFromDonors = request.unitsFromDonors !== undefined && request.unitsFromDonors !== null && request.unitsFromDonors > 0
+    ? Number(request.unitsFromDonors)
+    : Math.max(0, totalNeeded - fromStock);
+  const fulfilledUnits = Number(request.unitsFulfilled || 0);
+  const donorFulfilled = Math.max(0, fulfilledUnits - fromStock);
+  const stillNeeded = Math.max(0, neededFromDonors - donorFulfilled);
+
+  if (stillNeeded <= 0 || pledgeUnits > stillNeeded) {
+    const err = new Error(`Pledge of ${pledgeUnits} unit(s) exceeds remaining needed units from donors (${stillNeeded} unit(s) remaining).`);
     err.statusCode = 400;
     throw err;
   }
@@ -55,7 +86,14 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
     }
   }
 
-  // 3. Duplicate check: reject if duplicate pledge on the same request
+  // Standby / availability check
+  if (donorProfile.isAvailable === false) {
+    const err = new Error('Donor is currently marked as unavailable/standby offline. Please toggle your standby status online to pledge.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // 3. Duplicate check: reject with 409 if duplicate pledge on the same request
   const existingPledges = await Donation.find({
     donor: donorUserId,
     request: requestId,
@@ -64,7 +102,7 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
   const duplicate = existingPledges.find(p => ['pledged', 'completed'].includes(p.status));
   if (duplicate) {
     const err = new Error('You have already pledged or completed a donation for this request');
-    err.statusCode = 400;
+    err.statusCode = 409;
     throw err;
   }
 
@@ -72,7 +110,7 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
     donor: donorUserId,
     donorProfile: donorProfile ? donorProfile._id : null,
     request: requestId,
-    unitsDonated: Number(unitsDonated) || 1,
+    unitsDonated: pledgeUnits,
     status: 'pledged',
   });
 
@@ -86,7 +124,7 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated = 1) => {
   await Notification.create({
     recipient: request.requester,
     title: '❤️ A Donor Has Pledged to Help!',
-    message: `A donor has pledged to donate ${unitsDonated} unit(s) of ${request.bloodGroup} for ${request.patientName}.`,
+    message: `A donor has pledged to donate ${formatUnits(pledgeUnits)} of ${request.bloodGroup} for ${request.patientName}.`,
     type: 'status_update',
     link: `/requests/${request._id}`,
   });

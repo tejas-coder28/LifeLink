@@ -116,7 +116,14 @@ Replaced vibrant violet/teal/sky with harmonized clinical tones:
 2. **GlassNavbar**: Floating pill structure (`top-4`, `mx-auto`, `max-w-7xl`). Shrinks on scroll.
 3. **GlassModal**: Teleport to `document.body` via React portal. Full-screen backdrop blur overlay, body scroll lock, Esc key handler, spring scale-in.
 4. **GlassInput & GlassSelect**: Always use semantic tokens for border, text, and surface. Native `<select>` must declare `color-scheme: light dark` and `<option>` elements must receive theme-aware background.
-5. **Motion Guidelines**:
+5. **AIChatWidget (LifeLink AI Assistant)**:
+   - **Floating Placement**: Bottom-right floating pill (`fixed bottom-6 right-6 z-40`, Level 3 spatial elevation) with backdrop blur and active network indicator.
+   - **User Bubbles**: Solid filled `bg-raised` with hairline border and `text-primary` (`rounded-2xl rounded-br-none`).
+   - **Assistant Bubbles**: Surface container `bg-surface` with hairline border and `text-primary` (`rounded-2xl rounded-bl-none`).
+   - **One-Click Action Buttons**: Info/Ice secondary pills (`bg-info/10 hover:bg-info/20 text-info border border-info/30`) with navigation icons, triggering React Router deep-links without reloading.
+   - **Role Suggestion Chips**: Horizontal scrollable container with `bg-raised` chips and `hover:border-info/40` transitions.
+   - **Accessibility & Keyboard**: `role="log"` and `aria-live="polite"` on message list; Esc key closes widget; Enter sends message without Shift key.
+6. **Motion Guidelines**:
    - Only animate `transform` and `opacity`.
    - Micro-interactions max `250ms`.
    - Never stack more than 2 blurred layers.

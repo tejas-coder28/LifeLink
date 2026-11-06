@@ -36,8 +36,6 @@ const Home = () => {
   const [stats, setStats] = useState(null);
   const [openRequests, setOpenRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pledgingId, setPledgingId] = useState(null);
-  const [pledgeMsg, setPledgeMsg] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,28 +61,13 @@ const Home = () => {
     fetchData();
   }, []);
 
-  const handlePledge = async (requestId) => {
+  const handlePledge = (requestId) => {
+    const targetUrl = `/donor/dashboard?tab=requests&request=${requestId}&action=pledge`;
     if (!user) {
-      navigate('/login?redirect=/');
+      navigate(`/login?redirect=${encodeURIComponent(targetUrl)}`);
       return;
     }
-
-    setPledgingId(requestId);
-    setPledgeMsg('');
-    try {
-      const res = await requestApi.pledgeDonation({ requestId, unitsDonated: 1 });
-      if (res.data && res.data.success) {
-        setPledgeMsg('Donation pledged! Thank you for stepping up to save a life.');
-        const updated = await requestApi.getRequests({ status: 'open' });
-        if (updated.data && updated.data.success) {
-          setOpenRequests(updated.data.data.slice(0, 4));
-        }
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to pledge donation');
-    } finally {
-      setPledgingId(null);
-    }
+    navigate(targetUrl);
   };
 
   return (
@@ -240,13 +223,6 @@ const Home = () => {
           </Link>
         </div>
 
-        {pledgeMsg && (
-          <div className="p-4 rounded-2xl text-xs sm:text-sm font-semibold flex items-center bg-surface border border-hairline text-primary">
-            <CheckCircle2 className="w-5 h-5 mr-2.5 shrink-0 text-success" />
-            <span>{pledgeMsg}</span>
-          </div>
-        )}
-
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Skeleton variant="card" />
@@ -267,7 +243,6 @@ const Home = () => {
                 <RequestCard
                   request={req}
                   onPledge={handlePledge}
-                  isPledging={pledgingId === req._id}
                   pledgeText="Pledge Donation"
                 />
               </StaggerItem>

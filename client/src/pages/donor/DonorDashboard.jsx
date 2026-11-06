@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -16,11 +16,13 @@ import Modal from '../../components/common/Modal';
 import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
+import PledgeModal from '../../components/forms/PledgeModal';
 import PageTransition from '../../components/common/PageTransition';
 import SlidingTabs from '../../components/common/SlidingTabs';
 import Skeleton from '../../components/common/Skeleton';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
+import { formatUnits } from '../../constants/bloodUnits';
 
 import {
   Heart,
@@ -67,7 +69,10 @@ const DonorDashboard = () => {
 
   // Modal State
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [pledgingId, setPledgingId] = useState(null);
+  const [pledgeModalRequest, setPledgeModalRequest] = useState(null);
+  const [isSubmittingPledge, setIsSubmittingPledge] = useState(false);
+  const [pledgeError, setPledgeError] = useState(null);
+  const [highlightedRequestId, setHighlightedRequestId] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [respondingPingId, setRespondingPingId] = useState(null);
 
@@ -198,23 +203,93 @@ const DonorDashboard = () => {
     }
   };
 
-  const handlePledge = async (requestId) => {
-    setPledgingId(requestId);
+  const pledgedUnitsByRequestId = useMemo(() => {
+    const map = {};
+    (donationHistory || []).forEach((d) => {
+      if (['pledged', 'completed'].includes(d.status)) {
+        const reqId = (d.request?._id || d.request)?.toString();
+        if (reqId) {
+          map[reqId] = d.unitsDonated || d.units || 1;
+        }
+      }
+    });
+    return map;
+  }, [donationHistory]);
+
+  const pledgedRequestIds = useMemo(() => {
+    return new Set(Object.keys(pledgedUnitsByRequestId));
+  }, [pledgedUnitsByRequestId]);
+
+  const handleOpenPledgeModal = (req) => {
+    const reqId = (req._id || req.id)?.toString();
+    if (pledgedUnitsByRequestId[reqId]) {
+      showSuccess(`You have already pledged ${formatUnits(pledgedUnitsByRequestId[reqId])} to this request.`);
+      setTab('history');
+      return;
+    }
+    setPledgeError(null);
+    setPledgeModalRequest(req);
+  };
+
+  const handleConfirmPledge = async ({ requestId, units }) => {
+    setIsSubmittingPledge(true);
+    setPledgeError(null);
     try {
-      const res = await requestApi.pledgeDonation({ requestId, unitsDonated: 1 });
+      const res = await requestApi.pledgeDonation({ requestId, units });
       if (res.data && res.data.success) {
-        showSuccess('Donation pledged! Thank you for stepping up to save a life.');
-        fetchLiveRequests();
-        fetchDonorProfile();
-        fetchHistory();
+        showSuccess(`Donation pledged: ${formatUnits(units)}! Thank you for stepping up to save a life.`);
+        setPledgeModalRequest(null);
+        const currentParams = new URLSearchParams(searchParams);
+        if (currentParams.get('action') === 'pledge') {
+          currentParams.delete('action');
+          currentParams.delete('request');
+          setSearchParams(currentParams, { replace: true });
+        }
+        await Promise.all([
+          fetchLiveRequests(),
+          fetchDonorProfile(),
+          fetchHistory(),
+        ]);
         if (selectedRequest) setSelectedRequest(null);
       }
     } catch (err) {
-      showError(err.response?.data?.message || 'Failed to pledge donation');
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.message || 'Failed to pledge donation';
+      setPledgeError(msg);
+      showError(msg);
     } finally {
-      setPledgingId(null);
+      setIsSubmittingPledge(false);
     }
   };
+
+  // Handle AI navigation / URL params: /donor/dashboard?tab=requests&request=<id>&action=pledge
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const targetId = searchParams.get('request');
+    if (action === 'pledge' && targetId && liveRequests.length > 0) {
+      const targetReq = liveRequests.find((r) => (r._id || r.id)?.toString() === targetId);
+      if (targetReq) {
+        setHighlightedRequestId(targetId);
+        setTimeout(() => {
+          const el = document.getElementById(`request-card-${targetId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+
+        // Open modal only if not already pledged
+        const alreadyPledged = Boolean(pledgedUnitsByRequestId[targetId]);
+        if (!alreadyPledged) {
+          setPledgeError(null);
+          setPledgeModalRequest(targetReq);
+        }
+
+        const timer = setTimeout(() => {
+          setHighlightedRequestId(null);
+        }, 4000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [searchParams, liveRequests, pledgedUnitsByRequestId]);
 
   const handleProfileSubmit = async (formData) => {
     setUpdatingProfile(true);
@@ -242,13 +317,6 @@ const DonorDashboard = () => {
       console.error('Failed to mark read:', err);
     }
   };
-
-  // Set of request IDs the donor has already pledged to or completed
-  const pledgedRequestIds = new Set(
-    (donationHistory || [])
-      .filter((d) => ['pledged', 'completed'].includes(d.status))
-      .map((d) => (d.request?._id || d.request)?.toString())
-  );
 
   const donorTabs = [
     { id: 'overview',       icon: Activity,  label: 'Overview' },
@@ -415,19 +483,27 @@ const DonorDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {liveRequests.slice(0, 4).map((req) => {
-                  const hasPledged = pledgedRequestIds.has(req._id?.toString());
+                  const reqId = (req._id || req.id)?.toString();
+                  const hasPledged = pledgedRequestIds.has(reqId);
+                  const myPledgedUnits = pledgedUnitsByRequestId[reqId];
                   return (
-                    <RequestCard
+                    <div
                       key={req._id}
-                      request={req}
-                      isDonorCard={true}
-                      donorBloodGroup={profile?.bloodGroup}
-                      onSelect={setSelectedRequest}
-                      onPledge={handlePledge}
-                      isPledging={pledgingId === req._id}
-                      isPledged={hasPledged}
-                      pledgeText={hasPledged ? 'Pledged ✓' : 'Respond / Pledge'}
-                    />
+                      id={`request-card-${reqId}`}
+                      className={highlightedRequestId === reqId ? 'ring-2 ring-danger ring-offset-2 ring-offset-background rounded-2xl transition-all duration-300' : ''}
+                    >
+                      <RequestCard
+                        request={req}
+                        isDonorCard={true}
+                        donorBloodGroup={profile?.bloodGroup}
+                        onSelect={setSelectedRequest}
+                        onPledge={() => handleOpenPledgeModal(req)}
+                        isPledged={hasPledged}
+                        pledgedAmount={myPledgedUnits}
+                        onViewPledge={() => setTab('history')}
+                        pledgeText="Respond / Pledge"
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -453,19 +529,27 @@ const DonorDashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {liveRequests.map((req) => {
-                const hasPledged = pledgedRequestIds.has(req._id?.toString());
+                const reqId = (req._id || req.id)?.toString();
+                const hasPledged = pledgedRequestIds.has(reqId);
+                const myPledgedUnits = pledgedUnitsByRequestId[reqId];
                 return (
-                  <RequestCard
+                  <div
                     key={req._id}
-                    request={req}
-                    isDonorCard={true}
-                    donorBloodGroup={profile?.bloodGroup}
-                    onSelect={setSelectedRequest}
-                    onPledge={handlePledge}
-                    isPledging={pledgingId === req._id}
-                    isPledged={hasPledged}
-                    pledgeText={hasPledged ? 'Pledged ✓' : 'Respond / Pledge'}
-                  />
+                    id={`request-card-${reqId}`}
+                    className={highlightedRequestId === reqId ? 'ring-2 ring-danger ring-offset-2 ring-offset-background rounded-2xl transition-all duration-300' : ''}
+                  >
+                    <RequestCard
+                      request={req}
+                      isDonorCard={true}
+                      donorBloodGroup={profile?.bloodGroup}
+                      onSelect={setSelectedRequest}
+                      onPledge={() => handleOpenPledgeModal(req)}
+                      isPledged={hasPledged}
+                      pledgedAmount={myPledgedUnits}
+                      onViewPledge={() => setTab('history')}
+                      pledgeText="Respond / Pledge"
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -529,8 +613,8 @@ const DonorDashboard = () => {
                   </div>
 
                   <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                    <span className="text-base font-black text-success block tracking-tight">
-                      {item.unitsDonated} Unit(s)
+                    <span className="text-sm font-black text-success block tracking-tight">
+                      {formatUnits(item.unitsDonated || 1)}
                     </span>
                     <span className="text-[11px] text-muted block font-mono mt-0.5">
                       ID: {item._id.slice(-6)}
@@ -699,7 +783,7 @@ const DonorDashboard = () => {
                     <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-2.5 text-xs text-secondary">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-muted">Units Required:</span>
-                        <span className="font-extrabold text-primary">{req.unitsNeeded || 1} Packet(s)</span>
+                        <span className="font-extrabold text-primary">{formatUnits(req.unitsNeeded || 1)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-muted shrink-0">Location:</span>
@@ -777,7 +861,7 @@ const DonorDashboard = () => {
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="block font-semibold mb-0.5 text-muted">Units Required</span>
-                <span className="font-bold text-primary text-sm">{selectedRequest.unitsNeeded} Packets</span>
+                <span className="font-bold text-primary text-sm">{formatUnits(selectedRequest.unitsNeeded || 1)}</span>
               </div>
               <div>
                 <span className="block font-semibold mb-0.5 text-muted">Required By</span>
@@ -797,6 +881,10 @@ const DonorDashboard = () => {
 
             {(() => {
               const isComp = profile?.bloodGroup ? canDonate(profile.bloodGroup, selectedRequest.bloodGroup) : true;
+              const reqId = (selectedRequest._id || selectedRequest.id)?.toString();
+              const hasPledged = pledgedRequestIds.has(reqId);
+              const myPledgedUnits = pledgedUnitsByRequestId[reqId];
+
               return (
                 <div className="space-y-2">
                   {!isComp && (
@@ -804,30 +892,73 @@ const DonorDashboard = () => {
                       Your blood group ({profile?.bloodGroup}) is not compatible with patient need ({selectedRequest.bloodGroup}).
                     </p>
                   )}
-                  <button
-                    onClick={() => isComp && handlePledge(selectedRequest._id)}
-                    disabled={pledgingId === selectedRequest._id || !isComp}
-                    className={`w-full py-3.5 rounded-xl text-xs justify-center flex items-center gap-2 transition-all ${
-                      !isComp
-                        ? 'bg-surface text-muted cursor-not-allowed border border-hairline'
-                        : 'btn-primary'
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-muted'}`} />
-                    <span>
-                      {pledgingId === selectedRequest._id
-                        ? 'Pledging...'
-                        : !isComp
-                        ? 'Not compatible with your blood group'
-                        : 'Confirm & Pledge Donation'}
-                    </span>
-                  </button>
+                  {hasPledged ? (
+                    <div className="p-3 rounded-xl bg-surface border border-hairline flex items-center justify-between">
+                      <span className="text-xs font-bold text-success flex items-center gap-1.5">
+                        <Check className="w-4 h-4" />
+                        Pledged: {formatUnits(myPledgedUnits || 1)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedRequest(null);
+                          setTab('history');
+                        }}
+                        className="btn-secondary text-xs px-3 py-1.5 rounded-xl cursor-pointer"
+                      >
+                        View in History
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (isComp) {
+                          const req = selectedRequest;
+                          setSelectedRequest(null);
+                          handleOpenPledgeModal(req);
+                        }
+                      }}
+                      disabled={!isComp}
+                      className={`w-full py-3.5 rounded-xl text-xs justify-center flex items-center gap-2 transition-all cursor-pointer ${
+                        !isComp
+                          ? 'bg-surface text-muted cursor-not-allowed border border-hairline'
+                          : 'btn-primary'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isComp ? 'fill-white' : 'text-muted'}`} />
+                      <span>
+                        {!isComp
+                          ? 'Not compatible with your blood group'
+                          : 'Respond / Pledge'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               );
             })()}
           </div>
         )}
       </Modal>
+
+      {/* Pledge Confirmation Dialog */}
+      <PledgeModal
+        isOpen={Boolean(pledgeModalRequest)}
+        onClose={() => {
+          setPledgeModalRequest(null);
+          setPledgeError(null);
+          const currentParams = new URLSearchParams(searchParams);
+          if (currentParams.get('action') === 'pledge') {
+            currentParams.delete('action');
+            currentParams.delete('request');
+            setSearchParams(currentParams, { replace: true });
+          }
+        }}
+        request={pledgeModalRequest}
+        donorProfile={profile}
+        onConfirm={handleConfirmPledge}
+        isSubmitting={isSubmittingPledge}
+        error={pledgeError}
+      />
     </PageTransition>
   );
 };

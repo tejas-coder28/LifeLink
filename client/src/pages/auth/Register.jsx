@@ -23,7 +23,7 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const Register = () => {
   const { register } = useAuth();
-  const { showError, showSuccess } = useToast();
+  const { showSuccess } = useToast();
   const navigate = useNavigate();
 
   const [accountType, setAccountType] = useState('user'); // 'user' (donor) or 'hospital'
@@ -66,7 +66,6 @@ const Register = () => {
     } catch (err) {
       const errMsg = err.response?.data?.message || err.message || 'Registration failed';
       setError(errMsg);
-      showError(errMsg);
     } finally {
       setLoading(false);
     }

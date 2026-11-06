@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const aiController = require('../controllers/ai.controller');
-const { protect } = require('../middleware/auth.middleware');
-const { aiLimiter } = require('../middleware/rateLimiter');
+const { protect, optionalProtect } = require('../middleware/auth.middleware');
+const { aiLimiter, aiChatLimiter } = require('../middleware/rateLimiter');
 
-// Protect all AI routes with strict rate limiter
-router.use(aiLimiter);
+// Admin insights endpoints with dedicated limiter
+router.get('/insights', aiLimiter, aiController.getInsights);
+router.post('/insights', aiLimiter, protect, aiController.generateInsight);
 
-router.get('/insights', aiController.getInsights);
-router.post('/insights', protect, aiController.generateInsight);
+// AI Assistant chat endpoint
+router.post('/chat', optionalProtect, aiChatLimiter, aiController.chat);
 
 module.exports = router;

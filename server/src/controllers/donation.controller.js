@@ -3,8 +3,9 @@ const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler'
 
 const pledge = async (req, res, next) => {
   try {
-    const { requestId, unitsDonated } = req.body;
-    const donation = await donationService.pledgeDonation(req.user._id, requestId, unitsDonated);
+    const { requestId, units, unitsDonated } = req.body;
+    const unitsToPledge = units !== undefined ? units : unitsDonated;
+    const donation = await donationService.pledgeDonation(req.user._id, requestId, unitsToPledge);
     return sendSuccess(res, 'Donation pledged successfully! Thank you.', donation, 201);
   } catch (error) {
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);

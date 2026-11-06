@@ -20,6 +20,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { canSeekDonors } from '../../utils/requestRules';
+import { createSmartPolling } from '../../utils/networkHealth';
 
 const MatchingDonorsPage = () => {
   const { id } = useParams();
@@ -70,9 +71,10 @@ const MatchingDonorsPage = () => {
   useEffect(() => {
     fetchMatchesAndPings();
 
-    // 5-second live polling interval
-    const interval = setInterval(() => {
-      pingApi.getRequestPings(id).then((pingsRes) => {
+    // Live polling interval with backoff when backend is unreachable
+    const cancelPolling = createSmartPolling(async () => {
+      try {
+        const pingsRes = await pingApi.getRequestPings(id);
         if (pingsRes.data && pingsRes.data.success) {
           const map = {};
           (pingsRes.data.data || []).forEach((ping) => {
@@ -81,10 +83,12 @@ const MatchingDonorsPage = () => {
           });
           setPingsMap(map);
         }
-      }).catch(err => console.error(err));
+      } catch (err) {
+        if (import.meta.env.DEV) console.error(err);
+      }
     }, 5000);
 
-    return () => clearInterval(interval);
+    return cancelPolling;
   }, [id]);
 
   const handleContactDonor = async (donorUserId) => {

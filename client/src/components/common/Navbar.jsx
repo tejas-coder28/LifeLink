@@ -89,14 +89,14 @@ const Navbar = () => {
             </Link>
 
             {/* CENTER: Navigation Links with Liquid Active Indicator (Crimson Reserved) */}
-            <div className="hidden lg:flex items-center justify-center space-x-1.5">
+            <div className="hidden lg:flex items-center justify-center space-x-1 xl:space-x-1.5 shrink-0">
               {navLinks.map((link) => {
                 const active = isActive(link.to);
                 return (
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`relative px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                    className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap shrink-0 ${
                       active ? 'text-primary' : 'text-secondary hover:text-primary'
                     }`}
                   >
@@ -118,7 +118,7 @@ const Navbar = () => {
                   {isIndividual && (
                     <Link
                       to="/donor/dashboard"
-                      className={`relative px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                      className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap shrink-0 ${
                         isActive('/donor') || isActive('/individual')
                           ? 'text-primary'
                           : 'text-secondary hover:text-primary'
@@ -137,7 +137,7 @@ const Navbar = () => {
                   {isHospital && (
                     <Link
                       to="/hospital/dashboard"
-                      className={`relative px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                      className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap shrink-0 ${
                         isActive('/hospital')
                           ? 'text-primary'
                           : 'text-secondary hover:text-primary'
@@ -156,7 +156,7 @@ const Navbar = () => {
                   {isAdmin && (
                     <Link
                       to="/admin/dashboard"
-                      className={`relative px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                      className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap shrink-0 ${
                         isActive('/admin')
                           ? 'text-primary'
                           : 'text-secondary hover:text-primary'
@@ -178,7 +178,7 @@ const Navbar = () => {
               {/* Emergency CTA in nav (Rule 1: Crimson reserved for primary CTA) */}
               <Link
                 to="/emergency-request"
-                className="emergency-pulse ml-2 flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold text-white bg-danger-solid hover:bg-danger-hover shadow-glow-danger transition-all hover:scale-105"
+                className="emergency-pulse ml-1.5 xl:ml-2 flex items-center space-x-1.5 px-3 xl:px-3.5 py-1.5 rounded-full text-xs font-extrabold text-white bg-danger-solid hover:bg-danger-hover shadow-glow-danger transition-all hover:scale-105 whitespace-nowrap shrink-0"
               >
                 <Activity className="w-3.5 h-3.5 text-white animate-pulse" />
                 <span>Emergency Request</span>

@@ -241,6 +241,7 @@ describe('Firebase Firestore & Auth Verification Suite', () => {
         .set('Authorization', `Bearer ${donorRes.token}`)
         .send({
           requestId: bloodReq._id.toString(),
+          units: 1,
           scheduledDate: new Date(Date.now() + 86400000).toISOString(),
         });
       expect(pledgeRes.status).toBe(201);

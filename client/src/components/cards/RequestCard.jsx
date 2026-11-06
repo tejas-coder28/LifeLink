@@ -20,6 +20,7 @@ import {
 import { Link } from 'react-router-dom';
 import { canDonate } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
+import { formatUnits } from '../../constants/bloodUnits';
 
 const RequestCard = ({
   request,
@@ -30,6 +31,8 @@ const RequestCard = ({
   onPledge,
   isPledging = false,
   isPledged = false,
+  pledgedAmount,
+  onViewPledge,
   pledgeText = 'Respond / Pledge',
   showActions = true,
   trackLink,
@@ -152,23 +155,23 @@ const RequestCard = ({
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
             <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Total needed</span>
-              <span className="font-black text-primary text-sm">{totalNeeded}</span>
+              <span className="font-black text-primary text-sm">{formatUnits(totalNeeded)}</span>
             </div>
             <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">From hospital stock</span>
-              <span className="font-black text-primary text-sm">{fromStock}</span>
+              <span className="font-black text-primary text-sm">{formatUnits(fromStock)}</span>
             </div>
             <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Needed from donors</span>
-              <span className={`font-black text-sm ${isCritical ? 'text-danger' : 'text-primary'}`}>{neededFromDonors}</span>
+              <span className={`font-black text-sm ${isCritical ? 'text-danger' : 'text-primary'}`}>{formatUnits(neededFromDonors)}</span>
             </div>
             <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Pledged</span>
-              <span className="font-black text-info text-sm">{pledgedUnits}</span>
+              <span className="font-black text-info text-sm">{formatUnits(pledgedUnits)}</span>
             </div>
             <div className="p-1.5 rounded-xl bg-surface border border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block">Received</span>
-              <span className="font-black text-success text-sm">{receivedUnits}</span>
+              <span className="font-black text-success text-sm">{formatUnits(receivedUnits)}</span>
             </div>
           </div>
 
@@ -188,8 +191,8 @@ const RequestCard = ({
             </div>
             <div className="flex items-center justify-between text-[10px] text-muted font-medium">
               <span>{pctReceived}% Received</span>
-              {pledgedUnits > 0 && <span className="text-info font-bold">+{pledgedUnits} Pledged</span>}
-              <span>Target: {totalNeeded} unit(s)</span>
+              {pledgedUnits > 0 && <span className="text-info font-bold">+{formatUnits(pledgedUnits)} Pledged</span>}
+              <span>Target: {formatUnits(totalNeeded)}</span>
             </div>
           </div>
 
@@ -201,7 +204,7 @@ const RequestCard = ({
                 Current stock ({request.bloodGroup}):
               </span>
               <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-surface border border-hairline">
-                {currentStock} available in inventory
+                {formatUnits(currentStock)} available in inventory
               </span>
             </div>
           )}
@@ -321,7 +324,7 @@ const RequestCard = ({
                         <Badge status={p.status} />
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-[11px] text-muted flex-wrap">
-                        <span>{p.unitsDonated || 1} unit(s)</span>
+                        <span>{formatUnits(p.unitsDonated || 1)}</span>
                         <span>•</span>
                         <span>{pledgedTime}</span>
                         {p.donor?.phone && (
@@ -401,14 +404,21 @@ const RequestCard = ({
             {extraAction}
 
             {isPledged ? (
-              <button
-                type="button"
-                disabled
-                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-surface text-success border border-hairline cursor-default font-extrabold shadow-none"
-              >
-                <Check className="w-3.5 h-3.5 text-success" />
-                <span>Pledged ✓</span>
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-surface text-success border border-hairline font-extrabold shadow-none">
+                  <Check className="w-3.5 h-3.5 text-success" />
+                  <span>Pledged: {formatUnits(pledgedAmount || 1)}</span>
+                </span>
+                {onViewPledge && (
+                  <button
+                    type="button"
+                    onClick={onViewPledge}
+                    className="btn-secondary text-xs px-3 py-2 rounded-xl cursor-pointer shrink-0"
+                  >
+                    View Pledge
+                  </button>
+                )}
+              </div>
             ) : onPledge ? (
               <button
                 type="button"

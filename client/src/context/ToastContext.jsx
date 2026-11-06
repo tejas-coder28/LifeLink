@@ -1,37 +1,156 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 const ToastContext = createContext();
 
+// Global handler references for non-React callers (e.g. Axios interceptors)
+let globalAddToast = null;
+let globalRemoveToast = null;
+
+export const emitToast = (message, type = 'info', duration = 4000, id = null) => {
+  if (globalAddToast) {
+    globalAddToast(message, type, duration, id);
+  }
+};
+
+export const dismissToast = (id) => {
+  if (globalRemoveToast) {
+    globalRemoveToast(id);
+  }
+};
+
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
-
-  const addToast = useCallback((message, type = 'info', duration = 4000) => {
-    const id = Date.now() + Math.random().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
-  }, []);
+  const timerMapRef = useRef(new Map());
 
   const removeToast = useCallback((id) => {
+    if (timerMapRef.current.has(id)) {
+      clearTimeout(timerMapRef.current.get(id));
+      timerMapRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showSuccess = useCallback((msg, duration) => addToast(msg, 'success', duration), [addToast]);
-  const showError = useCallback((msg, duration) => addToast(msg, 'error', duration), [addToast]);
-  const showInfo = useCallback((msg, duration) => addToast(msg, 'info', duration), [addToast]);
-  const showWarning = useCallback((msg, duration) => addToast(msg, 'warning', duration), [addToast]);
+  const clearAllToasts = useCallback(() => {
+    timerMapRef.current.forEach((timerId) => clearTimeout(timerId));
+    timerMapRef.current.clear();
+    setToasts([]);
+  }, []);
+
+  /**
+   * Add a toast with de-duplication:
+   * - If a toast with the same type and message (or customId) is already visible,
+   *   do not add another — refresh its auto-dismiss timer instead.
+   * - Limit visible toasts to 3 maximum, dropping the oldest.
+   */
+  const addToast = useCallback((msgOrObj, type = 'info', duration = 4000, customId = null) => {
+    let message = msgOrObj;
+    let toastType = type;
+    let toastDuration = duration;
+    let toastId = customId;
+
+    if (typeof msgOrObj === 'object' && msgOrObj !== null) {
+      message = msgOrObj.message;
+      toastType = msgOrObj.type || type;
+      toastDuration = msgOrObj.duration !== undefined ? msgOrObj.duration : duration;
+      toastId = msgOrObj.id || customId;
+    }
+
+    if (!message || typeof message !== 'string') return;
+
+    setToasts((prev) => {
+      // Check if an identical toast or one with the same stable ID is already displayed
+      const existing = prev.find(
+        (t) => (toastId && t.id === toastId) || (t.type === toastType && t.message === message)
+      );
+
+      if (existing) {
+        // Refresh timer for existing toast
+        if (timerMapRef.current.has(existing.id)) {
+          clearTimeout(timerMapRef.current.get(existing.id));
+        }
+        if (toastDuration > 0) {
+          const timerId = setTimeout(() => {
+            removeToast(existing.id);
+          }, toastDuration);
+          timerMapRef.current.set(existing.id, timerId);
+        }
+        // Do not add a duplicate toast
+        return prev;
+      }
+
+      const id = toastId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      if (toastDuration > 0) {
+        const timerId = setTimeout(() => {
+          removeToast(id);
+        }, toastDuration);
+        timerMapRef.current.set(id, timerId);
+      }
+
+      const newToast = { id, message, type: toastType };
+
+      // Limit to 3 visible toasts, dropping the oldest if exceeded
+      if (prev.length >= 3) {
+        const oldest = prev[0];
+        if (timerMapRef.current.has(oldest.id)) {
+          clearTimeout(timerMapRef.current.get(oldest.id));
+          timerMapRef.current.delete(oldest.id);
+        }
+        return [...prev.slice(1), newToast];
+      }
+
+      return [...prev, newToast];
+    });
+  }, [removeToast]);
+
+  // Hook global listeners for non-React callers
+  useEffect(() => {
+    globalAddToast = addToast;
+    globalRemoveToast = removeToast;
+    return () => {
+      globalAddToast = null;
+      globalRemoveToast = null;
+    };
+  }, [addToast, removeToast]);
+
+  // Keyboard dismiss (Esc)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        clearAllToasts();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clearAllToasts]);
+
+  // Convenience methods
+  const showSuccess = useCallback((msg, duration, id) => addToast(msg, 'success', duration, id), [addToast]);
+  const showError = useCallback((msg, duration, id) => addToast(msg, 'error', duration, id), [addToast]);
+  const showInfo = useCallback((msg, duration, id) => addToast(msg, 'info', duration, id), [addToast]);
+  const showWarning = useCallback((msg, duration, id) => addToast(msg, 'warning', duration, id), [addToast]);
 
   return (
-    <ToastContext.Provider value={{ addToast, showToast: addToast, removeToast, showSuccess, showError, showInfo, showWarning }}>
+    <ToastContext.Provider
+      value={{
+        addToast,
+        showToast: addToast,
+        removeToast,
+        clearAllToasts,
+        showSuccess,
+        showError,
+        showInfo,
+        showWarning,
+      }}
+    >
       {children}
-      {/* Toast Render Portal Container */}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col space-y-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      {/* Toast Render Portal Container: positioned at top on mobile (never covers form fields), bottom-right on desktop */}
+      <div
+        className="fixed z-[100] flex flex-col space-y-2.5 pointer-events-none transition-all duration-300
+          top-20 inset-x-4 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:inset-x-auto sm:max-w-sm w-auto sm:w-full"
+      >
         <AnimatePresence>
           {toasts.map((toast) => {
             const config = {
@@ -67,11 +186,13 @@ export const ToastProvider = ({ children }) => {
               <motion.div
                 key={toast.id}
                 layout
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                initial={{ opacity: 0, y: -12, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-2xl bg-surface/90 text-primary shadow-spatial-floating ${config.border}`}
+                className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-2xl bg-surface/95 dark:bg-[#111A2E]/95 text-primary shadow-spatial-floating ${config.border}`}
+                role="status"
+                aria-live="polite"
               >
                 <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${config.iconColor}`} />
                 <div className="flex-1 text-xs font-semibold leading-relaxed">{toast.message}</div>
@@ -80,6 +201,7 @@ export const ToastProvider = ({ children }) => {
                   onClick={() => removeToast(toast.id)}
                   className="text-muted hover:text-primary transition-colors p-1 rounded-lg cursor-pointer"
                   aria-label="Dismiss notification"
+                  title="Dismiss (or press Esc)"
                 >
                   <X className="w-4 h-4" />
                 </button>
