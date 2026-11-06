@@ -122,11 +122,11 @@ function App() {
               </div>
 
               <Navbar />
-            <main className="flex-1 pt-24 sm:pt-28 pb-12">
-              <ErrorBoundary>
-                <AnimatedRoutes />
-              </ErrorBoundary>
-            </main>
+              <main className="flex-1 pt-28 sm:pt-32 md:pt-36 pb-12">
+                <ErrorBoundary>
+                  <AnimatedRoutes />
+                </ErrorBoundary>
+              </main>
             <AIChatWidget />
             <Footer />
           </div>

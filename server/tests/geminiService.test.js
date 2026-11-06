@@ -346,7 +346,7 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       spy.mockRestore();
     });
 
-    test('Donor with one compatible open request -> reply starts "1 patient is waiting", includes details and action', async () => {
+    test('Donor with one compatible open request -> reply starts "Yes, 1 patient is waiting", includes details and action buttons', async () => {
       const spy = jest.spyOn(aiTools, 'executeTool').mockImplementation(async (toolName) => {
         if (toolName === 'getOpenRequestsForMe') {
           return {
@@ -374,16 +374,124 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
         userId: 'donor-1',
       });
 
-      expect(res.reply).toMatch(/^1 patient is waiting/);
+      expect(res.reply).toMatch(/^Yes, 1 patient is waiting/);
       expect(res.reply).toContain('B+');
       expect(res.reply).toContain('2 unit(s)');
       expect(res.reply).toContain('Apollo Hospital');
-      expect(res.reply).toContain('critical');
-      expect(res.actions).toHaveLength(1);
+      expect(res.reply).toContain('CRITICAL');
+      expect(res.actions).toHaveLength(2);
+      expect(res.actions[0].label).toBe('View Requests');
       expect(res.actions[0].path).toBe('/donor/dashboard');
       expect(res.actions[0].tab).toBe('requests');
+      expect(res.actions[1].label).toBe('Respond / Pledge');
+      expect(res.actions[1].path).toBe('/donor/dashboard');
+      expect(res.actions[1].tab).toBe('requests');
 
       spy.mockRestore();
+    });
+  });
+
+  describe('Bug 1 & 2: LifeLink Questions, Phrasings, Capability, and Gemini Instruction', () => {
+    const aiTools = require('../src/services/aiTools');
+
+    const mockDonorRequestTool = () => {
+      return jest.spyOn(aiTools, 'executeTool').mockImplementation(async (toolName) => {
+        if (toolName === 'getOpenRequestsForMe') {
+          return {
+            donorBloodGroup: 'B+',
+            totalMatchingRequests: 1,
+            requests: [
+              {
+                id: 'req-101',
+                patientName: 'John Connor',
+                bloodGroup: 'B+',
+                unitsNeeded: 2,
+                unitsFulfilled: 0,
+                urgency: 'high',
+                hospitalName: 'City General Hospital',
+                distanceKm: 2.1,
+              },
+            ],
+          };
+        }
+        return {};
+      });
+    };
+
+    test('"is there any request ?" -> Yes, 1 patient is waiting with [View Requests] and [Respond / Pledge]', async () => {
+      const spy = mockDonorRequestTool();
+      const res = await routeWithKeywords('is there any request ?', { role: 'donor', userId: 'd-1' });
+
+      expect(res.reply).toBe('Yes, 1 patient is waiting for your blood type: B+ needs 2 unit(s) at City General Hospital (urgency: HIGH).');
+      expect(res.actions).toHaveLength(2);
+      expect(res.actions[0].label).toBe('View Requests');
+      expect(res.actions[1].label).toBe('Respond / Pledge');
+      expect(spy).toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
+      spy.mockRestore();
+    });
+
+    test('"any requests" -> maps to data tool and starts with "Yes, 1 patient is waiting"', async () => {
+      const spy = mockDonorRequestTool();
+      const res = await routeWithKeywords('any requests', { role: 'donor', userId: 'd-1' });
+
+      expect(res.reply).toMatch(/^Yes, 1 patient is waiting/);
+      expect(res.reply).toContain('City General Hospital');
+      expect(spy).toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
+      spy.mockRestore();
+    });
+
+    test('"does anyone need blood" -> maps to data tool and starts with "Yes, 1 patient is waiting"', async () => {
+      const spy = mockDonorRequestTool();
+      const res = await routeWithKeywords('does anyone need blood', { role: 'donor', userId: 'd-1' });
+
+      expect(res.reply).toMatch(/^Yes, 1 patient is waiting/);
+      expect(spy).toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
+      spy.mockRestore();
+    });
+
+    test('"any patients?" -> maps to data tool and starts with "Yes, 1 patient is waiting"', async () => {
+      const spy = mockDonorRequestTool();
+      const res = await routeWithKeywords('any patients?', { role: 'donor', userId: 'd-1' });
+
+      expect(res.reply).toMatch(/^Yes, 1 patient is waiting/);
+      expect(spy).toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
+      spy.mockRestore();
+    });
+
+    test('"write me a poem" -> fixed refusal', async () => {
+      const res = await routeWithKeywords('write me a poem', { role: 'donor' });
+      expect(res.reply).toBe(FIXED_REFUSAL);
+      expect(res.actions).toEqual([]);
+    });
+
+    test('"hmm what can you do" -> capability reply listing what user role can ask', async () => {
+      const res = await routeWithKeywords('hmm what can you do', { role: 'donor' });
+      expect(res.reply).not.toBe(FIXED_REFUSAL);
+      expect(res.reply).toContain('I can help you');
+      expect(res.reply).toContain('eligibility');
+      expect(res.suggestions.length).toBeGreaterThan(0);
+    });
+
+    test('Zero open requests matching blood group -> "No open requests match your blood group right now."', async () => {
+      const spy = jest.spyOn(aiTools, 'executeTool').mockImplementation(async (toolName) => {
+        if (toolName === 'getOpenRequestsForMe') {
+          return { donorBloodGroup: 'O-', totalMatchingRequests: 0, requests: [] };
+        }
+        return {};
+      });
+
+      const res = await routeWithKeywords('is there any request ?', { role: 'donor', userId: 'd-2' });
+      expect(res.reply).toBe('No open requests match your blood group right now.');
+      expect(res.actions).toHaveLength(1);
+      expect(res.actions[0].label).toBe('View Requests');
+      spy.mockRestore();
+    });
+
+    test('Gemini system instruction explicitly designates short/sloppy queries as in scope', () => {
+      const instruction = buildSystemInstruction({ role: 'donor', name: 'John Doe' });
+      expect(instruction).toContain(
+        'Short or sloppy questions about requests, patients, donors, blood, stock or the app are IN SCOPE. Call the relevant tool and lead with the count. Only return OUT_OF_SCOPE when the message has no connection to LifeLink.'
+      );
     });
   });
 });

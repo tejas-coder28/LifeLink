@@ -106,7 +106,7 @@ Current Role: ${role}
 Current Path: ${userContext.currentPath || 'unknown'}
 
 STRICT OPERATIONAL BOUNDARIES:
-1. APP-ONLY RESTRICTION: You may ONLY answer questions directly pertaining to LifeLink: emergency blood requests, blood donors, blood bank inventory, donations, and platform navigation.
+1. APP-ONLY RESTRICTION: You may ONLY answer questions directly pertaining to LifeLink: emergency blood requests, blood donors, blood bank inventory, donations, and platform navigation. Short or sloppy questions about requests, patients, donors, blood, stock or the app are IN SCOPE. Call the relevant tool and lead with the count. Only return OUT_OF_SCOPE when the message has no connection to LifeLink.
 2. REFUSAL RULE: If the user asks about ANYTHING ELSE (including but not limited to sports, news, politics, entertainment, coding, software development, math, recipes, weather, movies, jokes, general knowledge, or personal advice), you MUST refuse with this EXACT sentence and nothing else:
 "${FIXED_REFUSAL}"
 3. READ-ONLY SCOPE: You have read-only tools to retrieve real-time data for the current user's role. You CANNOT perform database writes, modify inventories, or execute requests.
@@ -223,8 +223,12 @@ async function generateChatReply(message, history = [], userContext = {}) {
                   const act = buildAction('donor-profile');
                   if (act) collectedActions.push(act);
                 } else if (fc.name === 'getOpenRequestsForMe') {
-                  const act = buildAction('donor-requests');
-                  if (act) collectedActions.push(act);
+                  const viewAct = buildAction('donor-requests', { label: 'View Requests' });
+                  if (viewAct) collectedActions.push(viewAct);
+                  if (toolResult && toolResult.totalMatchingRequests === 1) {
+                    const pledgeAct = buildAction('donor-requests', { label: 'Respond / Pledge' });
+                    if (pledgeAct) collectedActions.push(pledgeAct);
+                  }
                 } else if (fc.name === 'getMyDonationHistory') {
                   const act = buildAction('donor-history');
                   if (act) collectedActions.push(act);
