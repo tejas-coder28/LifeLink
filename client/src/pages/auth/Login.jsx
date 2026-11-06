@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
-import { useTypewriterFill } from '../../hooks/useTypewriterFill';
 import {
   HeartHandshake,
   AlertCircle,
@@ -29,32 +28,20 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeRole, setActiveRole] = useState(null);
 
-  // Element refs for typewriter focus & pulse effects
-  const emailInputRef = useRef(null);
-  const passwordInputRef = useRef(null);
   const submitButtonRef = useRef(null);
 
-  // Typewriter demo account filler hook
-  const {
-    activeRole,
-    isTyping,
-    activeField,
-    pulsingField,
-    liveMessage,
-    startTypewriter,
-    cancelTypewriter,
-  } = useTypewriterFill({
-    setEmail,
-    setPassword,
-    emailInputRef,
-    passwordInputRef,
-    submitButtonRef,
-  });
+  const handleSelectDemo = (roleKey, demoEmail, demoPassword) => {
+    setActiveRole(roleKey);
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
+    submitButtonRef.current?.focus();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    cancelTypewriter();
     setError('');
     setLoading(true);
 
@@ -88,11 +75,6 @@ const Login = () => {
 
   return (
     <PageTransition className="min-h-[80vh] flex items-center justify-center p-3 sm:p-6 py-6 sm:py-10">
-      {/* Visually hidden live region for screen readers during typewriter demo fill */}
-      <div className="sr-only" aria-live="polite" role="status">
-        {liveMessage}
-      </div>
-
       <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated">
         {/* Left Visual Branding Panel (Midnight Navy Foundation with subtle harmonic glows) */}
         <div
@@ -236,22 +218,13 @@ const Login = () => {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
-                  ref={emailInputRef}
                   id="login-email"
                   type="email"
                   required
                   value={email}
-                  aria-busy={isTyping && activeField === 'email'}
-                  onChange={(e) => {
-                    cancelTypewriter();
-                    setEmail(e.target.value);
-                  }}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@lifelink.com"
-                  className={`glass-input w-full pl-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150 ${
-                    pulsingField === 'email'
-                      ? 'border-info ring-2 ring-info/30 shadow-[0_0_12px_rgba(96,165,250,0.30)]'
-                      : ''
-                  } ${activeField === 'email' ? 'border-info/70' : ''}`}
+                  className="glass-input w-full pl-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150"
                 />
               </div>
             </div>
@@ -276,22 +249,13 @@ const Login = () => {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
-                  ref={passwordInputRef}
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  aria-busy={isTyping && activeField === 'password'}
-                  onChange={(e) => {
-                    cancelTypewriter();
-                    setPassword(e.target.value);
-                  }}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`glass-input w-full pl-10 pr-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150 ${
-                    pulsingField === 'password'
-                      ? 'border-info ring-2 ring-info/30 shadow-[0_0_12px_rgba(96,165,250,0.30)]'
-                      : ''
-                  } ${activeField === 'password' ? 'border-info/70' : ''}`}
+                  className="glass-input w-full pl-10 pr-10 text-xs sm:text-sm px-3.5 py-3 caret-info transition-all duration-150"
                 />
                 <button
                   type="button"
@@ -323,7 +287,7 @@ const Login = () => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => startTypewriter('donor', 'Donor', 'user@lifelink.com', 'user123')}
+                  onClick={() => handleSelectDemo('donor', 'user@lifelink.com', 'user123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'donor'
                       ? 'border-info shadow-sm bg-info/15'
@@ -340,7 +304,7 @@ const Login = () => {
 
                 <button
                   type="button"
-                  onClick={() => startTypewriter('hospital', 'Hospital', 'hospital@lifelink.com', 'hospital123')}
+                  onClick={() => handleSelectDemo('hospital', 'hospital@lifelink.com', 'hospital123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'hospital'
                       ? 'border-success shadow-sm bg-success/15'
@@ -357,7 +321,7 @@ const Login = () => {
 
                 <button
                   type="button"
-                  onClick={() => startTypewriter('admin', 'Admin', 'admin@lifelink.com', 'admin123')}
+                  onClick={() => handleSelectDemo('admin', 'admin@lifelink.com', 'admin123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'admin'
                       ? 'border-warning shadow-sm bg-warning/15'
