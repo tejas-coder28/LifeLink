@@ -18,7 +18,7 @@ import PageTransition from '../../components/common/PageTransition';
 
 const Login = () => {
   const { login } = useAuth();
-  const { showError, showSuccess } = useToast();
+  const { showSuccess } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
@@ -67,7 +67,6 @@ const Login = () => {
     } catch (err) {
       const errMsg = err.response?.data?.message || err.message || 'Invalid email or password';
       setError(errMsg);
-      showError(errMsg);
     } finally {
       setLoading(false);
     }

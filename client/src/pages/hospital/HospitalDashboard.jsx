@@ -19,6 +19,7 @@ import RequestForm from '../../components/forms/RequestForm';
 import InventoryForm from '../../components/forms/InventoryForm';
 import { compatibleDonorGroups } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
+import { createSmartPolling } from '../../utils/networkHealth';
 
 import {
   Building2,
@@ -200,11 +201,11 @@ const HospitalDashboard = () => {
     if (!selectedMatchRequestId) return;
     fetchRequestPings(selectedMatchRequestId);
 
-    const interval = setInterval(() => {
+    const cancelPolling = createSmartPolling(() => {
       fetchRequestPings(selectedMatchRequestId);
     }, 5000);
 
-    return () => clearInterval(interval);
+    return cancelPolling;
   }, [selectedMatchRequestId]);
 
   const setTab = (tabName) => {
