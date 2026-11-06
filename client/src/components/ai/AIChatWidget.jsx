@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -10,10 +10,10 @@ import {
   RotateCcw,
   Compass,
   ArrowRight,
-  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { aiApi } from '../../api/aiApi';
+import { useWordReveal } from '../../hooks/useWordReveal';
 
 const ROLE_SUGGESTIONS = {
   donor: [
@@ -50,9 +50,11 @@ function getRoleKey(accountType, role) {
 }
 
 function getInitialGreeting(user, roleKey) {
-  const firstName = user?.name ? user.name.split(' ')[0] : '';
+  // Use full name for hospitals (e.g. "City General Hospital"), first name only for individuals/admin
+  const fullName = user?.name || '';
+  const firstName = fullName.split(' ')[0];
   if (roleKey === 'hospital') {
-    return `Welcome to LifeLink Hospital Support${firstName ? `, ${firstName}` : ''}. How can I assist with your blood bank reserves or emergency demands?`;
+    return `Welcome to LifeLink${fullName ? `, ${fullName}` : ''}. How can I assist with your blood bank reserves or emergency demands?`;
   }
   if (roleKey === 'admin') {
     return `Welcome Admin${firstName ? ` ${firstName}` : ''}. How can I assist with platform oversight and emergency network operations?`;
@@ -62,6 +64,61 @@ function getInitialGreeting(user, roleKey) {
   }
   return `Welcome to LifeLink! How can I assist you with finding donors, locating hospitals, or requesting emergency blood?`;
 }
+
+/**
+ * AnimatedBubble renders a single AI message with optional word-reveal.
+ * User messages and non-animated messages render instantly.
+ */
+const MessageBubble = memo(function MessageBubble({ msg, isLatestAI, onActionClick, onSkip }) {
+  const { displayed, done } = useWordReveal(
+    msg.role === 'assistant' ? msg.text : '',
+    msg.id,
+    isLatestAI
+  );
+
+  const textToShow = msg.role === 'user' ? msg.text : (isLatestAI ? displayed : msg.text);
+  // Show action buttons immediately for non-animated messages; after reveal for animated
+  const showActions = msg.actions && msg.actions.length > 0 && (msg.role === 'user' || !isLatestAI || done);
+
+  return (
+    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-sm cursor-pointer select-text ${
+          msg.role === 'user'
+            ? 'bg-raised text-primary border border-hairline rounded-br-none'
+            : 'bg-surface text-primary border border-hairline rounded-bl-none'
+        }`}
+        onClick={isLatestAI && !done ? onSkip : undefined}
+        title={isLatestAI && !done ? 'Click to reveal full reply instantly' : undefined}
+      >
+        <p className="whitespace-pre-line text-xs sm:text-sm">
+          {textToShow}
+          {isLatestAI && !done && (
+            <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-info/70 rounded-sm animate-pulse align-middle" />
+          )}
+        </p>
+
+        {/* One-click Action Navigation Buttons */}
+        {showActions && (
+          <div className="mt-3 pt-2.5 border-t border-hairline flex flex-wrap gap-2">
+            {msg.actions.map((act, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onActionClick(act)}
+                className="px-3 py-1.5 rounded-xl bg-info/10 hover:bg-info/20 text-info border border-info/30 hover:border-info/50 font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm group"
+              >
+                <Compass className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform" />
+                <span>{act.label}</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 const AIChatWidget = () => {
   const { user, accountType, role } = useAuth();
@@ -75,8 +132,11 @@ const AIChatWidget = () => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(defaultSuggestions);
+  // animatingId tracks which message ID should run word-reveal; null = none
+  const [animatingId, setAnimatingId] = useState(null);
   const [messages, setMessages] = useState([
     {
+      id: 'greeting',
       role: 'assistant',
       text: getInitialGreeting(user, roleKey),
       actions: [],
@@ -91,8 +151,10 @@ const AIChatWidget = () => {
     const greeting = getInitialGreeting(user, roleKey);
     const initialChips = ROLE_SUGGESTIONS[roleKey] || ROLE_SUGGESTIONS.public;
     setSuggestions(initialChips);
+    setAnimatingId(null);
     setMessages([
       {
+        id: 'greeting',
         role: 'assistant',
         text: greeting,
         actions: [],
@@ -123,12 +185,14 @@ const AIChatWidget = () => {
     const initialChips = ROLE_SUGGESTIONS[roleKey] || ROLE_SUGGESTIONS.public;
     setMessages([
       {
+        id: 'greeting',
         role: 'assistant',
         text: greeting,
         actions: [],
       },
     ]);
     setSuggestions(initialChips);
+    setAnimatingId(null);
     setPrompt('');
   };
 
@@ -136,11 +200,12 @@ const AIChatWidget = () => {
     const query = (textToSend || prompt).trim();
     if (!query || loading) return;
 
-    const userMessage = { role: 'user', text: query };
+    const userMessage = { id: `user-${Date.now()}`, role: 'user', text: query };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setPrompt('');
     setLoading(true);
+    setAnimatingId(null); // stop any running animation when user sends
 
     // Build history for backend (excluding greeting)
     const historyPayload = nextMessages
@@ -160,14 +225,17 @@ const AIChatWidget = () => {
 
       if (res.data && res.data.success) {
         const responseData = res.data.data;
+        const newMsgId = `ai-${Date.now()}`;
         setMessages((prev) => [
           ...prev,
           {
+            id: newMsgId,
             role: 'assistant',
             text: responseData.reply,
             actions: responseData.actions || [],
           },
         ]);
+        setAnimatingId(newMsgId);
         if (Array.isArray(responseData.suggestions) && responseData.suggestions.length > 0) {
           setSuggestions(responseData.suggestions);
         }
@@ -178,6 +246,7 @@ const AIChatWidget = () => {
       setMessages((prev) => [
         ...prev,
         {
+          id: `err-${Date.now()}`,
           role: 'assistant',
           text: 'I apologize, but I am unable to connect to the LifeLink services right now. Please check your connection and try again.',
           actions: [],
@@ -234,10 +303,10 @@ const AIChatWidget = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
             transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-            className="w-[calc(100vw-2rem)] sm:w-[410px] bg-surface/95 dark:bg-[#111A2E]/95 rounded-3xl border border-hairline shadow-spatial-overlay overflow-hidden flex flex-col h-[520px] max-h-[85vh] backdrop-blur-2xl"
+            className="w-[calc(100vw-2rem)] sm:w-[410px] bg-surface/95 dark:bg-[#111A2E]/95 rounded-3xl border border-hairline shadow-spatial-overlay flex flex-col h-[520px] max-h-[85vh] backdrop-blur-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-raised/80 px-4 py-3.5 border-b border-hairline flex items-center justify-between">
+            <div className="bg-raised/80 px-4 py-3.5 border-b border-hairline flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-xl bg-info/10 border border-info/25 text-info flex items-center justify-center shadow-sm">
                   <Bot className="w-4 h-4" />
@@ -279,45 +348,20 @@ const AIChatWidget = () => {
               </div>
             </div>
 
-            {/* Messages Container */}
+            {/* Messages Container — min-h-0 prevents flex overflow clipping (Bug F) */}
             <div
               role="log"
               aria-live="polite"
-              className="flex-1 p-4 overflow-y-auto space-y-4 text-xs sm:text-sm"
+              className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 text-xs sm:text-sm"
             >
               {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-sm ${
-                      msg.role === 'user'
-                        ? 'bg-raised text-primary border border-hairline rounded-br-none'
-                        : 'bg-surface text-primary border border-hairline rounded-bl-none'
-                    }`}
-                  >
-                    <p className="whitespace-pre-line text-xs sm:text-sm">{msg.text}</p>
-
-                    {/* One-click Action Navigation Buttons */}
-                    {msg.actions && msg.actions.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-hairline flex flex-wrap gap-2">
-                        {msg.actions.map((act, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => handleActionClick(act)}
-                            className="px-3 py-1.5 rounded-xl bg-info/10 hover:bg-info/20 text-info border border-info/30 hover:border-info/50 font-bold text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm group"
-                          >
-                            <Compass className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform" />
-                            <span>{act.label}</span>
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <MessageBubble
+                  key={msg.id || index}
+                  msg={msg}
+                  isLatestAI={msg.role === 'assistant' && msg.id === animatingId}
+                  onActionClick={handleActionClick}
+                  onSkip={() => setAnimatingId(null)}
+                />
               ))}
 
               {loading && (
@@ -332,15 +376,15 @@ const AIChatWidget = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Role Quick Suggestion Chips */}
+            {/* Role Quick Suggestion Chips — flex-wrap to avoid horizontal scrollbar (Bug E) */}
             {suggestions.length > 0 && !loading && (
-              <div className="px-3 py-2 bg-raised/40 border-t border-hairline flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
-                {suggestions.map((chip, idx) => (
+              <div className="px-3 py-2 bg-raised/40 border-t border-hairline flex flex-wrap gap-1.5 shrink-0">
+                {suggestions.slice(0, 4).map((chip, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(chip)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap bg-raised border border-hairline hover:border-info/40 text-secondary hover:text-primary transition-colors cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-raised border border-hairline hover:border-info/40 text-secondary hover:text-primary transition-colors cursor-pointer"
                   >
                     {chip}
                   </button>
@@ -354,7 +398,7 @@ const AIChatWidget = () => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="p-3 bg-surface/90 border-t border-hairline flex items-center space-x-2"
+              className="p-3 bg-surface/90 border-t border-hairline flex items-center space-x-2 shrink-0"
             >
               <input
                 ref={inputRef}

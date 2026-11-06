@@ -85,8 +85,11 @@ async function getActiveRequests(context) {
     };
   }
 
+  // Mirror the UI: hospital's active broadcasts = requests where targetHospital === this hospital
+  // AND status is open, matching, or partially_fulfilled.
+  // This matches the same filter used by HospitalDashboard activeRequestsCount.
   const requests = await BloodRequest.find({
-    $or: [{ requester: context.userId }, { targetHospital: hospital._id }, { hospital: hospital._id }],
+    targetHospital: hospital._id,
     status: { $in: ['open', 'matching', 'partially_fulfilled'] },
   }).sort({ createdAt: -1 });
 

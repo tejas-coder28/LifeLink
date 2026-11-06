@@ -5,6 +5,7 @@ const donationService = require('../donation.service');
 const notificationService = require('../notification.service');
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
 const { calculateHaversineDistance } = require('../../utils/geo');
+const { canSeekDonors } = require('../../utils/requestRules');
 
 /**
  * Returns donor profile information for the authenticated user.
@@ -91,6 +92,8 @@ async function getOpenRequestsForMe(context) {
       // Exclude donor's own requests
       const reqUserId = req.requester?._id ? req.requester._id.toString() : req.requester?.toString();
       if (reqUserId && reqUserId === donorUserIdStr) return false;
+      // Must satisfy canSeekDonors rules (same as live emergency requests feed in UI)
+      if (!canSeekDonors(req)) return false;
       // RBC compatibility check
       return canDonate(donorBloodGroup, req.bloodGroup);
     })

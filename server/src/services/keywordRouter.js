@@ -1,5 +1,5 @@
 const { buildAction } = require('../config/aiNavigation');
-const { executeTool } = require('./aiTools');
+const aiTools = require('./aiTools');
 
 const ROLE_SUGGESTIONS = {
   donor: [
@@ -247,7 +247,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
   // 4. User / Donor specific keywords
   if (isDonorUser) {
     if (lower.includes('eligible') || lower.includes('cooldown') || lower.includes('can i donate')) {
-      const data = await executeTool('getEligibility', {}, userContext);
+      const data = await aiTools.executeTool('getEligibility', {}, userContext);
       const reply = `Eligible to donate: ${data.isEligible ? 'Yes' : 'No'}. Next eligible date: ${data.nextEligibleDate || 'Eligible today'}. Days remaining: ${data.daysLeft}. ${data.rationale}`;
       const action = buildAction('donor-profile');
       return {
@@ -263,13 +263,27 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
       lower.includes('requests for me') ||
       lower.includes('open requests') ||
       lower.includes('matching requests') ||
-      lower.includes('compatible')
+      lower.includes('compatible') ||
+      lower.includes('find requests') ||
+      lower.includes('requests matching') ||
+      lower.includes('blood group') ||
+      lower.includes('who needs') ||
+      lower.includes('how many') ||
+      lower.includes('compatible donors') ||
+      lower.includes('nearest request')
     ) {
-      const data = await executeTool('getOpenRequestsForMe', {}, userContext);
-      let reply = `Found ${data.totalMatchingRequests} matching request(s) for your blood group (${data.donorBloodGroup}).`;
-      if (data.requests && data.requests.length > 0) {
+      const data = await aiTools.executeTool('getOpenRequestsForMe', {}, userContext);
+      const bg = data.donorBloodGroup || '';
+      const count = data.totalMatchingRequests || 0;
+      let reply = '';
+      if (count === 0) {
+        reply = `No open requests match your blood group (${bg}) right now. Check back soon.`;
+      } else if (count === 1) {
         const top = data.requests[0];
-        reply += ` Nearest: ${top.patientName} (${top.bloodGroup}) at ${top.hospitalName}, ${top.distanceKm} km away.`;
+        reply = `1 patient is waiting for your blood type. ${bg} — ${top.unitsNeeded} unit(s) needed at ${top.hospitalName} (urgency: ${top.urgency}, ${top.distanceKm} km away).`;
+      } else {
+        const top = data.requests[0];
+        reply = `${count} patients are waiting for your blood type (${bg}). Most urgent: ${top.unitsNeeded} unit(s) at ${top.hospitalName} (urgency: ${top.urgency}, ${top.distanceKm} km away).`;
       }
       const action = buildAction('donor-requests');
       return {
@@ -282,7 +296,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('history') || lower.includes('past donation') || lower.includes('pledges')) {
-      const data = await executeTool('getMyDonationHistory', {}, userContext);
+      const data = await aiTools.executeTool('getMyDonationHistory', {}, userContext);
       const reply = `You have completed ${data.completedDonations} donation(s) out of ${data.totalDonations} total pledge(s) recorded.`;
       const action = buildAction('donor-history');
       return {
@@ -295,7 +309,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('my request') || lower.includes('requests created')) {
-      const data = await executeTool('getMyRequests', {}, userContext);
+      const data = await aiTools.executeTool('getMyRequests', {}, userContext);
       const reply = `You have submitted ${data.totalRequests} emergency blood request(s).`;
       const action = buildAction('individual-create-request');
       return {
@@ -308,7 +322,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('alert') || lower.includes('notification')) {
-      const data = await executeTool('getMyAlerts', {}, userContext);
+      const data = await aiTools.executeTool('getMyAlerts', {}, userContext);
       const reply = `You have ${data.unreadCount} unread alert(s).`;
       const action = buildAction('donor-alerts');
       return {
@@ -321,7 +335,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('profile') || lower.includes('standby') || lower.includes('online') || lower.includes('availability')) {
-      const data = await executeTool('getMyProfile', {}, userContext);
+      const data = await aiTools.executeTool('getMyProfile', {}, userContext);
       const reply = `Donor Profile: ${data.name}. Blood Group: ${data.bloodGroup} (${data.bloodGroupConfirmed ? 'Confirmed' : 'Unconfirmed'}). Standby Status: ${data.isAvailable ? 'ONLINE' : 'OFFLINE'}.`;
       const action = buildAction('donor-profile');
       return {
@@ -337,7 +351,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
   // 5. Hospital specific keywords
   if (isHospital) {
     if (lower.includes('inventory') || lower.includes('stock') || lower.includes('units') || lower.includes('reserves')) {
-      const data = await executeTool('getInventory', {}, userContext);
+      const data = await aiTools.executeTool('getInventory', {}, userContext);
       if (data.error) {
         return { reply: data.error, actions: [], suggestions, provider: 'keyword', fallbackReason };
       }
@@ -355,7 +369,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('demand') || lower.includes('incoming')) {
-      const data = await executeTool('getIncomingDemands', {}, userContext);
+      const data = await aiTools.executeTool('getIncomingDemands', {}, userContext);
       const reply = `You have ${data.pendingDemandsCount} incoming emergency demand(s) awaiting hospital review.`;
       const action = buildAction('hospital-demands');
       return {
@@ -368,14 +382,21 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('active request') || lower.includes('broadcast')) {
-      const data = await executeTool('getActiveRequests', {}, userContext);
+      const data = await aiTools.executeTool('getActiveRequests', {}, userContext);
       let reply = '';
       if (data.status === 'unverified') {
         reply = data.message;
+      } else if (data.totalActive === 0) {
+        reply = `0 active requests. Your hospital has not broadcast any open blood requests to community donors right now.`;
       } else {
-        reply = `Your hospital has ${data.totalActive} active emergency blood request(s) broadcast to community donors.`;
+        const topList = (data.activeRequests || []).slice(0, 2).map(r =>
+          `${r.bloodGroup} (${r.unitsNeeded} unit(s), urgency: ${r.urgency})`
+        ).join('; ');
+        reply = `Your hospital has ${data.totalActive} active emergency blood request(s) broadcast to community donors${topList ? ': ' + topList : ''}.`;
       }
-      const action = buildAction('hospital-active-requests');
+      const action = data.totalActive === 0
+        ? buildAction('hospital-create-request')
+        : buildAction('hospital-active-requests');
       return {
         reply,
         actions: action ? [action] : [],
@@ -386,7 +407,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('pledge') || lower.includes('pending pledges')) {
-      const data = await executeTool('getPendingPledges', {}, userContext);
+      const data = await aiTools.executeTool('getPendingPledges', {}, userContext);
       const reply = `There are ${data.pendingPledgesCount} pending donor pledge(s) awaiting intake and verification.`;
       const action = buildAction('hospital-active-requests');
       return {
@@ -399,7 +420,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('verification') || lower.includes('verified') || lower.includes('approval')) {
-      const data = await executeTool('getMyVerificationStatus', {}, userContext);
+      const data = await aiTools.executeTool('getMyVerificationStatus', {}, userContext);
       const reply = `Hospital verification status for ${data.hospitalName}: ${data.statusText}. Address: ${data.address}.`;
       const action = buildAction('hospital-overview');
       return {
@@ -415,7 +436,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
   // 6. Admin specific keywords
   if (isAdmin) {
     if (lower.includes('stat') || lower.includes('analytics') || lower.includes('summary') || lower.includes('metric')) {
-      const data = await executeTool('getPlatformStats', {}, userContext);
+      const data = await aiTools.executeTool('getPlatformStats', {}, userContext);
       const reply = `Platform Summary: ${data.totalDonors} registered donors (${data.availableDonors} on standby). ${data.totalRequests} total requests (${data.fulfilledRequests} fulfilled, ${data.openRequests} open). Fulfillment rate: ${data.fulfillmentRate}.`;
       const action = buildAction('admin-analytics');
       return {
@@ -428,7 +449,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('pending') || lower.includes('approve hospital') || lower.includes('unverified hospital')) {
-      const data = await executeTool('getPendingHospitals', {}, userContext);
+      const data = await aiTools.executeTool('getPendingHospitals', {}, userContext);
       const reply = `There are ${data.pendingCount} partner hospital(s) pending administrator approval.`;
       const action = buildAction('admin-users');
       return {
@@ -441,7 +462,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('shortage') || lower.includes('insight') || lower.includes('alert')) {
-      const data = await executeTool('getShortageAlerts', {}, userContext);
+      const data = await aiTools.executeTool('getShortageAlerts', {}, userContext);
       const groups = data.highRiskBloodGroups.length > 0 ? data.highRiskBloodGroups.join(', ') : 'None';
       const reply = `Shortage alerts: High-risk blood groups: ${groups}. ${data.summary}`;
       const action = buildAction('admin-ai-insights');
@@ -455,7 +476,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     }
 
     if (lower.includes('request master') || lower.includes('all requests')) {
-      const data = await executeTool('getRequestOverview', {}, userContext);
+      const data = await aiTools.executeTool('getRequestOverview', {}, userContext);
       const reply = `Request Overview: ${data.totalRequests} total requests recorded, ${data.activeRequestsCount} currently active.`;
       const action = buildAction('admin-requests');
       return {
@@ -469,7 +490,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
   }
 
   // 7. Navigation / "Where is..." lookup
-  const guide = await executeTool('getHowToGuide', { topic: lower }, userContext);
+  const guide = await aiTools.executeTool('getHowToGuide', { topic: lower }, userContext);
   if (guide.found) {
     return {
       reply: `${guide.description} You can find this under ${guide.title}.`,

@@ -306,4 +306,84 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       expect(deduped[1].tab).toBe('incoming-requests');
     });
   });
+
+  describe('Assistant Parity & Polish (Bugs A-D)', () => {
+    const aiTools = require('../src/services/aiTools');
+    const { handleGreeting } = require('../src/services/keywordRouter');
+
+    test('Hospital greeting contains full hospital name (not just first word)', () => {
+      const res = handleGreeting({ role: 'hospital', name: 'City General Hospital' });
+      expect(res.reply).toContain('City General Hospital');
+      expect(res.reply).not.toContain(', City.');
+    });
+
+    test('"where do I see requests?" -> navigation only (no data tool call)', async () => {
+      const spy = jest.spyOn(aiTools, 'executeTool');
+      const res = await routeWithKeywords('where do I see requests?', { role: 'donor' });
+
+      expect(res.reply).toContain('You can find this under');
+      expect(res.actions.length).toBeGreaterThan(0);
+      expect(spy).toHaveBeenCalledWith('getHowToGuide', expect.anything(), expect.anything());
+      expect(spy).not.toHaveBeenCalledWith('getOpenRequestsForMe', expect.anything(), expect.anything());
+      spy.mockRestore();
+    });
+
+    test('"how many active requests?" (hospital, 0 active) -> "0 active requests" + New Blood Request button', async () => {
+      const spy = jest.spyOn(aiTools, 'executeTool').mockImplementation(async (toolName) => {
+        if (toolName === 'getActiveRequests') {
+          return { status: 'active', isVerified: true, totalActive: 0, activeRequests: [] };
+        }
+        return {};
+      });
+
+      const res = await routeWithKeywords('how many active requests?', { role: 'hospital', userId: 'hosp-1' });
+
+      expect(res.reply).toMatch(/^0 active requests/);
+      expect(res.actions).toHaveLength(1);
+      expect(res.actions[0].label).toBe('New Blood Request');
+      expect(res.actions[0].path).toBe('/hospital/dashboard');
+
+      spy.mockRestore();
+    });
+
+    test('Donor with one compatible open request -> reply starts "1 patient is waiting", includes details and action', async () => {
+      const spy = jest.spyOn(aiTools, 'executeTool').mockImplementation(async (toolName) => {
+        if (toolName === 'getOpenRequestsForMe') {
+          return {
+            donorBloodGroup: 'B+',
+            totalMatchingRequests: 1,
+            requests: [
+              {
+                id: 'req-1',
+                patientName: 'Sarah Connor',
+                bloodGroup: 'B+',
+                unitsNeeded: 2,
+                unitsFulfilled: 0,
+                urgency: 'critical',
+                hospitalName: 'Apollo Hospital',
+                distanceKm: 3.5,
+              },
+            ],
+          };
+        }
+        return {};
+      });
+
+      const res = await routeWithKeywords('find requests matching my blood group', {
+        role: 'donor',
+        userId: 'donor-1',
+      });
+
+      expect(res.reply).toMatch(/^1 patient is waiting/);
+      expect(res.reply).toContain('B+');
+      expect(res.reply).toContain('2 unit(s)');
+      expect(res.reply).toContain('Apollo Hospital');
+      expect(res.reply).toContain('critical');
+      expect(res.actions).toHaveLength(1);
+      expect(res.actions[0].path).toBe('/donor/dashboard');
+      expect(res.actions[0].tab).toBe('requests');
+
+      spy.mockRestore();
+    });
+  });
 });

@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-231_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-247_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -236,11 +236,11 @@ LifeLink includes a rigorous automated testing and accessibility assurance suite
 
 ### Backend Automated Tests (Jest + Supertest)
 ```bash
-# Run 231 automated backend tests
+# Run 247 automated backend tests
 cd server
 npm test
 ```
-- **15 Test Suites / 231 Tests**: 100% pass rate.
+- **16 Test Suites / 247 Tests**: 100% pass rate.
 - Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, transaction integrity, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit
