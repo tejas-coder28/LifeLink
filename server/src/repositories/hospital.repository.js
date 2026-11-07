@@ -105,6 +105,63 @@ class HospitalRepository extends BaseRepository {
 
     return normalizeDoc({ id: hospRef.id, data: () => ({ ...hospital, inventory, updatedAt: now }) }, this);
   }
+
+  /**
+   * Applies inventory deduction strictly as a write operation within an active transaction.
+   * Expects already-read hospital data.
+   */
+  applyDeductStock(transaction, hospitalId, currentInventory, bloodGroup, unitsToDeduct) {
+    const hospRef = this.collection.doc(hospitalId.toString());
+    const inventory = currentInventory ? [...currentInventory] : [...DEFAULT_INVENTORY];
+    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
+
+    if (itemIndex === -1) {
+      throw new Error(`Blood group ${bloodGroup} not present in hospital inventory`);
+    }
+
+    const currentUnits = inventory[itemIndex].units || 0;
+    if (currentUnits < unitsToDeduct) {
+      throw new Error(`Insufficient stock for ${bloodGroup} (available: ${currentUnits}, needed: ${unitsToDeduct})`);
+    }
+
+    inventory[itemIndex] = {
+      ...inventory[itemIndex],
+      units: currentUnits - unitsToDeduct,
+    };
+
+    const now = new Date();
+    transaction.update(hospRef, {
+      inventory,
+      updatedAt: now,
+    });
+    return inventory;
+  }
+
+  /**
+   * Applies inventory addition strictly as a write operation within an active transaction.
+   * Expects already-read hospital data.
+   */
+  applyAddStock(transaction, hospitalId, currentInventory, bloodGroup, unitsToAdd) {
+    const hospRef = this.collection.doc(hospitalId.toString());
+    const inventory = currentInventory ? [...currentInventory] : [...DEFAULT_INVENTORY];
+    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
+
+    if (itemIndex === -1) {
+      inventory.push({ bloodGroup, units: unitsToAdd });
+    } else {
+      inventory[itemIndex] = {
+        ...inventory[itemIndex],
+        units: (inventory[itemIndex].units || 0) + unitsToAdd,
+      };
+    }
+
+    const now = new Date();
+    transaction.update(hospRef, {
+      inventory,
+      updatedAt: now,
+    });
+    return inventory;
+  }
 }
 
 const hospitalRepo = new HospitalRepository();

@@ -105,6 +105,7 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Availability toggle (ONLINE -> success state) */}
       <div
+        id="standby-status-setting"
         className="p-4 rounded-2xl flex items-center justify-between border border-hairline bg-surface/70 backdrop-blur-md"
       >
         <div>

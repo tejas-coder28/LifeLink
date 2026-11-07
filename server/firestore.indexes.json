@@ -21,6 +21,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "targetHospital", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bloodRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetHospital", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
@@ -31,6 +39,14 @@
       "fields": [
         { "fieldPath": "requester", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bloodRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "requester", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     },
     {

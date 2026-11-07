@@ -261,11 +261,29 @@ class InMemoryFirestore {
   }
 
   async runTransaction(updateFn) {
+    let hasWritten = false;
     const txn = {
-      get: async (docRef) => await docRef.get(),
-      set: (docRef, data, options) => { docRef.set(data, options); return txn; },
-      update: (docRef, data) => { docRef.update(data); return txn; },
-      delete: (docRef) => { docRef.delete(); return txn; },
+      get: async (docRef) => {
+        if (hasWritten) {
+          throw new Error('Firestore transactions require all reads to be executed before all writes.');
+        }
+        return await docRef.get();
+      },
+      set: (docRef, data, options) => {
+        hasWritten = true;
+        docRef.set(data, options);
+        return txn;
+      },
+      update: (docRef, data) => {
+        hasWritten = true;
+        docRef.update(data);
+        return txn;
+      },
+      delete: (docRef) => {
+        hasWritten = true;
+        docRef.delete();
+        return txn;
+      },
     };
     return await updateFn(txn);
   }

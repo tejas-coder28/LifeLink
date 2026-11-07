@@ -7,6 +7,9 @@ const { validate } = require('../middleware/validate.middleware');
 const {
   createRequestSchema,
   updateStatusSchema,
+  editRequestSchema,
+  cancelRequestSchema,
+  closeRequestSchema,
   rejectRequestSchema,
   issueCompatibleSchema,
   issuePatientSchema,
@@ -25,14 +28,23 @@ router.post('/:requestId/notify/:donorId', protect, pingController.notifyDonor);
 router.post('/', protect, validate(createRequestSchema), requestController.createRequest);
 router.patch('/:id/status', protect, validate(updateStatusSchema), requestController.updateStatus);
 
+// Edit, cancel, and close request routes
+router.patch('/:id/cancel', protect, validate(cancelRequestSchema), requestController.cancelRequest);
+router.post('/:id/cancel', protect, validate(cancelRequestSchema), requestController.cancelRequest);
+router.patch('/:id/close', protect, validate(closeRequestSchema), requestController.closeRequest);
+router.post('/:id/close', protect, validate(closeRequestSchema), requestController.closeRequest);
+router.patch('/:id', protect, validate(editRequestSchema), requestController.editRequest);
+router.put('/:id', protect, validate(editRequestSchema), requestController.editRequest);
+
 // Hospital review and inventory fulfillment routes
 router.patch('/:id/accept', protect, authorize('hospital', 'admin'), requestController.acceptRequest);
 router.patch('/:id/reject', protect, authorize('hospital', 'admin'), validate(rejectRequestSchema), requestController.rejectRequest);
 router.post('/:id/issue-compatible', protect, authorize('hospital', 'admin'), validate(issueCompatibleSchema), requestController.issueCompatibleUnits);
 router.post('/:id/issue-patient', protect, authorize('hospital', 'admin'), validate(issuePatientSchema), requestController.issuePatientUnits);
 
-// Admin-only: delete a fake or spam blood request  →  DELETE /api/requests/:id
-router.delete('/:id', protect, authorize('admin'), requestController.deleteRequest);
+// Undo-create / delete blood request:
+// Allowed within 5 minutes and 0 pledges for owning hospital/requester, or anytime for admin
+router.delete('/:id', protect, requestController.deleteRequest);
 
 module.exports = router;
 

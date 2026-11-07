@@ -124,6 +124,15 @@ const TOOL_DEFINITIONS = {
       properties: {},
     },
   },
+  getCancelledRequests: {
+    fn: hospitalTools.getCancelledRequests,
+    roles: ['hospital', 'admin', 'user', 'donor', 'individual', 'recipient'],
+    description: 'Get count and summary of cancelled emergency blood requests.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
 
   // --- Admin Tools ---
   getPlatformStats: {

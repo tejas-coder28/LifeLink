@@ -4,6 +4,7 @@ const Donation = require('../../repositories/donation.repository');
 const { BLOOD_GROUPS } = require('../../utils/bloodCompatibility');
 const { findMatchesForRequestId } = require('../matching.service');
 const { ML_PER_UNIT, formatUnits } = require('../../config/bloodUnits');
+const { getHospitalRequestsBundle } = require('../hospitalRequestRules');
 
 /**
  * Returns inventory breakdown for all 8 blood groups, total, low stock (<= 3), and critical (= 0).
@@ -55,15 +56,12 @@ async function getIncomingDemands(context) {
     return { error: 'Hospital profile not found for this account' };
   }
 
-  const demands = await BloodRequest.find({
-    targetHospital: hospital._id,
-    status: 'pending_hospital_review',
-  }).sort({ createdAt: -1 });
+  const bundle = await getHospitalRequestsBundle(hospital, { skipDonorsSync: true });
 
   return {
     hospitalName: hospital.name,
-    pendingDemandsCount: demands.length,
-    demands: demands.slice(0, 8).map((req) => ({
+    pendingDemandsCount: bundle.incomingCount,
+    demands: bundle.incomingDemands.slice(0, 8).map((req) => ({
       id: req._id.toString(),
       patientName: req.patientName,
       bloodGroup: req.bloodGroup,
@@ -96,19 +94,13 @@ async function getActiveRequests(context) {
     };
   }
 
-  // Mirror the UI: hospital's active broadcasts = requests where targetHospital === this hospital
-  // AND status is open, matching, or partially_fulfilled.
-  // This matches the same filter used by HospitalDashboard activeRequestsCount.
-  const requests = await BloodRequest.find({
-    targetHospital: hospital._id,
-    status: { $in: ['open', 'matching', 'partially_fulfilled'] },
-  }).sort({ createdAt: -1 });
+  const bundle = await getHospitalRequestsBundle(hospital, { skipDonorsSync: true });
 
   return {
     status: 'active',
     isVerified: true,
-    totalActive: requests.length,
-    activeRequests: requests.slice(0, 8).map((req) => ({
+    totalActive: bundle.activeCount,
+    activeRequests: bundle.activeRequests.slice(0, 8).map((req) => ({
       id: req._id.toString(),
       patientName: req.patientName,
       bloodGroup: req.bloodGroup,
@@ -246,6 +238,63 @@ async function getMyVerificationStatus(context) {
   };
 }
 
+/**
+ * Returns cancelled requests for this hospital or user.
+ */
+async function getCancelledRequests(context) {
+  let count = 0;
+  let requests = [];
+
+  if (context.role === 'hospital') {
+    const hospital = await Hospital.findOne({ user: context.userId });
+    if (!hospital) {
+      return { cancelledCount: 0, message: 'Hospital profile not found', requests: [] };
+    }
+    const hospId = hospital._id.toString();
+    const docs = await BloodRequest.find({
+      $or: [
+        { targetHospital: hospId },
+        { hospital: hospId },
+        { requester: context.userId },
+      ],
+      status: 'cancelled',
+    }).sort({ cancelledAt: -1, createdAt: -1 });
+    count = docs.length;
+    requests = docs.slice(0, 5).map((r) => ({
+      id: r._id.toString(),
+      patientName: r.patientName,
+      bloodGroup: r.bloodGroup,
+      cancelReason: r.cancelReasonLabel || r.cancelReason,
+      cancelledAt: r.cancelledAt,
+    }));
+  } else if (context.role === 'admin') {
+    const docs = await BloodRequest.find({ status: 'cancelled' }).sort({ cancelledAt: -1 });
+    count = docs.length;
+    requests = docs.slice(0, 5).map((r) => ({
+      id: r._id.toString(),
+      patientName: r.patientName,
+      bloodGroup: r.bloodGroup,
+      cancelReason: r.cancelReasonLabel || r.cancelReason,
+      cancelledAt: r.cancelledAt,
+    }));
+  } else {
+    const docs = await BloodRequest.find({ requester: context.userId, status: 'cancelled' });
+    count = docs.length;
+    requests = docs.slice(0, 5).map((r) => ({
+      id: r._id.toString(),
+      patientName: r.patientName,
+      bloodGroup: r.bloodGroup,
+      cancelReason: r.cancelReasonLabel || r.cancelReason,
+      cancelledAt: r.cancelledAt,
+    }));
+  }
+
+  return {
+    cancelledCount: count,
+    requests,
+  };
+}
+
 module.exports = {
   getInventory,
   getIncomingDemands,
@@ -253,5 +302,6 @@ module.exports = {
   getPendingPledges,
   getMatchingDonors,
   getMyVerificationStatus,
+  getCancelledRequests,
 };
 

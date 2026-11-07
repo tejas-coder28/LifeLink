@@ -2,8 +2,12 @@ import axiosClient from './axiosClient';
 
 export const requestApi = {
   createRequest: (data) => axiosClient.post('/requests', data),
+  editRequest: (id, data) => axiosClient.patch(`/requests/${id}`, data),
+  cancelRequest: (id, data) => axiosClient.patch(`/requests/${id}/cancel`, data),
+  closeRequest: (id, data = {}) => axiosClient.patch(`/requests/${id}/close`, data),
+  deleteRequest: (id) => axiosClient.delete(`/requests/${id}`),
   getRequests: (params) => axiosClient.get('/requests', { params }),
-  getMyRequests: () => axiosClient.get('/requests/my'),
+  getMyRequests: (params) => axiosClient.get('/requests/my', { params }),
   getRequestById: (id) => axiosClient.get(`/requests/${id}`),
   getMatches: (id) => axiosClient.get(`/requests/${id}/matches`),
   updateStatus: (id, status) => axiosClient.patch(`/requests/${id}/status`, { status }),
