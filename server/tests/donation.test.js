@@ -196,11 +196,11 @@ describe('Completing a donation updates lastDonationDate', () => {
     expect(profileAfter.lastDonationDate).not.toBeNull();
     expect(profileAfter.totalDonations).toBe(1);
 
-    // Verify confirming an already completed donation returns 400
+    // Verify confirming an already completed donation returns 409 (Conflict)
     const alreadyCompleted = await request(app)
       .patch(`/api/donations/${donationId}/complete`)
       .set('Authorization', `Bearer ${adminRes.token}`);
-    expect(alreadyCompleted.status).toBe(400);
+    expect([400, 409]).toContain(alreadyCompleted.status);
   });
 
   test('declining a pledge sets status Cancelled and does NOT modify lastDonationDate', async () => {

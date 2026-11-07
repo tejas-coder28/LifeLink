@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -22,7 +22,7 @@ import SlidingTabs from '../../components/common/SlidingTabs';
 import Skeleton from '../../components/common/Skeleton';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
-import { formatUnits } from '../../constants/bloodUnits';
+import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
 
 import {
   Heart,
@@ -46,11 +46,21 @@ import {
   Send
 } from 'lucide-react';
 
+const normalizeDonorTab = (rawTab) => {
+  if (!rawTab) return 'overview';
+  const validTabs = ['overview', 'requests', 'pings', 'profile', 'history', 'notifications', 'camps'];
+  const t = String(rawTab).toLowerCase().trim();
+  if (validTabs.includes(t)) return t;
+  return 'overview';
+};
+
 const DonorDashboard = () => {
   const { user, profile, setProfile } = useAuth();
   const { showSuccess, showError } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab');
+  const activeTab = normalizeDonorTab(rawTab);
+  const tabHeadingRef = useRef(null);
   const [dismissedConfirmBanner, setDismissedConfirmBanner] = useState(false);
 
   // State Data
@@ -185,8 +195,25 @@ const DonorDashboard = () => {
     fetchHospitals();
   }, []);
 
-  const setTab = (tabName) => {
-    setSearchParams({ tab: tabName });
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (tabHeadingRef.current) {
+      tabHeadingRef.current.focus();
+    }
+  }, [activeTab]);
+
+  const setTab = (tabName, extraParams = {}) => {
+    setSearchParams({ tab: tabName, ...extraParams });
+  };
+
+  const handleNavigateToStandbySetting = () => {
+    setTab('profile');
+    setTimeout(() => {
+      const el = document.getElementById('standby-status-setting');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 120);
   };
 
   const handleToggleAvailability = async () => {
@@ -261,11 +288,12 @@ const DonorDashboard = () => {
     }
   };
 
-  // Handle AI navigation / URL params: /donor/dashboard?tab=requests&request=<id>&action=pledge
+  // Handle URL request param: /donor/dashboard?tab=requests&request=<id>
+  // Scrolls & highlights with red ring. Only opens pledge modal if action=pledge.
   useEffect(() => {
     const action = searchParams.get('action');
     const targetId = searchParams.get('request');
-    if (action === 'pledge' && targetId && liveRequests.length > 0) {
+    if (targetId && liveRequests.length > 0) {
       const targetReq = liveRequests.find((r) => (r._id || r.id)?.toString() === targetId);
       if (targetReq) {
         setHighlightedRequestId(targetId);
@@ -276,11 +304,13 @@ const DonorDashboard = () => {
           }
         }, 150);
 
-        // Open modal only if not already pledged
-        const alreadyPledged = Boolean(pledgedUnitsByRequestId[targetId]);
-        if (!alreadyPledged) {
-          setPledgeError(null);
-          setPledgeModalRequest(targetReq);
+        // Open modal only if explicitly action=pledge AND not already pledged
+        if (action === 'pledge') {
+          const alreadyPledged = Boolean(pledgedUnitsByRequestId[targetId]);
+          if (!alreadyPledged) {
+            setPledgeError(null);
+            setPledgeModalRequest(targetReq);
+          }
         }
 
         const timer = setTimeout(() => {
@@ -406,7 +436,7 @@ const DonorDashboard = () => {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="space-y-8">
+        <div ref={tabHeadingRef} tabIndex={-1} className="outline-none space-y-8">
           {/* Pending Pings Callout Banner */}
           {pendingPings.length > 0 && (
             <div className="p-6 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 emergency-pulse bg-danger/10 border-2 border-danger/40">
@@ -439,24 +469,32 @@ const DonorDashboard = () => {
               value={profile?.bloodGroup || 'Not Set'}
               icon={Heart}
               color="rose"
+              onClick={() => setTab('profile')}
+              ariaLabel={`Open Profile & Health (${profile?.bloodGroup || 'Not Set'})`}
             />
             <StatCard
               title="Standby Status"
               value={profile?.isAvailable ? 'ONLINE' : 'OFFLINE'}
               icon={ShieldCheck}
               color={profile?.isAvailable ? 'emerald' : 'slate'}
+              onClick={handleNavigateToStandbySetting}
+              ariaLabel={`Open Standby Status settings in Profile & Health (${profile?.isAvailable ? 'ONLINE' : 'OFFLINE'})`}
             />
             <StatCard
               title="Last Donation"
               value={profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None'}
               icon={Calendar}
               color="sky"
+              onClick={() => setTab('history')}
+              ariaLabel={`Open Donation History (Last donation: ${profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None'})`}
             />
             <StatCard
               title="Completed donations"
               value={donationHistory.filter((d) => d.status === 'completed').length}
               icon={CheckCircle2}
               color="amber"
+              onClick={() => setTab('history')}
+              ariaLabel={`Open Donation History (${donationHistory.filter((d) => d.status === 'completed').length} completed)`}
             />
           </div>
 
@@ -467,7 +505,12 @@ const DonorDashboard = () => {
                 <Activity className="w-5 h-5 mr-2 animate-pulse text-danger" />
                 Live Emergency Blood Needs
               </h2>
-              <button onClick={() => setTab('requests')} className="text-xs font-bold text-info hover:underline transition-colors cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setTab('requests')}
+                className="text-xs font-bold text-info hover:underline transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                aria-label="View all open emergency blood requests"
+              >
                 View All →
               </button>
             </div>
@@ -496,7 +539,7 @@ const DonorDashboard = () => {
                         request={req}
                         isDonorCard={true}
                         donorBloodGroup={profile?.bloodGroup}
-                        onSelect={setSelectedRequest}
+                        onSelect={() => setTab('requests', { request: reqId })}
                         onPledge={() => handleOpenPledgeModal(req)}
                         isPledged={hasPledged}
                         pledgedAmount={myPledgedUnits}
@@ -514,7 +557,7 @@ const DonorDashboard = () => {
 
       {/* TAB 2: BLOOD REQUESTS */}
       {activeTab === 'requests' && (
-        <div className="space-y-6">
+        <div ref={tabHeadingRef} tabIndex={-1} className="outline-none space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-black text-primary font-heading">Broadcast Blood Requests</h2>
@@ -559,7 +602,7 @@ const DonorDashboard = () => {
 
       {/* TAB 3: PROFILE & HEALTH */}
       {activeTab === 'profile' && (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div ref={tabHeadingRef} tabIndex={-1} className="max-w-3xl mx-auto space-y-6 outline-none">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-black text-primary font-heading">Donor Profile & Medical Credentials</h2>
             <p className="text-xs text-secondary">
@@ -575,7 +618,7 @@ const DonorDashboard = () => {
 
       {/* TAB 4: DONATION HISTORY */}
       {activeTab === 'history' && (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div ref={tabHeadingRef} tabIndex={-1} className="max-w-4xl mx-auto space-y-6 outline-none">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-black text-primary font-heading">Donation Impact History</h2>
             <p className="text-xs text-secondary">Track past pledges, completed blood donations, and verified hospital fulfillments.</p>

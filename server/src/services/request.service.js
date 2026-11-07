@@ -9,27 +9,21 @@ const { getDb } = require('../config/db');
 const { notifyMatchedDonorsForRequest } = require('./notification.service');
 const { canDonate } = require('../utils/bloodCompatibility');
 const { rankDonorsForRequest } = require('./matching.service');
-const { canSeekDonors } = require('../utils/requestRules');
+const {
+  ACTIVE_REQUEST_STATUSES,
+  INCOMING_REQUEST_STATUSES,
+  CLOSED_REQUEST_STATUSES,
+  CANCEL_REASONS,
+  CANCEL_LABELS,
+  isActiveRequest,
+  canSeekDonors,
+} = require('../utils/statusHelper');
+const { formatUnits } = require('../config/bloodUnits');
 const pingService = require('./ping.service');
-
-/**
- * Checks if a critical request has passed the 15-minute threshold without hospital response.
- * If so, updates status to 'hospital_no_response'.
- */
-const checkHospitalTimeout = async (requestDoc) => {
-  if (!requestDoc) return requestDoc;
-  if (
-    requestDoc.urgency === 'critical' &&
-    requestDoc.status === 'pending_hospital_review'
-  ) {
-    const elapsedMs = Date.now() - new Date(requestDoc.createdAt).getTime();
-    if (elapsedMs >= 15 * 60 * 1000) {
-      requestDoc.status = 'hospital_no_response';
-      await requestDoc.save();
-    }
-  }
-  return requestDoc;
-};
+const {
+  checkHospitalTimeout,
+  getHospitalRequestsBundle,
+} = require('./hospitalRequestRules');
 
 const createRequest = async (userId, requestData) => {
   const {
@@ -199,7 +193,7 @@ const getRequests = async (filters = {}, callerUser = null) => {
   return updatedRequests;
 };
 
-const getMyRequests = async (callerUser) => {
+const getMyRequests = async (callerUser, options = {}) => {
   const candidateDonors = await DonorProfile.find()
     .populate('user', 'name email phone accountType hospitalId');
 
@@ -211,25 +205,11 @@ const getMyRequests = async (callerUser) => {
       throw err;
     }
 
-    const requests = await BloodRequest.find({
-      targetHospital: callerHospital._id,
-      status: { $ne: 'legacy' },
-    })
-      .populate('requester', 'name email phone')
-      .populate('targetHospital', 'name phone address location isVerified inventory')
-      .sort({ createdAt: -1 });
-
-    const updatedRequests = [];
-    for (const req of requests) {
-      const timedReq = await checkHospitalTimeout(req);
-      const matches = rankDonorsForRequest(timedReq, candidateDonors);
-      timedReq.matchedDonorsCount = matches.length;
-      if (req.matchedDonorsCount !== matches.length) {
-        await BloodRequest.findByIdAndUpdate(req._id, { matchedDonorsCount: matches.length });
-      }
-      updatedRequests.push(timedReq);
+    const bundle = await getHospitalRequestsBundle(callerHospital);
+    if (options.includeAll) {
+      return bundle.allRequests;
     }
-    return updatedRequests;
+    return bundle.activeRequests;
   }
 
   const requests = await BloodRequest.find({
@@ -317,50 +297,8 @@ const getIncomingHospitalRequests = async (userId) => {
     throw err;
   }
 
-  const requests = await BloodRequest.find({
-    targetHospital: hospital._id,
-    status: { $ne: 'legacy' },
-  })
-    .populate('requester', 'name email phone')
-    .populate('targetHospital', 'name phone address location inventory isVerified')
-    .sort({ createdAt: -1 });
-
-  const candidateDonors = await DonorProfile.find()
-    .populate('user', 'name email phone accountType hospitalId');
-
-  // Apply timeout checks on read and synchronize matchedDonorsCount
-  const updatedRequests = [];
-  for (const r of requests) {
-    const timedReq = await checkHospitalTimeout(r);
-    const matches = rankDonorsForRequest(timedReq, candidateDonors);
-    timedReq.matchedDonorsCount = matches.length;
-    if (r.matchedDonorsCount !== matches.length) {
-      await BloodRequest.findByIdAndUpdate(r._id, { matchedDonorsCount: matches.length });
-    }
-    updatedRequests.push(timedReq);
-  }
-
-  // Fetch all pledges for these requests to display live in dashboard
-  const requestIds = updatedRequests.map(r => r._id);
-  let donations = [];
-  if (requestIds.length > 0) {
-    donations = await Donation.find({ request: { $in: requestIds } })
-      .populate('donor', 'name email phone')
-      .populate('donorProfile');
-  }
-
-  const donationsByRequestId = {};
-  donations.forEach(d => {
-    const rId = (d.request?._id || d.request).toString();
-    if (!donationsByRequestId[rId]) donationsByRequestId[rId] = [];
-    donationsByRequestId[rId].push(d);
-  });
-
-  return updatedRequests.map(r => {
-    const rObj = typeof r.toObject === 'function' ? r.toObject() : { ...r };
-    rObj.donations = donationsByRequestId[r._id.toString()] || [];
-    return rObj;
-  });
+  const bundle = await getHospitalRequestsBundle(hospital, { forIncomingEndpoint: true });
+  return bundle.incomingDemands;
 };
 
 /**
@@ -804,6 +742,657 @@ const issuePatientUnits = async (requestId, userId, callerRole, units = 1) => {
     .populate('targetHospital', 'name phone address location inventory');
 };
 
+/**
+ * Edit blood request:
+ * Editable fields: patientName, unitsNeeded, urgency, requiredByDate, notes, address.
+ * Disallowed fields: bloodGroup, targetHospital/hospital.
+ * Rule: units cannot go below (pledged + received).
+ * Logs changed fields in editHistory and notifies donors if urgency/units change.
+ */
+const editRequest = async (requestId, callerUser, updateData = {}) => {
+  const request = await BloodRequest.findById(requestId);
+  if (!request) {
+    const err = new Error('Blood request not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Authorization check: owning hospital, requester, or admin
+  let isAuthorized = false;
+  let callerHospitalId = null;
+  if (callerUser) {
+    if (callerUser.accountType === 'admin') {
+      isAuthorized = true;
+    } else if (callerUser.accountType === 'hospital') {
+      const hospital = await Hospital.findOne({ user: callerUser._id });
+      if (hospital) {
+        callerHospitalId = hospital._id.toString();
+        const targetHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+        if (targetHospId && targetHospId === callerHospitalId) {
+          isAuthorized = true;
+        }
+      }
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    } else {
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    const err = new Error('Unauthorized: Only the owning hospital, requester, or an admin can edit this request');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (request.status === 'cancelled' || request.status === 'closed') {
+    const err = new Error(`Cannot edit a ${request.status} blood request`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Reject edits to blood group or hospital
+  if (updateData.bloodGroup && updateData.bloodGroup !== request.bloodGroup) {
+    const err = new Error('Blood group cannot be edited. Please cancel this request and create a new one.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const existingHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+  const newTargetHospId = updateData.targetHospital || updateData.hospital || updateData.hospitalId;
+  if (newTargetHospId && existingHospId && newTargetHospId.toString() !== existingHospId) {
+    const err = new Error('Hospital assignment cannot be edited. Please cancel this request and create a new one.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Check units rule: units cannot go below (pledged + received)
+  const activePledges = await Donation.find({ request: requestId, status: 'pledged' });
+  const pledgedUnits = activePledges.reduce((sum, p) => sum + (Number(p.unitsDonated) || 1), 0);
+  const receivedUnits = Number(request.unitsFulfilled || 0);
+  const minAllowedUnits = receivedUnits + pledgedUnits;
+
+  const newUnitsNeeded = updateData.unitsNeeded !== undefined ? Number(updateData.unitsNeeded) : (updateData.unitsRequired !== undefined ? Number(updateData.unitsRequired) : undefined);
+
+  if (newUnitsNeeded !== undefined && newUnitsNeeded < minAllowedUnits) {
+    const err = new Error(`Units required cannot be reduced below ${minAllowedUnits} (${receivedUnits} already received + ${pledgedUnits} pledged by donors).`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const changedFields = [];
+  const updates = {};
+
+  if (updateData.patientName !== undefined && updateData.patientName !== request.patientName) {
+    changedFields.push('patientName');
+    updates.patientName = updateData.patientName;
+  }
+  if (newUnitsNeeded !== undefined && newUnitsNeeded !== request.unitsNeeded) {
+    changedFields.push('unitsNeeded');
+    updates.unitsNeeded = newUnitsNeeded;
+    const fromStock = Number(request.unitsFromStock || 0);
+    updates.unitsFromDonors = Math.max(0, newUnitsNeeded - fromStock);
+  }
+  if (updateData.urgency !== undefined && updateData.urgency !== request.urgency) {
+    changedFields.push('urgency');
+    updates.urgency = updateData.urgency;
+  }
+  if (updateData.requiredByDate !== undefined && updateData.requiredByDate !== request.requiredByDate) {
+    changedFields.push('requiredByDate');
+    updates.requiredByDate = updateData.requiredByDate;
+  }
+  if (updateData.notes !== undefined && updateData.notes !== request.notes) {
+    changedFields.push('notes');
+    updates.notes = updateData.notes;
+  }
+  if (updateData.address !== undefined && updateData.address !== request.address) {
+    changedFields.push('address');
+    updates.address = updateData.address;
+  }
+
+  if (changedFields.length > 0) {
+    const now = new Date();
+    updates.isEdited = true;
+    updates.lastEditedAt = now;
+    updates.lastEditedBy = callerUser ? callerUser._id.toString() : null;
+    updates.editHistory = [
+      ...(request.editHistory || []),
+      {
+        editedBy: callerUser ? callerUser._id.toString() : null,
+        editedAt: now,
+        changedFields,
+      },
+    ];
+    updates.updatedAt = now;
+
+    await BloodRequest.findByIdAndUpdate(requestId, updates);
+
+    // Audit log
+    const AuditLog = require('../repositories/auditLog.repository');
+    await AuditLog.record({
+      action: 'request_edited',
+      targetId: requestId,
+      targetType: 'BloodRequest',
+      actor: callerUser ? callerUser._id : null,
+      actorRole: callerUser ? (callerUser.accountType || callerUser.role) : 'unknown',
+      hospitalId: callerHospitalId || existingHospId,
+      changedFields,
+      metadata: updates,
+    });
+
+    // Notify pledged and matched donors if anything other than patientName/notes changed
+    const criticalFieldsChanged = changedFields.filter((f) => !['patientName', 'notes', 'address'].includes(f));
+    if (criticalFieldsChanged.length > 0) {
+      const changeSummaries = [];
+      if (updates.unitsNeeded !== undefined) changeSummaries.push(`units required: ${formatUnits(updates.unitsNeeded)}`);
+      if (updates.urgency !== undefined) changeSummaries.push(`urgency: ${updates.urgency.toUpperCase()}`);
+      if (updates.requiredByDate !== undefined) changeSummaries.push(`required-by date: ${updates.requiredByDate}`);
+
+      const notifMessage = `Request updated: ${changeSummaries.join(', ')}.`;
+
+      for (const p of activePledges) {
+        await Notification.create({
+          recipient: p.donor,
+          title: 'Blood Request Updated',
+          message: notifMessage,
+          type: 'status_update',
+          link: `/donor?tab=history`,
+        });
+      }
+
+      try {
+        const populated = await BloodRequest.findById(requestId)
+          .populate('requester', 'name email phone')
+          .populate('targetHospital', 'name phone address location');
+        await notifyMatchedDonorsForRequest(populated, { customMessage: notifMessage });
+      } catch (err) {
+        console.error('Failed to notify matched donors on edit:', err.message);
+      }
+    }
+  }
+
+  return await BloodRequest.findById(requestId)
+    .populate('requester', 'name email phone')
+    .populate('targetHospital', 'name phone address location isVerified');
+};
+
+/**
+ * Cancel blood request:
+ * One atomic transaction following Firestore rules: ALL reads first, compute, ALL writes last.
+ * - Releases pending pledges (status -> 'released') without affecting donor cooldown or stats
+ * - Returns stock to inventory if units were allocated from hospital stock
+ * - Creates donor notifications and audit log
+ * - Idempotent: cancelling twice returns friendly 409
+ * - Blocked (409) if any pledge is already fulfilled -> offers Close request
+ */
+const cancelRequest = async (requestId, callerUser, cancelData = {}) => {
+  const db = getDb();
+  const { reason, note } = cancelData;
+  const reasonCode = reason || 'created_by_mistake';
+  const friendlyReason = CANCEL_REASONS[reasonCode] || 'created by mistake';
+
+  const request = await BloodRequest.findById(requestId);
+  if (!request) {
+    const err = new Error('Blood request not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Authorization check: owning hospital, requester, or admin
+  let isAuthorized = false;
+  let callerHospitalId = null;
+  if (callerUser) {
+    if (callerUser.accountType === 'admin') {
+      isAuthorized = true;
+    } else if (callerUser.accountType === 'hospital') {
+      const hospital = await Hospital.findOne({ user: callerUser._id });
+      if (hospital) {
+        callerHospitalId = hospital._id.toString();
+        const targetHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+        if (targetHospId && targetHospId === callerHospitalId) {
+          isAuthorized = true;
+        }
+      }
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    } else {
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    const err = new Error('Unauthorized: Only the owning hospital, requester, or an admin can cancel this request');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // Idempotent: cancelling twice returns friendly 409
+  if (request.status === 'cancelled') {
+    const err = new Error('This blood request has already been cancelled.');
+    err.statusCode = 409;
+    throw err;
+  }
+  if (request.status === 'closed') {
+    const err = new Error('This blood request is closed and cannot be cancelled.');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  // Blocked if any pledge is already fulfilled
+  const receivedUnits = Number(request.unitsFulfilled || 0);
+  const completedDonations = await Donation.find({
+    request: requestId,
+    status: { $in: ['completed', 'fulfilled'] },
+  });
+  if (receivedUnits > 0 || completedDonations.length > 0) {
+    const err = new Error('This request cannot be cancelled because donations have already been fulfilled. Please close the request instead to stop new pledges while keeping received units recorded.');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  // Rate-limiting per hospital: maximum 10 cancellations per hour
+  const targetHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+  const hospToCheck = callerHospitalId || targetHospId;
+  if (hospToCheck && callerUser?.accountType !== 'admin') {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentCancels = await BloodRequest.countDocuments({
+      targetHospital: hospToCheck,
+      status: 'cancelled',
+      cancelledAt: { $gte: oneHourAgo },
+    });
+    if (recentCancels >= 10) {
+      const err = new Error('Cancellation rate limit reached for this hospital (maximum 10 cancellations per hour). Please contact platform administration if you need urgent assistance.');
+      err.statusCode = 429;
+      throw err;
+    }
+  }
+
+  const activePledges = await Donation.find({ request: requestId, status: 'pledged' });
+  const unitsFromStock = Number(request.unitsFromStock || 0);
+  const hospitalName = request.hospitalName || request.targetHospital?.name || 'the hospital';
+
+  let stockReturnedUnits = 0;
+
+  // Atomic transaction: ALL reads first, compute, ALL writes last
+  await db.runTransaction(async (transaction) => {
+    const reqRef = BloodRequest.collection.doc(requestId.toString());
+    const hospRef = (unitsFromStock > 0 && targetHospId) ? Hospital.collection.doc(targetHospId) : null;
+    const pledgeRefs = activePledges.map((p) => Donation.collection.doc(p._id.toString()));
+
+    // (a) ALL READS FIRST
+    const [reqSnap, hospSnap, ...pledgeSnaps] = await Promise.all([
+      transaction.get(reqRef),
+      hospRef ? transaction.get(hospRef) : Promise.resolve(null),
+      ...pledgeRefs.map((r) => transaction.get(r)),
+    ]);
+
+    if (!reqSnap.exists) {
+      const err = new Error('Blood request not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    const currentReq = BloodRequest.normalize(reqSnap);
+    if (currentReq.status === 'cancelled') {
+      const err = new Error('This blood request has already been cancelled.');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (Number(currentReq.unitsFulfilled || 0) > 0) {
+      const err = new Error('This request cannot be cancelled because donations have already been fulfilled. Please close the request instead.');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // (b) COMPUTE IN PLAIN JS
+    const now = new Date();
+    const reqUpdates = {
+      status: 'cancelled',
+      cancelReason: reasonCode,
+      cancelReasonLabel: CANCEL_LABELS[reasonCode] || reasonCode,
+      cancelInternalNote: (note || '').slice(0, 200),
+      cancelledAt: now,
+      cancelledBy: callerUser ? callerUser._id.toString() : null,
+      updatedAt: now,
+    };
+
+    // Return stock if units were allocated from stock
+    let newInventory = null;
+    let invTxDocRef = null;
+    let invTxPayload = null;
+    if (hospRef && hospSnap && hospSnap.exists && unitsFromStock > 0) {
+      const hospData = Hospital.normalize(hospSnap);
+      const inventory = hospData.inventory ? [...hospData.inventory] : [];
+      const itemIndex = inventory.findIndex((i) => i.bloodGroup === currentReq.bloodGroup);
+      if (itemIndex !== -1) {
+        inventory[itemIndex] = {
+          ...inventory[itemIndex],
+          units: (Number(inventory[itemIndex].units) || 0) + unitsFromStock,
+        };
+      } else {
+        inventory.push({ bloodGroup: currentReq.bloodGroup, units: unitsFromStock });
+      }
+      newInventory = inventory;
+      reqUpdates.unitsFromStock = 0;
+      stockReturnedUnits = unitsFromStock;
+
+      invTxDocRef = InventoryTransaction.collection.doc();
+      invTxPayload = {
+        hospital: hospRef.id,
+        bloodGroup: currentReq.bloodGroup,
+        change: unitsFromStock,
+        reason: 'cancelled_request_returned',
+        request: currentReq._id,
+        actor: callerUser ? callerUser._id.toString() : null,
+        notes: `Returned ${unitsFromStock} unit(s) to hospital stock after request was cancelled (${reasonCode})`,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
+    // Pending pledges released
+    const pledgeUpdates = [];
+    const notifications = [];
+
+    for (let i = 0; i < pledgeRefs.length; i++) {
+      const pRef = pledgeRefs[i];
+      const pSnap = pledgeSnaps[i];
+      if (pSnap && pSnap.exists) {
+        const pData = Donation.normalize(pSnap);
+        if (pData.status === 'pledged') {
+          pledgeUpdates.push({
+            ref: pRef,
+            data: {
+              status: 'released',
+              releasedReason: 'request_cancelled',
+              releasedAt: now,
+              updatedAt: now,
+            },
+          });
+
+          // Pledged donor notification
+          const notifRef = Notification.collection.doc();
+          notifications.push({
+            ref: notifRef,
+            data: {
+              recipient: pData.donor,
+              title: 'Request Cancelled',
+              message: `Request cancelled by ${hospitalName}. Sorry for the confusion - your pledge was released and your eligibility is unchanged. Thank you for being ready to help.`,
+              type: 'status_update',
+              link: '/donor?tab=history',
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+        }
+      }
+    }
+
+    // (c) ALL WRITES LAST
+    transaction.update(reqRef, reqUpdates);
+    for (const pu of pledgeUpdates) {
+      transaction.update(pu.ref, pu.data);
+    }
+    if (hospRef && newInventory) {
+      transaction.update(hospRef, { inventory: newInventory, updatedAt: now });
+      if (invTxDocRef && invTxPayload) {
+        transaction.set(invTxDocRef, invTxPayload);
+      }
+    }
+    for (const n of notifications) {
+      transaction.set(n.ref, n.data);
+    }
+  });
+
+  // Post-transaction
+  await pingService.cancelPendingPingsForRequest(requestId);
+
+  // Notify matched-only donors (never expose internal note; show friendly mapped reason)
+  try {
+    const candidateDonors = await DonorProfile.find().populate('user', 'name email');
+    const matchedDonors = rankDonorsForRequest(request, candidateDonors);
+    const pledgedDonorIds = new Set(activePledges.map((p) => p.donor?.toString()));
+    for (const match of matchedDonors) {
+      const dUserId = (match.donor?.user?._id || match.donor?.user || match.donor?._id)?.toString();
+      if (dUserId && !pledgedDonorIds.has(dUserId)) {
+        await Notification.create({
+          recipient: dUserId,
+          title: 'Blood Request Withdrawn',
+          message: 'A request you were matched to has been withdrawn.',
+          type: 'status_update',
+          link: '/donor?tab=requests',
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to notify matched donors on cancel:', err.message);
+  }
+
+  // Record audit log
+  const AuditLog = require('../repositories/auditLog.repository');
+  await AuditLog.record({
+    action: 'request_cancelled',
+    targetId: requestId,
+    targetType: 'BloodRequest',
+    actor: callerUser ? callerUser._id : null,
+    actorRole: callerUser ? (callerUser.accountType || callerUser.role) : 'unknown',
+    hospitalId: targetHospId || callerHospitalId,
+    reasonCode,
+    note: (note || '').slice(0, 200),
+    metadata: {
+      pledgesReleased: activePledges.length,
+      stockReturned: stockReturnedUnits,
+    },
+  });
+
+  return {
+    success: true,
+    message: `Blood request cancelled successfully. ${activePledges.length} active pledge(s) released.${stockReturnedUnits > 0 ? ` ${stockReturnedUnits} unit(s) returned to hospital stock.` : ''}`,
+    stockReturned: stockReturnedUnits,
+    pledgesReleased: activePledges.length,
+  };
+};
+
+/**
+ * Close blood request:
+ * For requests with fulfilled pledges where new pledges are stopped.
+ */
+const closeRequest = async (requestId, callerUser, note = '') => {
+  const request = await BloodRequest.findById(requestId);
+  if (!request) {
+    const err = new Error('Blood request not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Authorization check
+  let isAuthorized = false;
+  if (callerUser) {
+    if (callerUser.accountType === 'admin') {
+      isAuthorized = true;
+    } else if (callerUser.accountType === 'hospital') {
+      const hospital = await Hospital.findOne({ user: callerUser._id });
+      const targetHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+      if (hospital && targetHospId && targetHospId === hospital._id.toString()) {
+        isAuthorized = true;
+      }
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    } else {
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    const err = new Error('Unauthorized: Only the owning hospital, requester, or an admin can close this request');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (request.status === 'closed') {
+    const err = new Error('This blood request is already closed.');
+    err.statusCode = 409;
+    throw err;
+  }
+  if (request.status === 'cancelled') {
+    const err = new Error('This blood request is cancelled and cannot be closed.');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const now = new Date();
+  request.status = 'closed';
+  request.closedAt = now;
+  request.closedBy = callerUser ? callerUser._id.toString() : null;
+  request.closeNote = (note || '').slice(0, 200);
+  request.updatedAt = now;
+  await request.save();
+
+  // Release any remaining pending pledges
+  const activePledges = await Donation.find({ request: requestId, status: 'pledged' });
+  const hospitalName = request.hospitalName || request.targetHospital?.name || 'the hospital';
+  for (const p of activePledges) {
+    await Donation.findByIdAndUpdate(p._id, {
+      status: 'released',
+      releasedReason: 'request_closed',
+      releasedAt: now,
+    });
+    await Notification.create({
+      recipient: p.donor,
+      title: 'Request Closed',
+      message: `Request closed by ${hospitalName}. Your pledge was released and your eligibility is unchanged. Thank you for being ready to help.`,
+      type: 'status_update',
+      link: '/donor?tab=history',
+    });
+  }
+
+  await pingService.cancelPendingPingsForRequest(requestId);
+
+  const AuditLog = require('../repositories/auditLog.repository');
+  await AuditLog.record({
+    action: 'request_closed',
+    targetId: requestId,
+    targetType: 'BloodRequest',
+    actor: callerUser ? callerUser._id : null,
+    actorRole: callerUser ? (callerUser.accountType || callerUser.role) : 'unknown',
+    hospitalId: request.targetHospital || request.hospital,
+    note: (note || '').slice(0, 200),
+    metadata: {
+      unitsFulfilled: request.unitsFulfilled || 0,
+      pledgesReleased: activePledges.length,
+    },
+  });
+
+  return await BloodRequest.findById(requestId)
+    .populate('requester', 'name email phone')
+    .populate('targetHospital', 'name phone address location isVerified');
+};
+
+/**
+ * Undo-create / Delete request:
+ * If request created < 5 minutes ago AND has 0 donor pledges -> hard-deletes it and notifications.
+ * Otherwise rejected (400) and user must cancel instead. (Admin bypass allowed).
+ */
+const deleteRequest = async (requestId, callerUser) => {
+  const request = await BloodRequest.findById(requestId);
+  if (!request) {
+    if (callerUser && callerUser.accountType !== 'admin') {
+      const err = new Error('Unauthorized: Only the owning hospital, requester, or an admin can delete this request');
+      err.statusCode = 403;
+      throw err;
+    }
+    const err = new Error('Blood request not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Authorization check: admin, owning hospital, or requester
+  let isAuthorized = false;
+  let callerHospitalId = null;
+  if (callerUser) {
+    if (callerUser.accountType === 'admin') {
+      isAuthorized = true;
+    } else if (callerUser.accountType === 'hospital') {
+      const hospital = await Hospital.findOne({ user: callerUser._id });
+      if (hospital) {
+        callerHospitalId = hospital._id.toString();
+        const targetHospId = (request.targetHospital?._id || request.targetHospital || request.hospital?._id || request.hospital)?.toString();
+        if (targetHospId && targetHospId === callerHospitalId) {
+          isAuthorized = true;
+        }
+      }
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    } else {
+      if (request.requester && request.requester.toString() === callerUser._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
+    const err = new Error('Unauthorized: Only the owning hospital, requester, or an admin can delete this request');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // Non-admins must be within 5-minute grace period and have 0 pledges
+  if (callerUser?.accountType !== 'admin') {
+    const elapsedMs = Date.now() - new Date(request.createdAt).getTime();
+    const isWithinGracePeriod = elapsedMs < 5 * 60 * 1000;
+    const pledges = await Donation.find({ request: requestId });
+
+    if (!isWithinGracePeriod || pledges.length > 0) {
+      const err = new Error('Requests created more than 5 minutes ago or with existing donor pledges cannot be deleted. Please cancel the request instead.');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // Hard delete request
+  await BloodRequest.findByIdAndDelete(requestId);
+
+  // Hard delete notifications linked to this request
+  try {
+    const notifs = await Notification.find();
+    for (const n of notifs) {
+      if (n.link && n.link.includes(requestId.toString())) {
+        await Notification.findByIdAndDelete(n._id);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to clean up notifications for deleted request:', err.message);
+  }
+
+  // Cancel/delete pings
+  await pingService.cancelPendingPingsForRequest(requestId);
+
+  const AuditLog = require('../repositories/auditLog.repository');
+  await AuditLog.record({
+    action: 'request_deleted',
+    targetId: requestId,
+    targetType: 'BloodRequest',
+    actor: callerUser ? callerUser._id : null,
+    actorRole: callerUser ? (callerUser.accountType || callerUser.role) : 'unknown',
+    hospitalId: callerHospitalId || request.targetHospital,
+    metadata: {
+      patientName: request.patientName,
+      bloodGroup: request.bloodGroup,
+    },
+  });
+
+  return { success: true, message: 'Blood request and its notifications deleted successfully' };
+};
+
 module.exports = {
   createRequest,
   getRequests,
@@ -815,4 +1404,8 @@ module.exports = {
   rejectRequest,
   issueCompatibleUnits,
   issuePatientUnits,
+  editRequest,
+  cancelRequest,
+  closeRequest,
+  deleteRequest,
 };

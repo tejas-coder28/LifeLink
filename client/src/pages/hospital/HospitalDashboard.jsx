@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -20,7 +20,8 @@ import InventoryForm from '../../components/forms/InventoryForm';
 import { compatibleDonorGroups } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { createSmartPolling } from '../../utils/networkHealth';
-import { formatUnits } from '../../constants/bloodUnits';
+import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
+import { CANCEL_LABELS, formatStatusLabel } from '../../utils/statusHelper';
 
 import {
   Building2,
@@ -47,14 +48,29 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Edit2,
+  Trash2,
+  Ban,
 } from 'lucide-react';
+
+const normalizeHospitalTab = (rawTab) => {
+  if (!rawTab) return 'overview';
+  const t = String(rawTab).toLowerCase().trim();
+  if (t === 'incoming' || t === 'incoming-requests') return 'incoming-requests';
+  if (t === 'active' || t === 'active-requests') return 'active-requests';
+  if (t === 'inventory') return 'inventory';
+  if (t === 'overview') return 'overview';
+  return 'overview';
+};
 
 const HospitalDashboard = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab');
+  const activeTab = normalizeHospitalTab(rawTab);
+  const tabHeadingRef = useRef(null);
 
   // State Data
   const [hospitalProfile, setHospitalProfile] = useState(null);
@@ -74,9 +90,12 @@ const HospitalDashboard = () => {
   const [issuingPatientRequestId, setIssuingPatientRequestId] = useState(null);
   const [creatingRequest, setCreatingRequest] = useState(false);
   const [updatingInventory, setUpdatingInventory] = useState(false);
+  const [requestsError, setRequestsError] = useState(null);
+  const [incomingError, setIncomingError] = useState(null);
 
   // Filters
   const [incomingFilter, setIncomingFilter] = useState('pending'); // 'pending' | 'all'
+  const [selectedDetailRequest, setSelectedDetailRequest] = useState(null);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -103,6 +122,40 @@ const HospitalDashboard = () => {
     submitting: false,
   });
 
+  // Edit Request Modal
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    request: null,
+    patientName: '',
+    unitsNeeded: 1,
+    minAllowedUnits: 1,
+    urgency: 'high',
+    requiredByDate: '',
+    notes: '',
+    submitting: false,
+  });
+
+  // Cancel Request Modal
+  const [cancelModal, setCancelModal] = useState({
+    isOpen: false,
+    request: null,
+    pledgedCount: 0,
+    fulfilledCount: 0,
+    reason: 'created_by_mistake',
+    note: '',
+    submitting: false,
+  });
+
+  // Delete Request Modal (Undo-Create)
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    request: null,
+    submitting: false,
+  });
+
+  // Active Requests filter: 'active' | 'pledges' | 'fulfilled' | 'closed_cancelled'
+  const [activeRequestsFilter, setActiveRequestsFilter] = useState('active');
+
   const fetchHospitalProfile = async () => {
     setLoadingProfile(true);
     try {
@@ -119,13 +172,15 @@ const HospitalDashboard = () => {
 
   const fetchHospitalRequests = async () => {
     setLoadingRequests(true);
+    setRequestsError(null);
     try {
-      const res = await requestApi.getMyRequests();
+      const res = await requestApi.getMyRequests({ includeAll: true });
       if (res.data && res.data.success) {
-        setMyRequests(res.data.data);
+        setMyRequests(res.data.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch hospital requests:', err);
+      setRequestsError(err.response?.data?.message || 'Could not load requests. Click Retry to try again.');
     } finally {
       setLoadingRequests(false);
     }
@@ -147,6 +202,7 @@ const HospitalDashboard = () => {
 
   const fetchIncomingRequests = async () => {
     setLoadingIncoming(true);
+    setIncomingError(null);
     try {
       const res = await requestApi.getIncomingHospitalRequests();
       if (res.data && res.data.success) {
@@ -154,6 +210,7 @@ const HospitalDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to fetch incoming hospital requests:', err);
+      setIncomingError(err.response?.data?.message || 'Could not load requests. Click Retry to try again.');
     } finally {
       setLoadingIncoming(false);
     }
@@ -209,8 +266,15 @@ const HospitalDashboard = () => {
     return cancelPolling;
   }, [selectedMatchRequestId]);
 
-  const setTab = (tabName) => {
-    setSearchParams({ tab: tabName });
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (tabHeadingRef.current) {
+      tabHeadingRef.current.focus();
+    }
+  }, [activeTab]);
+
+  const setTab = (tabName, extraParams = {}) => {
+    setSearchParams({ tab: tabName, ...extraParams });
   };
 
   const handleCreateRequest = async (formData) => {
@@ -226,9 +290,14 @@ const HospitalDashboard = () => {
         hospitalId: hospitalProfile?._id,
       });
       if (res.data && res.data.success) {
-        showSuccess('Emergency blood request broadcast successfully!');
         setIsCreateModalOpen(false);
-        fetchHospitalRequests();
+        const units = Number(formData.unitsNeeded) || 1;
+        showSuccess(`Request broadcast: ${formData.bloodGroup}, ${formatUnits(units)}`);
+        setTab('active-requests');
+        await Promise.all([
+          fetchHospitalRequests(),
+          fetchIncomingRequests(),
+        ]);
       }
     } catch (err) {
       showError(err.response?.data?.message || 'Failed to create request');
@@ -443,7 +512,11 @@ const HospitalDashboard = () => {
     try {
       const res = await requestApi.completeDonation(donationId);
       if (res.data && res.data.success) {
-        showSuccess('Donation confirmed! 1 unit added to hospital inventory. Donor profile updated.');
+        const donationData = res.data.data;
+        const donorName = donationData?.donor?.name || donationData?.donorName || 'Donor';
+        const donorFirstName = donorName.trim().split(/\s+/)[0] || donorName;
+        const units = Number(donationData?.unitsDonated || 1);
+        showSuccess(`Donation confirmed: ${formatUnits(units)} from ${donorFirstName}`);
         await Promise.all([
           fetchHospitalRequests(),
           fetchHospitalPledges(),
@@ -455,7 +528,16 @@ const HospitalDashboard = () => {
         }
       }
     } catch (err) {
-      showError(err.response?.data?.message || 'Failed to confirm donation');
+      const status = err.response?.status;
+      if (status === 409) {
+        showError(err.response?.data?.message || 'This donation has already been confirmed/fulfilled.');
+      } else if (status === 404) {
+        showError(err.response?.data?.message || 'Pledge record not found.');
+      } else if (status === 403) {
+        showError(err.response?.data?.message || 'Unauthorized: Only the owning hospital can confirm this donation.');
+      } else {
+        showError(err.response?.data?.message || 'Failed to confirm donation. Please try again.');
+      }
     } finally {
       setActionInProgressId(null);
     }
@@ -476,7 +558,14 @@ const HospitalDashboard = () => {
         }
       }
     } catch (err) {
-      showError(err.response?.data?.message || 'Failed to decline pledge');
+      const status = err.response?.status;
+      if (status === 404) {
+        showError(err.response?.data?.message || 'Pledge record not found.');
+      } else if (status === 403) {
+        showError(err.response?.data?.message || 'Unauthorized: Only the owning hospital can decline this pledge.');
+      } else {
+        showError(err.response?.data?.message || 'Failed to decline pledge. Please try again.');
+      }
     } finally {
       setActionInProgressId(null);
     }
@@ -500,6 +589,138 @@ const HospitalDashboard = () => {
     }
   };
 
+  const handleOpenEditModal = (req) => {
+    const minUnits = Math.max(1, (req.unitsReceived || 0) + (req.unitsPledged || 0));
+    setEditModal({
+      isOpen: true,
+      request: req,
+      patientName: req.patientName || '',
+      unitsNeeded: req.unitsNeeded || minUnits,
+      minAllowedUnits: minUnits,
+      urgency: req.urgency || 'high',
+      requiredByDate: req.requiredByDate ? req.requiredByDate.substring(0, 10) : '',
+      notes: req.notes || '',
+      submitting: false,
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editModal.request) return;
+    if (editModal.unitsNeeded < editModal.minAllowedUnits) {
+      showError(`Units needed cannot be less than pledged + received (${editModal.minAllowedUnits}).`);
+      return;
+    }
+    setEditModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const payload = {
+        patientName: editModal.patientName,
+        unitsNeeded: Number(editModal.unitsNeeded),
+        urgency: editModal.urgency,
+        notes: editModal.notes,
+      };
+      if (editModal.requiredByDate) {
+        payload.requiredByDate = editModal.requiredByDate;
+      }
+      const res = await requestApi.editRequest(editModal.request._id, payload);
+      if (res.data && res.data.success) {
+        showSuccess('Request updated successfully');
+        setEditModal((prev) => ({ ...prev, isOpen: false }));
+        fetchHospitalRequests();
+        if (selectedDetailRequest && selectedDetailRequest._id === editModal.request._id) {
+          setSelectedDetailRequest(res.data.data);
+        }
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to update request');
+    } finally {
+      setEditModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const handleOpenCancelModal = (req) => {
+    setCancelModal({
+      isOpen: true,
+      request: req,
+      pledgedCount: req.unitsPledged || 0,
+      fulfilledCount: req.unitsReceived || 0,
+      reason: 'created_by_mistake',
+      note: '',
+      submitting: false,
+    });
+  };
+
+  const handleCancelSubmit = async (e) => {
+    e.preventDefault();
+    if (!cancelModal.request) return;
+    setCancelModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const res = await requestApi.cancelRequest(cancelModal.request._id, {
+        reason: cancelModal.reason,
+        note: cancelModal.note,
+      });
+      if (res.data && res.data.success) {
+        showSuccess('Request has been cancelled and pledges released.');
+        setCancelModal((prev) => ({ ...prev, isOpen: false }));
+        fetchHospitalRequests();
+        if (selectedDetailRequest && selectedDetailRequest._id === cancelModal.request._id) {
+          setSelectedDetailRequest(res.data.data);
+        }
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to cancel request');
+    } finally {
+      setCancelModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const handleCloseRequest = async (req) => {
+    const confirm = window.confirm(
+      'Are you sure you want to close this request? No new pledges will be accepted, but all received units will remain recorded.'
+    );
+    if (!confirm) return;
+    try {
+      const res = await requestApi.closeRequest(req._id, { reason: 'Hospital closed request' });
+      if (res.data && res.data.success) {
+        showSuccess('Request closed successfully.');
+        fetchHospitalRequests();
+        if (selectedDetailRequest && selectedDetailRequest._id === req._id) {
+          setSelectedDetailRequest(res.data.data);
+        }
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to close request');
+    }
+  };
+
+  const handleOpenDeleteModal = (req) => {
+    setDeleteModal({
+      isOpen: true,
+      request: req,
+      submitting: false,
+    });
+  };
+
+  const handleDeleteSubmit = async () => {
+    if (!deleteModal.request) return;
+    setDeleteModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const res = await requestApi.deleteRequest(deleteModal.request._id);
+      if (res.data && res.data.success) {
+        showSuccess('Request deleted successfully.');
+        setDeleteModal((prev) => ({ ...prev, isOpen: false }));
+        fetchHospitalRequests();
+        if (selectedDetailRequest && selectedDetailRequest._id === deleteModal.request._id) {
+          setSelectedDetailRequest(null);
+        }
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to delete request');
+    } finally {
+      setDeleteModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
   // Calculations for summary stats
   const pendingIncomingCount = incomingRequests.filter(
     (r) => r.status === 'pending_hospital_review'
@@ -508,6 +729,9 @@ const HospitalDashboard = () => {
     (r) => r.status === 'open' || r.status === 'matching' || r.status === 'partially_fulfilled'
   ).length;
   const completedRequestsCount = myRequests.filter((r) => r.status === 'fulfilled').length;
+  const closedCancelledCount = myRequests.filter(
+    (r) => r.status === 'cancelled' || r.status === 'closed' || r.status === 'rejected' || r.status === 'hospital_no_response'
+  ).length;
   const totalPledgesCount = hospitalPledges.length;
   const pendingPledgesCount = hospitalPledges.filter((p) => p.status === 'pledged').length;
   const totalInventoryUnits = (hospitalProfile?.inventory || []).reduce(
@@ -532,7 +756,7 @@ const HospitalDashboard = () => {
       id: 'active-requests',
       label: 'Active Requests',
       icon: Layers,
-      count: myRequests.length,
+      count: activeRequestsCount,
     },
     {
       id: 'inventory',
@@ -614,7 +838,7 @@ const HospitalDashboard = () => {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="space-y-8">
+        <div ref={tabHeadingRef} tabIndex={-1} className="outline-none space-y-8">
           {/* Urgent Incoming Demands Callout Banner */}
           {pendingIncomingCount > 0 && (
             <div className="p-5 rounded-2xl bg-danger/10 border-2 border-danger/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -649,6 +873,8 @@ const HospitalDashboard = () => {
               icon={Inbox}
               description={pendingIncomingCount > 0 ? `${pendingIncomingCount} pending review` : 'All demands reviewed'}
               color="rose"
+              onClick={() => setTab('incoming')}
+              ariaLabel={`Open Incoming Demands (${pendingIncomingCount})`}
             />
             <StatCard
               title="Active Blood Requests"
@@ -656,6 +882,8 @@ const HospitalDashboard = () => {
               icon={Activity}
               description="Open & matching demands"
               color="sky"
+              onClick={() => setTab('active')}
+              ariaLabel={`Open Active Requests (${activeRequestsCount})`}
             />
             <StatCard
               title="Total Donor Pledges"
@@ -663,6 +891,8 @@ const HospitalDashboard = () => {
               icon={Users}
               description={pendingPledgesCount > 0 ? `${pendingPledgesCount} awaiting confirmation` : 'All pledges confirmed'}
               color="emerald"
+              onClick={() => setTab('active', { filter: 'pledges' })}
+              ariaLabel={`Open Active Requests with Pledges (${totalPledgesCount})`}
             />
             <StatCard
               title="Inventory Reserves"
@@ -670,6 +900,8 @@ const HospitalDashboard = () => {
               icon={Building2}
               description="Across 8 RBC blood types"
               color="amber"
+              onClick={() => setTab('inventory')}
+              ariaLabel={`Open Inventory Reserves (${totalInventoryUnits} units)`}
             />
           </div>
 
@@ -682,8 +914,10 @@ const HospitalDashboard = () => {
               </h2>
               {hospitalProfile?.isVerified && (
                 <button
+                  type="button"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="text-xs font-bold text-info hover:underline cursor-pointer"
+                  className="text-xs font-bold text-info hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                  aria-label="Open New Blood Request modal"
                 >
                   + Create New Request
                 </button>
@@ -692,6 +926,20 @@ const HospitalDashboard = () => {
 
             {loadingRequests ? (
               <Loader text="Loading hospital requests..." />
+            ) : requestsError ? (
+              <Card hover={false} className="text-center py-10 border-danger/30 bg-danger/5">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <AlertTriangle className="w-8 h-8 text-danger" />
+                  <p className="text-xs font-semibold text-secondary">Could not load requests. Click Retry to try again.</p>
+                  <button
+                    onClick={fetchHospitalRequests}
+                    className="btn-primary text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry</span>
+                  </button>
+                </div>
+              </Card>
             ) : myRequests.length === 0 ? (
               <Card hover={false} className="text-center py-12">
                 {hospitalProfile?.isVerified ? (
@@ -730,6 +978,12 @@ const HospitalDashboard = () => {
                       onConfirmDonation={handleConfirmDonation}
                       onDeclineDonation={handleDeclineDonation}
                       actionInProgressId={actionInProgressId}
+                      onSelect={setSelectedDetailRequest}
+                      isOwner={true}
+                      onEdit={handleOpenEditModal}
+                      onCancel={handleOpenCancelModal}
+                      onDelete={handleOpenDeleteModal}
+                      onClose={handleCloseRequest}
                     extraAction={
                       <div className="flex flex-wrap items-center gap-2">
                         {req.status !== 'fulfilled' && (
@@ -765,7 +1019,7 @@ const HospitalDashboard = () => {
 
       {/* TAB 2: INCOMING REQUESTS */}
       {activeTab === 'incoming-requests' && (
-        <div className="space-y-6">
+        <div ref={tabHeadingRef} tabIndex={-1} className="outline-none space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-black text-primary font-heading tracking-tight">
@@ -803,6 +1057,21 @@ const HospitalDashboard = () => {
 
           {loadingIncoming ? (
             <Loader text="Loading incoming emergency demands..." />
+          ) : incomingError ? (
+            <Card hover={false} className="text-center py-12 border-danger/30 bg-danger/5">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <AlertTriangle className="w-10 h-10 text-danger" />
+                <h3 className="text-base font-extrabold text-primary">Could not load incoming demands</h3>
+                <p className="text-xs text-secondary max-w-md">Could not load requests. Click Retry to try again.</p>
+                <button
+                  onClick={fetchIncomingRequests}
+                  className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry</span>
+                </button>
+              </div>
+            </Card>
           ) : displayedIncoming.length === 0 ? (
             <Card hover={false} className="text-center py-12">
               <EmptyState
@@ -865,7 +1134,10 @@ const HospitalDashboard = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-2xl bg-surface/80 border border-theme">
                       <div>
                         <span className="text-muted block font-semibold text-[10px] uppercase">Units Needed</span>
-                        <span className="font-extrabold text-primary text-sm">{formatUnits(req.unitsNeeded)}</span>
+                        <div className="font-extrabold text-primary text-sm flex flex-col leading-tight whitespace-nowrap">
+                          <span>{formatUnitsParts(req.unitsNeeded).unitsText}</span>
+                          <span className="text-[11px] font-normal text-muted">{formatUnitsParts(req.unitsNeeded).volumeText}</span>
+                        </div>
                       </div>
                       <div>
                         <span className="text-muted block font-semibold text-[10px] uppercase">Required By</span>
@@ -957,52 +1229,187 @@ const HospitalDashboard = () => {
       )}
 
       {/* TAB 3: ACTIVE REQUESTS */}
-      {activeTab === 'active-requests' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-primary font-heading tracking-tight">
-                Hospital Request Directory & Shortfalls
-              </h2>
-              <p className="text-xs text-secondary">
-                Manage ongoing blood broadcasts, view rule-based donor matching engine scores, and issue units to patients.
-              </p>
+      {activeTab === 'active-requests' && (() => {
+        const urlFilter = searchParams.get('filter');
+        const isFilterPledges = urlFilter === 'pledges' || activeRequestsFilter === 'pledges';
+
+        let displayedRequests = myRequests;
+        if (urlFilter === 'pledges' || activeRequestsFilter === 'pledges') {
+          displayedRequests = myRequests.filter((req) => {
+            const reqPledges = hospitalPledges.filter((p) => (p.request?._id || p.request) === req._id);
+            return reqPledges.some((p) => p.status === 'pledged');
+          });
+        } else if (activeRequestsFilter === 'fulfilled') {
+          displayedRequests = myRequests.filter((req) => req.status === 'fulfilled' || req.status === 'completed');
+        } else if (activeRequestsFilter === 'closed_cancelled') {
+          displayedRequests = myRequests.filter((req) => req.status === 'cancelled' || req.status === 'closed' || req.status === 'rejected' || req.status === 'hospital_no_response');
+        } else if (activeRequestsFilter === 'all') {
+          displayedRequests = myRequests;
+        } else {
+          // default: active
+          displayedRequests = myRequests.filter((req) => req.status === 'open' || req.status === 'matching' || req.status === 'partially_fulfilled');
+        }
+
+        return (
+          <div ref={tabHeadingRef} tabIndex={-1} className="outline-none space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-primary font-heading tracking-tight">
+                  Hospital Request Directory & Shortfalls
+                </h2>
+                <p className="text-xs text-secondary">
+                  Manage ongoing blood broadcasts, view rule-based donor matching engine scores, and issue units to patients.
+                </p>
+              </div>
+              {hospitalProfile?.isVerified && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2"
+                  aria-label="Create Request"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Create Request</span>
+                </button>
+              )}
             </div>
-            {hospitalProfile?.isVerified && (
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2"
+                type="button"
+                onClick={() => {
+                  setActiveRequestsFilter('active');
+                  setSearchParams({ tab: 'active' });
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeRequestsFilter === 'active' && !urlFilter
+                    ? 'bg-primary text-inverted shadow-sm'
+                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                }`}
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>Create Request</span>
+                Active Requests ({activeRequestsCount})
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveRequestsFilter('pledges');
+                  setSearchParams({ tab: 'active', filter: 'pledges' });
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  isFilterPledges
+                    ? 'bg-primary text-inverted shadow-sm'
+                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                }`}
+              >
+                Awaiting Confirmation ({pendingPledgesCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveRequestsFilter('fulfilled');
+                  setSearchParams({ tab: 'active' });
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeRequestsFilter === 'fulfilled' && !urlFilter
+                    ? 'bg-primary text-inverted shadow-sm'
+                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                }`}
+              >
+                Fulfilled ({completedRequestsCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveRequestsFilter('closed_cancelled');
+                  setSearchParams({ tab: 'active' });
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  activeRequestsFilter === 'closed_cancelled' && !urlFilter
+                    ? 'bg-primary text-inverted shadow-sm'
+                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                }`}
+              >
+                Closed / Cancelled ({closedCancelledCount})
+              </button>
+            </div>
+
+            {isFilterPledges && (
+              <div className="flex items-center justify-between p-3.5 px-4 rounded-2xl bg-info/10 border border-info/30 text-xs">
+                <span className="font-semibold text-primary">
+                  Showing requests with pledges awaiting confirmation ({displayedRequests.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({ tab: 'active' })}
+                  className="text-info font-bold hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                >
+                  Clear Filter
+                </button>
+              </div>
             )}
-          </div>
 
-          {loadingRequests ? (
-            <Loader text="Loading request directory..." />
-          ) : myRequests.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              title="No Requests Broadcast"
-              description="Your hospital has not broadcast or accepted any active blood requests."
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {myRequests.map((req) => {
-                const stockItem = hospitalProfile?.inventory?.find((i) => i.bloodGroup === req.bloodGroup);
-                const currentStock = stockItem ? stockItem.units : 0;
-                const reqPledges = hospitalPledges.filter((p) => (p.request?._id || p.request) === req._id);
+            {loadingRequests ? (
+              <Loader text="Loading request directory..." />
+            ) : requestsError ? (
+              <Card hover={false} className="text-center py-12 border-danger/30 bg-danger/5">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <AlertTriangle className="w-10 h-10 text-danger" />
+                  <h3 className="text-base font-extrabold text-primary">Could not load requests</h3>
+                  <p className="text-xs text-secondary max-w-md">Could not load requests. Click Retry to try again.</p>
+                  <button
+                    onClick={fetchHospitalRequests}
+                    className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry</span>
+                  </button>
+                </div>
+              </Card>
+            ) : displayedRequests.length === 0 ? (
+              <EmptyState
+                icon={Activity}
+                title={
+                  isFilterPledges
+                    ? 'No Requests With Pledges'
+                    : activeRequestsFilter === 'closed_cancelled'
+                    ? 'No Closed or Cancelled Requests'
+                    : activeRequestsFilter === 'fulfilled'
+                    ? 'No Fulfilled Requests'
+                    : 'No Requests Broadcast'
+                }
+                description={
+                  isFilterPledges
+                    ? 'No current requests have pledges awaiting hospital confirmation.'
+                    : activeRequestsFilter === 'closed_cancelled'
+                    ? 'No requests have been withdrawn or closed.'
+                    : activeRequestsFilter === 'fulfilled'
+                    ? 'No completed requests found.'
+                    : 'Your hospital has not broadcast or accepted any active blood requests.'
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {displayedRequests.map((req) => {
+                  const stockItem = hospitalProfile?.inventory?.find((i) => i.bloodGroup === req.bloodGroup);
+                  const currentStock = stockItem ? stockItem.units : 0;
+                  const reqPledges = hospitalPledges.filter((p) => (p.request?._id || p.request) === req._id);
 
-                return (
-                  <RequestCard
-                    key={req._id}
-                    request={req}
-                    currentStock={currentStock}
-                    pledges={reqPledges}
-                    onConfirmDonation={handleConfirmDonation}
-                    onDeclineDonation={handleDeclineDonation}
-                    actionInProgressId={actionInProgressId}
+                  return (
+                    <RequestCard
+                      key={req._id}
+                      request={req}
+                      currentStock={currentStock}
+                      pledges={reqPledges}
+                      onConfirmDonation={handleConfirmDonation}
+                      onDeclineDonation={handleDeclineDonation}
+                      actionInProgressId={actionInProgressId}
+                      onSelect={setSelectedDetailRequest}
+                      isOwner={true}
+                      onEdit={handleOpenEditModal}
+                      onCancel={handleOpenCancelModal}
+                      onDelete={handleOpenDeleteModal}
+                      onClose={handleCloseRequest}
                     extraAction={
                       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                         {/* If pending hospital review, offer immediate accept & allocate action */}
@@ -1073,11 +1480,12 @@ const HospitalDashboard = () => {
             </div>
           )}
         </div>
-      )}
+      );
+    })()}
 
       {/* TAB 4: INVENTORY */}
       {activeTab === 'inventory' && (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div ref={tabHeadingRef} tabIndex={-1} className="max-w-4xl mx-auto space-y-8 outline-none">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-black text-primary font-heading tracking-tight">
               Hospital Blood Inventory Reserves & Ledger
@@ -1581,6 +1989,378 @@ const HospitalDashboard = () => {
         )}
       </div>
     )}
+      </Modal>
+
+      {/* Request Details Modal */}
+      <Modal
+        isOpen={Boolean(selectedDetailRequest)}
+        onClose={() => setSelectedDetailRequest(null)}
+        title="Blood Request Details"
+      >
+        {selectedDetailRequest && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <Badge bloodGroup={selectedDetailRequest.bloodGroup} />
+                <div>
+                  <h3 className="text-lg font-extrabold text-primary font-heading">
+                    {selectedDetailRequest.patientName}
+                  </h3>
+                  <span className="text-xs text-muted">
+                    Requested by {selectedDetailRequest.requester?.name || 'Patient/Caregiver'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge urgency={selectedDetailRequest.urgency} />
+                <Badge status={selectedDetailRequest.status} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs p-4 rounded-2xl bg-surface/80 border border-theme">
+              <div>
+                <span className="text-muted block font-semibold text-[10px] uppercase">Units Needed</span>
+                <span className="font-extrabold text-primary text-sm">{formatUnits(selectedDetailRequest.unitsNeeded)}</span>
+              </div>
+              <div>
+                <span className="text-muted block font-semibold text-[10px] uppercase">Required By</span>
+                <span className="font-bold text-secondary">
+                  {selectedDetailRequest.requiredByDate ? new Date(selectedDetailRequest.requiredByDate).toLocaleString() : 'Immediate'}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted block font-semibold text-[10px] uppercase">From Hospital Stock</span>
+                <span className="font-bold text-secondary">{formatUnits(selectedDetailRequest.unitsFromStock || 0)}</span>
+              </div>
+              <div>
+                <span className="text-muted block font-semibold text-[10px] uppercase">Fulfilled Units</span>
+                <span className="font-bold text-secondary">{formatUnits(selectedDetailRequest.unitsFulfilled || 0)}</span>
+              </div>
+              <div className="col-span-2 pt-2 border-t border-theme text-secondary text-xs">
+                <span className="block text-muted text-[10px] uppercase font-semibold">Location / Address</span>
+                <span>{selectedDetailRequest.address || 'Hospital facility'}</span>
+              </div>
+            </div>
+
+            {(() => {
+              const isCreatedRecent =
+                selectedDetailRequest.createdAt &&
+                Date.now() - new Date(selectedDetailRequest.createdAt).getTime() < 5 * 60 * 1000;
+              const hasPledges = (selectedDetailRequest.unitsPledged || 0) > 0;
+              const hasFulfilled = (selectedDetailRequest.unitsReceived || 0) > 0;
+              const isClosedOrCancelled =
+                selectedDetailRequest.status === 'cancelled' ||
+                selectedDetailRequest.status === 'closed' ||
+                selectedDetailRequest.status === 'rejected';
+              const canUndoDelete = isCreatedRecent && !hasPledges && !hasFulfilled && !isClosedOrCancelled;
+              const canCancel = !isClosedOrCancelled;
+              const canEdit = !isClosedOrCancelled;
+
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-theme">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const req = selectedDetailRequest;
+                          setSelectedDetailRequest(null);
+                          handleOpenEditModal(req);
+                        }}
+                        className="btn-secondary px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                    )}
+                    {canUndoDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const req = selectedDetailRequest;
+                          setSelectedDetailRequest(null);
+                          handleOpenDeleteModal(req);
+                        }}
+                        className="btn-danger px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete request</span>
+                      </button>
+                    ) : hasFulfilled && canCancel ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const req = selectedDetailRequest;
+                          handleCloseRequest(req);
+                        }}
+                        className="btn-secondary px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>Close request</span>
+                      </button>
+                    ) : canCancel ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const req = selectedDetailRequest;
+                          setSelectedDetailRequest(null);
+                          handleOpenCancelModal(req);
+                        }}
+                        className="btn-danger px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>Cancel request</span>
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDetailRequest(null)}
+                    className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Request Modal */}
+      <Modal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Edit Blood Request"
+      >
+        {editModal.request && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-info/10 border border-info/30 text-xs text-primary">
+              <span className="font-bold">Patient Blood Group:</span>
+              <Badge bloodGroup={editModal.request.bloodGroup} />
+              <span className="text-[11px] text-secondary ml-auto">
+                Blood group & hospital cannot be changed.
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Patient Name
+              </label>
+              <input
+                type="text"
+                required
+                value={editModal.patientName}
+                onChange={(e) => setEditModal({ ...editModal, patientName: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                  Units Needed
+                </label>
+                <input
+                  type="number"
+                  min={editModal.minAllowedUnits}
+                  max={50}
+                  required
+                  value={editModal.unitsNeeded}
+                  onChange={(e) => setEditModal({ ...editModal, unitsNeeded: parseInt(e.target.value, 10) || 1 })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-[11px] text-secondary mt-1 block">
+                  {formatUnits(editModal.unitsNeeded)}
+                  {editModal.minAllowedUnits > 1 && (
+                    <span className="text-warning ml-1">(Min {editModal.minAllowedUnits} due to pledges/received)</span>
+                  )}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                  Urgency Level
+                </label>
+                <select
+                  value={editModal.urgency}
+                  onChange={(e) => setEditModal({ ...editModal, urgency: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                >
+                  <option value="critical">Critical (Immediate)</option>
+                  <option value="high">High (Urgent)</option>
+                  <option value="medium">Medium (Standard)</option>
+                  <option value="low">Low (Flexible)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Required By Date
+              </label>
+              <input
+                type="date"
+                value={editModal.requiredByDate}
+                onChange={(e) => setEditModal({ ...editModal, requiredByDate: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Clinical Notes / Remarks
+              </label>
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={editModal.notes}
+                onChange={(e) => setEditModal({ ...editModal, notes: e.target.value })}
+                placeholder="Optional clinical notes or directions..."
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editModal.submitting}
+                className="btn-primary px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {editModal.submitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Cancel Request Modal */}
+      <Modal
+        isOpen={cancelModal.isOpen}
+        onClose={() => setCancelModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Cancel Blood Request"
+      >
+        {cancelModal.request && (
+          <form onSubmit={handleCancelSubmit} className="space-y-4">
+            <div className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-danger font-bold text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Withdraw Blood Request</span>
+              </div>
+              <p className="text-secondary leading-relaxed">
+                Cancelling this request will immediately mark it as cancelled, withdraw it from active matching, and release any active donor pledges.
+              </p>
+              {cancelModal.pledgedCount > 0 && (
+                <div className="p-2.5 rounded-lg bg-warning/15 border border-warning/30 text-warning font-semibold text-xs">
+                  ⚠️ <strong>{cancelModal.pledgedCount} donor(s)</strong> have currently pledged to this request.
+                  Their pledges will be released back to standby, and their eligibility cooldown will NOT be penalised.
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Reason for Cancellation <span className="text-danger">*</span>
+              </label>
+              <select
+                required
+                value={cancelModal.reason}
+                onChange={(e) => setCancelModal({ ...cancelModal, reason: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+              >
+                <option value="created_by_mistake">Created by mistake</option>
+                <option value="wrong_details">Wrong details</option>
+                <option value="patient_recovered">Patient no longer needs blood</option>
+                <option value="need_met_elsewhere">Need met elsewhere</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Internal Note (Optional, max 200 chars)
+              </label>
+              <textarea
+                rows={2}
+                maxLength={200}
+                value={cancelModal.note}
+                onChange={(e) => setCancelModal({ ...cancelModal, note: e.target.value })}
+                placeholder="Optional hospital internal remarks..."
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <span className="text-[10px] text-muted block text-right">
+                {cancelModal.note.length}/200
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setCancelModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Keep Request
+              </button>
+              <button
+                type="submit"
+                disabled={cancelModal.submitting}
+                className="btn-danger px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{cancelModal.submitting ? 'Cancelling...' : 'Confirm Cancellation'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Delete Request Modal (Undo-Create) */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Delete Blood Request"
+      >
+        {deleteModal.request && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-danger font-bold text-sm">
+                <Trash2 className="w-4 h-4 shrink-0" />
+                <span>Undo / Delete Request</span>
+              </div>
+              <p className="text-secondary leading-relaxed">
+                This request was created less than 5 minutes ago and has received no donor pledges.
+                Deleting it will permanently remove the record and any initial match notifications.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Keep Request
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSubmit}
+                disabled={deleteModal.submitting}
+                className="btn-danger px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteModal.submitting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </PageTransition>
   );

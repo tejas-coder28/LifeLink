@@ -29,6 +29,13 @@ function normalizeDoc(docSnapshot, repo = null) {
   data.id = docId;
   data._id = docId;
 
+  // If relational reference fields were saved as embedded populated maps/objects, normalize to string id
+  for (const f of ['targetHospital', 'hospital', 'requester', 'donor', 'user']) {
+    if (data[f] && typeof data[f] === 'object' && !Array.isArray(data[f]) && (data[f]._id || data[f].id)) {
+      data[f] = (data[f]._id || data[f].id).toString();
+    }
+  }
+
   // Ergonomic helper methods
   Object.defineProperty(data, 'toObject', {
     value: function () {
@@ -81,6 +88,14 @@ function toFirestoreData(data) {
   delete payload.toObject;
   delete payload.toJSON;
   delete payload.matchPassword;
+
+  // Guard against populated objects leaking into Firestore foreign key reference fields
+  for (const f of ['targetHospital', 'hospital', 'requester', 'donor', 'user']) {
+    if (payload[f] && typeof payload[f] === 'object' && !Array.isArray(payload[f]) && (payload[f]._id || payload[f].id)) {
+      payload[f] = (payload[f]._id || payload[f].id).toString();
+    }
+  }
+
   return payload;
 }
 
@@ -270,7 +285,13 @@ class BaseRepository {
         } else if (value.$lt !== undefined) {
           query = query.where(key, '<', value.$lt);
         } else if (value.$ne !== undefined) {
-          query = query.where(key, '!=', value.$ne);
+          inMemoryFilters.push(doc => {
+            const val = doc[key];
+            const target = value.$ne;
+            const docValStr = val && typeof val === 'object' && val._id ? val._id.toString() : (val !== undefined && val !== null ? val.toString() : val);
+            const targetStr = target && typeof target === 'object' && target._id ? target._id.toString() : (target !== undefined && target !== null ? target.toString() : target);
+            return docValStr !== targetStr;
+          });
         } else if (value.$nin && Array.isArray(value.$nin)) {
           inMemoryFilters.push(doc => !value.$nin.includes(doc[key]));
         } else {
@@ -312,21 +333,25 @@ class BaseRepository {
       if (err.message && err.message.includes('The query requires an index')) {
         console.warn(`[Firestore] Composite index not yet deployed for query on '${this.collectionName}'. Executing with in-memory sort fallback.`);
         let fallbackQuery = this.collection;
+        const additionalInMemory = [];
         for (const [key, value] of Object.entries(filter)) {
           if (value === undefined) continue;
           if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-            if (value.$gte !== undefined) fallbackQuery = fallbackQuery.where(key, '>=', value.$gte);
-            else if (value.$lte !== undefined) fallbackQuery = fallbackQuery.where(key, '<=', value.$lte);
-            else if (value.$gt !== undefined) fallbackQuery = fallbackQuery.where(key, '>', value.$gt);
-            else if (value.$lt !== undefined) fallbackQuery = fallbackQuery.where(key, '<', value.$lt);
-            else if (value.$ne !== undefined) fallbackQuery = fallbackQuery.where(key, '!=', value.$ne);
-            else if (value.$in && Array.isArray(value.$in) && value.$in.length <= 10) fallbackQuery = fallbackQuery.where(key, 'in', value.$in);
+            // Apply only one inequality filter if possible, otherwise move to memory
+            if (value.$gte !== undefined) additionalInMemory.push(doc => doc[key] >= value.$gte);
+            else if (value.$lte !== undefined) additionalInMemory.push(doc => doc[key] <= value.$lte);
+            else if (value.$gt !== undefined) additionalInMemory.push(doc => doc[key] > value.$gt);
+            else if (value.$lt !== undefined) additionalInMemory.push(doc => doc[key] < value.$lt);
+            else if (value.$ne !== undefined) additionalInMemory.push(doc => doc[key] !== value.$ne);
+            else if (value.$in && Array.isArray(value.$in)) additionalInMemory.push(doc => value.$in.includes(doc[key]));
+            else if (value.$nin && Array.isArray(value.$nin)) additionalInMemory.push(doc => !value.$nin.includes(doc[key]));
           } else {
             const eqVal = value && typeof value === 'object' && value._id ? value._id.toString() : value;
             fallbackQuery = fallbackQuery.where(key, '==', eqVal);
           }
         }
         snapshot = await fallbackQuery.get();
+        inMemoryFilters.push(...additionalInMemory);
       } else {
         throw err;
       }
@@ -463,6 +488,34 @@ class BaseRepository {
       await docRef.delete();
     }
     return docData;
+  }
+
+  /**
+   * Transaction-aware read only: reads document within an active transaction.
+   * Guarantees no interleaved writes.
+   */
+  async getForUpdate(transaction, id) {
+    if (!id || !transaction) return null;
+    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
+    const docRef = this.collection.doc(docId);
+    const snap = await transaction.get(docRef);
+    if (!snap.exists) return null;
+    return this.normalize(snap);
+  }
+
+  /**
+   * Transaction-aware write only: applies mutation inside an active transaction.
+   * Guarantees all writes occur after reads.
+   */
+  applyUpdate(transaction, id, updates) {
+    if (!id || !transaction) return;
+    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
+    const docRef = this.collection.doc(docId);
+    const rawUpdates = updates && updates.$set ? { ...updates.$set } : { ...updates };
+    delete rawUpdates.$set;
+    const payload = toFirestoreData(rawUpdates);
+    payload.updatedAt = new Date();
+    transaction.update(docRef, payload);
   }
 
   async updateMany(filter = {}, updates = {}) {

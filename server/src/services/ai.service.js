@@ -23,12 +23,10 @@ const generateSystemInsight = async (customPrompt = '') => {
   const generateFallbackInsight = () => {
     const totalReq = analytics.summary.totalRequests || 0;
     const fulfilled = analytics.summary.fulfilledRequests || 0;
-    const fulfillmentRate = analytics.summary.fulfillmentRate || 85;
+    const fulfillmentRate = analytics.summary.fulfillmentRate || 0;
     const available = analytics.summary.availableDonors || 0;
-
-    const deficitGroups = analytics.bloodGroupDistribution
-      .filter(b => b.requests >= b.donors && b.requests > 0)
-      .map(b => b.bloodGroup);
+    const totalDonors = analytics.summary.totalDonors || 0;
+    const shortageGroups = analytics.shortageGroups || [];
     
     const highSupplyGroups = analytics.bloodGroupDistribution
       .filter(b => b.donors > b.requests + 2)
@@ -36,15 +34,15 @@ const generateSystemInsight = async (customPrompt = '') => {
 
     const title = customPrompt ? `AI Custom Insight: ${customPrompt.slice(0, 30)}...` : 'Emergency Donor Network & Supply Line Intelligence';
 
-    const summary = `LifeLink network status: ${available} active donors on standby. Emergency request fulfillment rate is currently holding at ${fulfillmentRate}%. ` +
-      (deficitGroups.length > 0 
-        ? `Deficit alert identified for rare blood groups (${deficitGroups.join(', ')}). Immediate targeted donor outreach recommended.`
-        : `Blood supply levels are in healthy equilibrium across all major categories.`);
+    const summary = `LifeLink network status: ${totalDonors} registered donors (${available} active on standby). Emergency request fulfillment rate is currently holding at ${fulfillmentRate}%. ` +
+      (shortageGroups.length > 0 
+        ? `Shortage alert identified for blood group(s): ${shortageGroups.join(', ')}. Immediate targeted donor outreach recommended.`
+        : `Blood supply levels and donor coverage are in healthy equilibrium across all major categories.`);
 
     const recommendations = [
-      deficitGroups.length > 0 
-        ? `Launch targeted SMS/push campaign for registered donors with blood types: ${deficitGroups.join(', ')}.`
-        : `Maintain current donor engagement strategy and monitor weekend emergency reserves.`,
+      shortageGroups.length > 0 
+        ? `Launch targeted SMS/push campaign for registered donors with blood group(s): ${shortageGroups.join(', ')}.`
+        : `Maintain current donor engagement strategy and monitor emergency reserves.`,
       `Establish priority dispatch routes for critical urgency requests in high-density hospital sectors.`,
       `Incentivize universal donors (O-Negative) with emergency response badges to boost standby availability by 15%.`,
       `Automate hospital inventory sync to auto-replenish reserves falling below 3 units.`,
@@ -54,11 +52,12 @@ const generateSystemInsight = async (customPrompt = '') => {
       title,
       summary,
       metrics: {
+        totalDonors,
         totalRequests: totalReq,
         fulfilledRequests: fulfilled,
         fulfillmentRate: `${fulfillmentRate}%`,
         activeStandbyDonors: available,
-        highRiskBloodGroups: deficitGroups.length > 0 ? deficitGroups : ['O-'],
+        highRiskBloodGroups: shortageGroups.length > 0 ? shortageGroups : [],
         surplusGroups: highSupplyGroups.length > 0 ? highSupplyGroups : ['A+'],
       },
       recommendations,
@@ -135,10 +134,22 @@ const generateSystemInsight = async (customPrompt = '') => {
 const getLatestInsights = async (limit = 10) => {
   let insights = await AIInsight.find().sort({ createdAt: -1 }).limit(limit);
   
-  // If collection empty, generate first insight on demand
+  // If collection empty or out of sync, ensure we return an insight consistent with current system analytics
   if (insights.length === 0) {
     const initialInsight = await generateSystemInsight();
     insights = [initialInsight];
+  } else {
+    const liveAnalytics = await analyticsService.getSystemAnalytics();
+    const latest = insights[0];
+    const metricsMatch = latest.metrics &&
+      Number(latest.metrics.totalDonors) === liveAnalytics.summary.totalDonors &&
+      Number(latest.metrics.totalRequests) === liveAnalytics.summary.totalRequests &&
+      latest.metrics.fulfillmentRate === `${liveAnalytics.summary.fulfillmentRate}%` &&
+      !latest.summary?.includes('rare blood groups');
+    if (!metricsMatch) {
+      const refreshedInsight = await generateSystemInsight();
+      insights = [refreshedInsight, ...insights.slice(0, limit - 1)];
+    }
   }
 
   return insights;

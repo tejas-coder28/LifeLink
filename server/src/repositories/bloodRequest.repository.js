@@ -35,6 +35,29 @@ class BloodRequestRepository extends BaseRepository {
 
     return await super.create(payload, transaction);
   }
+
+  _sanitizeUpdates(data) {
+    if (!data || typeof data !== 'object') return data;
+    const sanitized = { ...data };
+    if (sanitized.requester && typeof sanitized.requester === 'object' && sanitized.requester._id) {
+      sanitized.requester = sanitized.requester._id.toString();
+    }
+    if (sanitized.hospital && typeof sanitized.hospital === 'object' && sanitized.hospital._id) {
+      sanitized.hospital = sanitized.hospital._id.toString();
+    }
+    if (sanitized.targetHospital && typeof sanitized.targetHospital === 'object' && sanitized.targetHospital._id) {
+      sanitized.targetHospital = sanitized.targetHospital._id.toString();
+    }
+    return sanitized;
+  }
+
+  async findByIdAndUpdate(id, data, options = {}) {
+    return await super.findByIdAndUpdate(id, this._sanitizeUpdates(data), options);
+  }
+
+  async findOneAndUpdate(filter, data, options = {}) {
+    return await super.findOneAndUpdate(filter, this._sanitizeUpdates(data), options);
+  }
 }
 
 const bloodRequestRepo = new BloodRequestRepository();

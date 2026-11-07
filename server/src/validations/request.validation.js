@@ -26,9 +26,33 @@ const updateStatusSchema = z.object({
     'rejected',
     'hospital_no_response',
     'cancelled',
+    'closed',
     'expired',
     'legacy',
   ]),
+});
+
+const editRequestSchema = z.object({
+  patientName: z.string().min(2, 'Patient name must be at least 2 characters').optional(),
+  unitsNeeded: z.number().min(1, 'Units needed must be at least 1').optional(),
+  unitsRequired: z.number().min(1, 'Units required must be at least 1').optional(),
+  urgency: z.enum(['low', 'medium', 'high', 'urgent', 'critical']).optional(),
+  requiredByDate: z.string().optional(),
+  notes: z.string().max(500, 'Notes cannot exceed 500 characters').optional(),
+  address: z.string().optional(),
+  bloodGroup: z.string().optional(),
+  hospital: z.string().optional(),
+  targetHospital: z.string().optional(),
+  hospitalId: z.string().optional(),
+});
+
+const cancelRequestSchema = z.object({
+  reason: z.string().min(1, 'Cancellation reason is required'),
+  note: z.string().max(200, 'Note cannot exceed 200 characters').optional().default(''),
+});
+
+const closeRequestSchema = z.object({
+  note: z.string().max(200, 'Note cannot exceed 200 characters').optional().default(''),
 });
 
 const rejectRequestSchema = z.object({
@@ -49,6 +73,9 @@ const issuePatientSchema = z.object({
 module.exports = {
   createRequestSchema,
   updateStatusSchema,
+  editRequestSchema,
+  cancelRequestSchema,
+  closeRequestSchema,
   rejectRequestSchema,
   issueCompatibleSchema,
   issuePatientSchema,

@@ -8,8 +8,11 @@ const pledge = async (req, res, next) => {
     const donation = await donationService.pledgeDonation(req.user._id, requestId, unitsToPledge);
     return sendSuccess(res, 'Donation pledged successfully! Thank you.', donation, 201);
   } catch (error) {
-    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
-    return sendError(res, error.message, error.statusCode || 400);
+    if (error.statusCode) {
+      return sendError(res, error.message, error.statusCode);
+    }
+    console.error(`[Donation Pledge Error] ${error.name || 'Error'}:`, error.message);
+    return sendError(res, 'Unable to submit donation pledge. Please try again.', 500);
   }
 };
 
@@ -18,8 +21,11 @@ const complete = async (req, res, next) => {
     const donation = await donationService.completeDonation(req.params.id, req.user);
     return sendSuccess(res, 'Donation marked as completed', donation);
   } catch (error) {
-    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
-    return sendError(res, error.message, error.statusCode || 400);
+    if (error.statusCode) {
+      return sendError(res, error.message, error.statusCode);
+    }
+    console.error(`[Donation Complete Error] ${error.name || 'Error'}:`, error.message);
+    return sendError(res, 'Unable to confirm donation. Please try again.', 500);
   }
 };
 
@@ -28,8 +34,11 @@ const decline = async (req, res, next) => {
     const donation = await donationService.declineDonation(req.params.id, req.user);
     return sendSuccess(res, 'Donation pledge declined / marked as no-show', donation);
   } catch (error) {
-    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
-    return sendError(res, error.message, error.statusCode || 400);
+    if (error.statusCode) {
+      return sendError(res, error.message, error.statusCode);
+    }
+    console.error(`[Donation Decline Error] ${error.name || 'Error'}:`, error.message);
+    return sendError(res, 'Unable to decline pledge. Please try again.', 500);
   }
 };
 
@@ -45,7 +54,7 @@ const getHospitalPledges = async (req, res, next) => {
 
 const getByRequest = async (req, res, next) => {
   try {
-    const donations = await donationService.getDonationsByRequest(req.params.requestId);
+    const donations = await donationService.getDonationsByRequest(req.params.requestId, req.user);
     return sendSuccess(res, 'Donations for request retrieved', donations);
   } catch (error) {
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { requestApi } from '../../api/requestApi';
 import { useToast } from '../../context/ToastContext';
 import Card from '../../components/common/Card';
@@ -20,10 +21,11 @@ import {
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const URGENCY_LEVELS = ['All', 'critical', 'high', 'medium', 'low'];
-const STATUS_OPTIONS = ['All', 'open', 'in-progress', 'fulfilled', 'cancelled'];
+const STATUS_OPTIONS = ['All', 'open', 'in-progress', 'fulfilled', 'cancelled', 'closed'];
 
 const RequestManagement = () => {
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +34,18 @@ const RequestManagement = () => {
   const [search, setSearch] = useState('');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState('All');
   const [selectedUrgency, setSelectedUrgency] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState(
+    searchParams.get('status') && STATUS_OPTIONS.includes(searchParams.get('status'))
+      ? searchParams.get('status')
+      : 'All'
+  );
+
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && STATUS_OPTIONS.includes(statusParam)) {
+      setSelectedStatus(statusParam);
+    }
+  }, [searchParams]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -73,6 +86,22 @@ const RequestManagement = () => {
       showToast(err.response?.data?.message || 'Failed to update status', 'error');
     }
   };
+
+  // Hospital cancellation counts
+  const hospitalCancelCounts = {};
+  requests.forEach((r) => {
+    if (r.status === 'cancelled') {
+      const hId = (
+        r.targetHospital?._id ||
+        r.targetHospital ||
+        r.hospital?._id ||
+        r.hospital ||
+        r.hospitalName ||
+        'unassigned'
+      ).toString();
+      hospitalCancelCounts[hId] = (hospitalCancelCounts[hId] || 0) + 1;
+    }
+  });
 
   // Filter client side search (patient name, hospital, city)
   const filteredRequests = requests.filter((req) => {
@@ -184,46 +213,76 @@ const RequestManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme font-medium">
-                {filteredRequests.map((req) => (
-                  <tr key={req._id || req.id} className="hover:bg-surface transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="font-bold text-primary">{req.patientName || req.recipientName || 'Emergency Patient'}</div>
-                      <div className="text-[11px] text-muted">
-                        {req.hospitalName || (req.hospital && typeof req.hospital === 'object' ? req.hospital.name : req.hospital) || 'Regional Hospital'}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <Badge bloodGroup={req.bloodGroup} />
-                    </td>
-                    <td className="px-5 py-4 font-bold text-primary">
-                      {req.unitsNeeded || req.unitsRequired || req.units || 1} Unit(s)
-                    </td>
-                    <td className="px-5 py-4">
-                      <Badge status={req.urgencyLevel || req.urgency || 'medium'} />
-                    </td>
-                    <td className="px-5 py-4">
-                      <Badge status={req.status || 'open'} />
-                    </td>
-                    <td className="px-5 py-4 text-secondary">
-                      {req.address || req.city || (typeof req.location === 'string' ? req.location : '') || 'N/A'}
-                    </td>
-                    <td className="px-5 py-4 text-muted font-mono text-[11px]">
-                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent'}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <select
-                        value={req.status || 'open'}
-                        onChange={(e) => handleStatusChange(req._id || req.id, e.target.value)}
-                        className="glass-input py-1.5 px-2.5 text-[11px] font-bold text-primary cursor-pointer"
-                      >
-                        <option value="open" className="bg-surface text-primary">Open</option>
-                        <option value="in-progress" className="bg-surface text-primary">In-Progress</option>
-                        <option value="fulfilled" className="bg-surface text-primary">Fulfilled</option>
-                        <option value="cancelled" className="bg-surface text-primary">Cancelled</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {filteredRequests.map((req) => {
+                  const hId = (
+                    req.targetHospital?._id ||
+                    req.targetHospital ||
+                    req.hospital?._id ||
+                    req.hospital ||
+                    req.hospitalName ||
+                    ''
+                  ).toString();
+                  const cancelCount = hospitalCancelCounts[hId] || 0;
+
+                  return (
+                    <tr key={req._id || req.id} className="hover:bg-surface transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-primary">{req.patientName || req.recipientName || 'Emergency Patient'}</div>
+                        <div className="text-[11px] text-muted flex items-center gap-1.5 flex-wrap">
+                          <span>
+                            {req.hospitalName || (req.hospital && typeof req.hospital === 'object' ? req.hospital.name : req.hospital) || 'Regional Hospital'}
+                          </span>
+                          {cancelCount > 0 && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-danger/10 text-danger border border-danger/25"
+                              title={`${cancelCount} request(s) cancelled for this hospital`}
+                            >
+                              {cancelCount} cancel{cancelCount > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <Badge bloodGroup={req.bloodGroup} />
+                      </td>
+                      <td className="px-5 py-4 font-bold text-primary">
+                        {req.unitsNeeded || req.unitsRequired || req.units || 1} Unit(s)
+                      </td>
+                      <td className="px-5 py-4">
+                        <Badge status={req.urgencyLevel || req.urgency || 'medium'} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge status={req.status || 'open'} />
+                          {req.status === 'cancelled' && (
+                            <span className="text-[10px] text-muted leading-tight">
+                              Reason: <strong className="text-secondary">{req.cancelReasonLabel || req.cancelReason || 'mistake'}</strong>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-secondary">
+                        {req.address || req.city || (typeof req.location === 'string' ? req.location : '') || 'N/A'}
+                      </td>
+                      <td className="px-5 py-4 text-muted font-mono text-[11px]">
+                        {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent'}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <select
+                          value={req.status || 'open'}
+                          onChange={(e) => handleStatusChange(req._id || req.id, e.target.value)}
+                          className="glass-input py-1.5 px-2.5 text-[11px] font-bold text-primary cursor-pointer"
+                        >
+                          <option value="open" className="bg-surface text-primary">Open</option>
+                          <option value="in-progress" className="bg-surface text-primary">In-Progress</option>
+                          <option value="fulfilled" className="bg-surface text-primary">Fulfilled</option>
+                          <option value="cancelled" className="bg-surface text-primary">Cancelled</option>
+                          <option value="closed" className="bg-surface text-primary">Closed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

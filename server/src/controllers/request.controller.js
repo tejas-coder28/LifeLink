@@ -24,9 +24,12 @@ const getRequests = async (req, res, next) => {
 
 const getMyRequests = async (req, res, next) => {
   try {
-    const requests = await requestService.getMyRequests(req.user);
+    const isMePath = req.path === '/me' || req.path.endsWith('/me');
+    const includeAll = isMePath || req.query.scope === 'all' || req.query.all === 'true' || req.query.includeAll === 'true';
+    const requests = await requestService.getMyRequests(req.user, { includeAll });
     return sendSuccess(res, 'User requests fetched', requests);
   } catch (error) {
+    console.error('[RequestController] getMyRequests error:', error?.constructor?.name || 'Error', error.message);
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
     return sendError(res, error.message, error.statusCode || 400);
   }
@@ -70,6 +73,7 @@ const getIncomingRequests = async (req, res, next) => {
     const requests = await requestService.getIncomingHospitalRequests(req.user._id);
     return sendSuccess(res, 'Incoming hospital requests fetched', requests);
   } catch (error) {
+    console.error('[RequestController] getIncomingRequests error:', error?.constructor?.name || 'Error', error.message);
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
     return sendError(res, error.message, error.statusCode || 400);
   }
@@ -137,14 +141,42 @@ const issuePatientUnits = async (req, res, next) => {
   }
 };
 
-// Admin: delete a blood request (fake/spam removal)
+const editRequest = async (req, res, next) => {
+  try {
+    const updated = await requestService.editRequest(req.params.id, req.user, req.body);
+    return sendSuccess(res, 'Blood request updated successfully', updated);
+  } catch (error) {
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
+  }
+};
+
+const cancelRequest = async (req, res, next) => {
+  try {
+    const result = await requestService.cancelRequest(req.params.id, req.user, req.body);
+    return sendSuccess(res, result.message, result);
+  } catch (error) {
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
+  }
+};
+
+const closeRequest = async (req, res, next) => {
+  try {
+    const updated = await requestService.closeRequest(req.params.id, req.user, req.body.note);
+    return sendSuccess(res, 'Blood request closed successfully', updated);
+  } catch (error) {
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
+  }
+};
+
+// Undo-create / Delete request (within 5 minutes & 0 pledges for non-admins, or anytime for admin)
 // DELETE /api/requests/:id
 const deleteRequest = async (req, res, next) => {
   try {
-    const BloodRequest = require('../repositories/bloodRequest.repository');
-    const deleted = await BloodRequest.findByIdAndDelete(req.params.id);
-    if (!deleted) return sendError(res, 'Blood request not found', 404);
-    return sendSuccess(res, 'Blood request deleted successfully');
+    const result = await requestService.deleteRequest(req.params.id, req.user);
+    return sendSuccess(res, result.message, result);
   } catch (error) {
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
     return sendError(res, error.message, error.statusCode || 400);
@@ -163,5 +195,8 @@ module.exports = {
   rejectRequest,
   issueCompatibleUnits,
   issuePatientUnits,
+  editRequest,
+  cancelRequest,
+  closeRequest,
   deleteRequest,
 };

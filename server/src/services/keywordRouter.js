@@ -323,7 +323,28 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     return greetingRes;
   }
 
-  // 2. Explicit Navigation question check ("where do I see...", "how do I find...", "take me to...")
+  // 2. Cancel / Edit How-To & Guidance (Read-Only AI Assistant)
+  const isCancelOrEditHowTo =
+    (norm.includes('cancel') || norm.includes('edit') || norm.includes('withdraw') || norm.includes('modify')) &&
+    (norm.includes('how') || norm.includes('where') || norm.includes('can i') || norm.includes('do i') || norm.includes('way to') || norm.includes('steps') || norm.includes('request'));
+
+  if (isCancelOrEditHowTo && !norm.includes('how many cancel') && !norm.includes('cancelled request')) {
+    const reply = isHospital
+      ? 'To edit or cancel a blood request, open the Active Requests tab on your dashboard, locate the request card, and select "Edit" or "Cancel request". Pledged donors will be notified if units or urgency change, and cancelling will release any active donor pledges.'
+      : 'To edit or cancel your blood request, open your Track Request page, locate the action buttons, and select "Edit" or "Cancel request". Pledged donors will be notified and their pledges released.';
+    const action = isHospital
+      ? buildAction('hospital-active-requests', { label: 'Go to Active Requests' })
+      : buildAction('individual-my-requests', { label: 'My Requests' });
+    return {
+      reply,
+      actions: action ? [action] : [],
+      suggestions,
+      provider: 'keyword',
+      fallbackReason,
+    };
+  }
+
+  // 3. Explicit Navigation question check ("where do I see...", "how do I find...", "take me to...")
   const isExplicitNav = /^(where|how\s+(do|can|to)|take\s+me|show\s+me\s+where|navigate)/i.test(lower);
   if (isExplicitNav) {
     let guide = await aiTools.executeTool('getHowToGuide', { topic: lower }, userContext);
@@ -339,6 +360,37 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
         fallbackReason,
       };
     }
+  }
+
+  // 2c. Cancelled requests count inquiry: "how many cancelled requests", "cancelled requests"
+  const isCancelledRequestsQuery =
+    norm.includes('cancelled request') ||
+    norm.includes('canceled request') ||
+    norm.includes('how many cancel') ||
+    norm.includes('how many cancelled') ||
+    (norm.includes('cancel') && (norm.includes('count') || norm.includes('total') || norm.includes('number')));
+
+  if (isCancelledRequestsQuery) {
+    const data = await aiTools.executeTool('getCancelledRequests', {}, userContext);
+    let reply = '';
+    let action = null;
+    if (isHospital) {
+      reply = `Your hospital has ${data.cancelledCount} cancelled blood request(s).`;
+      action = buildAction('hospital-active-requests', { label: 'View Request Directory' });
+    } else if (isAdmin) {
+      reply = `There are ${data.cancelledCount} cancelled blood request(s) recorded across the platform.`;
+      action = buildAction('admin-requests', { label: 'View Request Master' });
+    } else {
+      reply = `You have ${data.cancelledCount} cancelled blood request(s).`;
+      action = buildAction('individual-my-requests', { label: 'View Requests' });
+    }
+    return {
+      reply,
+      actions: action ? [action] : [],
+      suggestions,
+      provider: 'keyword',
+      fallbackReason,
+    };
   }
 
   // 3. User / Donor data intents

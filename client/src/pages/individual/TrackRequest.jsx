@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { requestApi } from '../../api/requestApi';
 import { useToast } from '../../context/ToastContext';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import Modal from '../../components/common/Modal';
+import { formatUnits } from '../../constants/bloodUnits';
 import {
   Activity,
   CheckCircle2,
@@ -19,18 +22,48 @@ import {
   Building2,
   AlertTriangle,
   RotateCcw,
-  ArrowRight
+  ArrowRight,
+  Edit2,
+  Trash2,
+  Ban,
 } from 'lucide-react';
 
 const TrackRequest = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [request, setRequest] = useState(null);
   const [matches, setMatches] = useState([]);
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completingId, setCompletingId] = useState(null);
+
+  // Modals for requester actions
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    patientName: '',
+    unitsNeeded: 1,
+    minAllowedUnits: 1,
+    urgency: 'high',
+    requiredByDate: '',
+    notes: '',
+    submitting: false,
+  });
+
+  const [cancelModal, setCancelModal] = useState({
+    isOpen: false,
+    pledgedCount: 0,
+    fulfilledCount: 0,
+    reason: 'created_by_mistake',
+    note: '',
+    submitting: false,
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    submitting: false,
+  });
 
   const fetchTrackData = async () => {
     setLoading(true);
@@ -104,6 +137,143 @@ const TrackRequest = () => {
       showError(err.response?.data?.message || 'Failed to confirm donation');
     } finally {
       setCompletingId(null);
+    }
+  };
+
+  const isOwner =
+    user &&
+    request &&
+    (user.accountType === 'admin' ||
+      (request.requester?._id && request.requester._id.toString() === user._id.toString()) ||
+      (request.requester && request.requester.toString() === user._id.toString()));
+
+  const isCreatedRecent =
+    request &&
+    request.createdAt &&
+    Date.now() - new Date(request.createdAt).getTime() < 5 * 60 * 1000;
+  const hasPledges =
+    (request?.unitsPledged || 0) > 0 ||
+    donations.some((d) => d.status === 'pledged' || d.status === 'confirmed');
+  const hasFulfilled =
+    (request?.unitsReceived || 0) > 0 ||
+    (request?.unitsFulfilled || 0) > 0 ||
+    donations.some((d) => d.status === 'fulfilled' || d.status === 'completed');
+  const isClosedOrCancelled =
+    request &&
+    (request.status === 'cancelled' ||
+      request.status === 'closed' ||
+      request.status === 'rejected');
+  const canUndoDelete = isCreatedRecent && !hasPledges && !hasFulfilled && !isClosedOrCancelled;
+  const canCancel = !isClosedOrCancelled;
+  const canEdit = !isClosedOrCancelled;
+
+  const handleOpenEditModal = () => {
+    const minUnits = Math.max(1, (request.unitsReceived || 0) + (request.unitsPledged || 0));
+    setEditModal({
+      isOpen: true,
+      patientName: request.patientName || '',
+      unitsNeeded: request.unitsNeeded || minUnits,
+      minAllowedUnits: minUnits,
+      urgency: request.urgency || 'high',
+      requiredByDate: request.requiredByDate ? request.requiredByDate.substring(0, 10) : '',
+      notes: request.notes || '',
+      submitting: false,
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!request) return;
+    if (editModal.unitsNeeded < editModal.minAllowedUnits) {
+      showError(`Units needed cannot be less than pledged + received (${editModal.minAllowedUnits}).`);
+      return;
+    }
+    setEditModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const payload = {
+        patientName: editModal.patientName,
+        unitsNeeded: Number(editModal.unitsNeeded),
+        urgency: editModal.urgency,
+        notes: editModal.notes,
+      };
+      if (editModal.requiredByDate) {
+        payload.requiredByDate = editModal.requiredByDate;
+      }
+      const res = await requestApi.editRequest(request._id, payload);
+      if (res.data && res.data.success) {
+        showSuccess('Request updated successfully');
+        setEditModal((prev) => ({ ...prev, isOpen: false }));
+        fetchTrackData();
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to update request');
+    } finally {
+      setEditModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const handleOpenCancelModal = () => {
+    setCancelModal({
+      isOpen: true,
+      pledgedCount: request.unitsPledged || 0,
+      fulfilledCount: request.unitsReceived || 0,
+      reason: 'created_by_mistake',
+      note: '',
+      submitting: false,
+    });
+  };
+
+  const handleCancelSubmit = async (e) => {
+    e.preventDefault();
+    if (!request) return;
+    setCancelModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const res = await requestApi.cancelRequest(request._id, {
+        reason: cancelModal.reason,
+        note: cancelModal.note,
+      });
+      if (res.data && res.data.success) {
+        showSuccess('Request has been cancelled and pledges released.');
+        setCancelModal((prev) => ({ ...prev, isOpen: false }));
+        fetchTrackData();
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to cancel request');
+    } finally {
+      setCancelModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const handleCloseRequest = async () => {
+    const confirm = window.confirm(
+      'Are you sure you want to close this request? No new pledges will be accepted, but all received units will remain recorded.'
+    );
+    if (!confirm) return;
+    try {
+      const res = await requestApi.closeRequest(request._id, { reason: 'Requester closed request' });
+      if (res.data && res.data.success) {
+        showSuccess('Request closed successfully.');
+        fetchTrackData();
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to close request');
+    }
+  };
+
+  const handleDeleteSubmit = async () => {
+    if (!request) return;
+    setDeleteModal((prev) => ({ ...prev, submitting: true }));
+    try {
+      const res = await requestApi.deleteRequest(request._id);
+      if (res.data && res.data.success) {
+        showSuccess('Request deleted successfully.');
+        setDeleteModal((prev) => ({ ...prev, isOpen: false }));
+        navigate('/emergency-request');
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to delete request');
+    } finally {
+      setDeleteModal((prev) => ({ ...prev, submitting: false }));
     }
   };
 
@@ -200,7 +370,12 @@ const TrackRequest = () => {
               <p className="text-xs text-muted">Request ID: {request._id}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            {request.isEdited && (
+              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-info/10 text-info border border-info/30">
+                Edited
+              </span>
+            )}
             <Badge status={request.urgency} />
             <Badge status={request.status} />
           </div>
@@ -319,6 +494,55 @@ const TrackRequest = () => {
             );
           })()}
         </div>
+
+        {/* Requester Action Buttons (Edit, Cancel, Delete, Close) */}
+        {isOwner && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-hairline">
+            <span className="text-xs text-muted">
+              {isClosedOrCancelled ? 'This request is closed/withdrawn.' : 'Manage your emergency request:'}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditModal}
+                  className="btn-secondary px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Edit Details</span>
+                </button>
+              )}
+              {canUndoDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteModal({ isOpen: true, submitting: false })}
+                  className="btn-danger px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Request</span>
+                </button>
+              ) : hasFulfilled && canCancel ? (
+                <button
+                  type="button"
+                  onClick={handleCloseRequest}
+                  className="btn-secondary px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Close Request</span>
+                </button>
+              ) : canCancel ? (
+                <button
+                  type="button"
+                  onClick={handleOpenCancelModal}
+                  className="btn-danger px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Cancel Request</span>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
 
 
@@ -482,6 +706,241 @@ const TrackRequest = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Request Modal */}
+      <Modal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Edit Blood Request"
+      >
+        {request && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-info/10 border border-info/30 text-xs text-primary">
+              <span className="font-bold">Blood Group:</span>
+              <Badge bloodGroup={request.bloodGroup} />
+              <span className="text-[11px] text-secondary ml-auto">
+                Blood group & hospital cannot be changed.
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Patient Name
+              </label>
+              <input
+                type="text"
+                required
+                value={editModal.patientName}
+                onChange={(e) => setEditModal({ ...editModal, patientName: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                  Units Needed
+                </label>
+                <input
+                  type="number"
+                  min={editModal.minAllowedUnits}
+                  max={50}
+                  required
+                  value={editModal.unitsNeeded}
+                  onChange={(e) => setEditModal({ ...editModal, unitsNeeded: parseInt(e.target.value, 10) || 1 })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-[11px] text-secondary mt-1 block">
+                  {formatUnits(editModal.unitsNeeded)}
+                  {editModal.minAllowedUnits > 1 && (
+                    <span className="text-warning ml-1">(Min {editModal.minAllowedUnits} due to pledges/received)</span>
+                  )}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                  Urgency Level
+                </label>
+                <select
+                  value={editModal.urgency}
+                  onChange={(e) => setEditModal({ ...editModal, urgency: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                >
+                  <option value="critical">Critical (Immediate)</option>
+                  <option value="high">High (Urgent)</option>
+                  <option value="medium">Medium (Standard)</option>
+                  <option value="low">Low (Flexible)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Required By Date
+              </label>
+              <input
+                type="date"
+                value={editModal.requiredByDate}
+                onChange={(e) => setEditModal({ ...editModal, requiredByDate: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Notes / Directions
+              </label>
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={editModal.notes}
+                onChange={(e) => setEditModal({ ...editModal, notes: e.target.value })}
+                placeholder="Hospital room/bed directions, contact notes..."
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editModal.submitting}
+                className="btn-primary px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {editModal.submitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Cancel Request Modal */}
+      <Modal
+        isOpen={cancelModal.isOpen}
+        onClose={() => setCancelModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Cancel Blood Request"
+      >
+        {request && (
+          <form onSubmit={handleCancelSubmit} className="space-y-4">
+            <div className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-danger font-bold text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Withdraw Blood Request</span>
+              </div>
+              <p className="text-secondary leading-relaxed">
+                Cancelling this request will immediately mark it as cancelled, withdraw it from active matching, and release any active donor pledges.
+              </p>
+              {cancelModal.pledgedCount > 0 && (
+                <div className="p-2.5 rounded-lg bg-warning/15 border border-warning/30 text-warning font-semibold text-xs">
+                  ⚠️ <strong>{cancelModal.pledgedCount} donor(s)</strong> have currently pledged to this request.
+                  Their pledges will be released back to standby, and their eligibility cooldown will NOT be penalised.
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Reason for Cancellation <span className="text-danger">*</span>
+              </label>
+              <select
+                required
+                value={cancelModal.reason}
+                onChange={(e) => setCancelModal({ ...cancelModal, reason: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+              >
+                <option value="created_by_mistake">Created by mistake</option>
+                <option value="wrong_details">Wrong details</option>
+                <option value="patient_recovered">Patient no longer needs blood</option>
+                <option value="need_met_elsewhere">Need met elsewhere</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase mb-1">
+                Optional Note (max 200 chars)
+              </label>
+              <textarea
+                rows={2}
+                maxLength={200}
+                value={cancelModal.note}
+                onChange={(e) => setCancelModal({ ...cancelModal, note: e.target.value })}
+                placeholder="Optional explanation..."
+                className="w-full px-4 py-2.5 rounded-xl border border-theme bg-surface-elevated text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <span className="text-[10px] text-muted block text-right">
+                {cancelModal.note.length}/200
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setCancelModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Keep Request
+              </button>
+              <button
+                type="submit"
+                disabled={cancelModal.submitting}
+                className="btn-danger px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{cancelModal.submitting ? 'Cancelling...' : 'Confirm Cancellation'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Delete Request Modal (Undo-Create) */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+        title="Delete Blood Request"
+      >
+        {request && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-danger font-bold text-sm">
+                <Trash2 className="w-4 h-4 shrink-0" />
+                <span>Undo / Delete Request</span>
+              </div>
+              <p className="text-secondary leading-relaxed">
+                This request was created less than 5 minutes ago and has received no donor pledges.
+                Deleting it will permanently remove the record and any initial match notifications.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-theme">
+              <button
+                type="button"
+                onClick={() => setDeleteModal((prev) => ({ ...prev, isOpen: false }))}
+                className="btn-secondary px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Keep Request
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSubmit}
+                disabled={deleteModal.submitting}
+                className="btn-danger px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteModal.submitting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

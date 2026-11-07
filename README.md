@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-269_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-320_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -25,7 +25,7 @@ LifeLink is an emergency response web application powered by **Google Cloud Fire
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
 - 💎 **Liquid Glass & Spatial UI**: Apple-inspired translucent glass aesthetic with 5 spatial elevation tiers, 4 harmonic drifting atmospheric orbs, dynamic refraction filters, and full light/dark mode support.
 - 📊 **AI Insights & Platform Analytics**: Administrative dashboard with emergency response time indicators, platform health metrics, shortage prediction alerts, and an interactive AI Chatbot assistant.
-- 🧪 **Comprehensive Automated Testing & QA**: 269 automated Jest + Supertest backend tests (17 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 🧪 **Comprehensive Automated Testing & QA**: 320 automated Jest + Supertest backend tests (22 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
 
 ---
 
@@ -236,11 +236,11 @@ LifeLink includes a rigorous automated testing and accessibility assurance suite
 
 ### Backend Automated Tests (Jest + Supertest)
 ```bash
-# Run 247 automated backend tests
+# Run 320 automated backend tests
 cd server
 npm test
 ```
-- **16 Test Suites / 247 Tests**: 100% pass rate.
+- **22 Test Suites / 320 Tests**: 100% pass rate.
 - Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, transaction integrity, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit

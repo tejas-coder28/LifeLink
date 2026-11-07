@@ -11,15 +11,33 @@ export const STATUS_LABELS = {
   fulfilled: 'Fulfilled',
   completed: 'Completed',
   pledged: 'Pledged',
+  released: 'Released - request cancelled',
   rejected: 'Rejected',
   hospital_no_response: 'No hospital response',
   cancelled: 'Cancelled',
+  closed: 'Closed',
   expired: 'Expired',
   legacy: 'Legacy',
   pending: 'Pending review',
   verified: 'Verified',
   active: 'Active',
   suspended: 'Suspended',
+};
+
+export const CANCEL_REASONS = {
+  created_by_mistake: 'created by mistake',
+  wrong_details: 'wrong details',
+  patient_recovered: 'patient no longer needs blood',
+  need_met_elsewhere: 'need met elsewhere',
+  other: 'other reason',
+};
+
+export const CANCEL_LABELS = {
+  created_by_mistake: 'Created by mistake',
+  wrong_details: 'Wrong details',
+  patient_recovered: 'Patient no longer needs blood',
+  need_met_elsewhere: 'Need met elsewhere',
+  other: 'Other',
 };
 
 /**
@@ -56,9 +74,11 @@ export const getStatusBadgeClass = (status) => {
     pending_hospital_review: 'badge-pending',
     pending: 'badge-pending',
     pledged: 'badge-pledged',
+    released: 'badge-low',
     hospital_no_response: 'badge-cancelled',
     rejected: 'badge-critical',
     cancelled: 'badge-cancelled',
+    closed: 'badge-cancelled',
     expired: 'badge-expired',
     suspended: 'badge-suspended',
     critical: 'badge-critical',

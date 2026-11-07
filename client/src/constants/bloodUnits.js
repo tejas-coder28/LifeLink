@@ -49,3 +49,38 @@ export function formatUnits(n, options = {}) {
   return `${num} ${unitWord} (≈ ${volStr})`;
 }
 
+/**
+ * Format unit count split into units string and volume string for narrow cells.
+ *
+ * @param {number|string} n
+ * @param {Object|boolean} [options={}]
+ * @returns {{ num: number, unitWord: string, unitsText: string, volumeText: string, full: string }}
+ */
+export function formatUnitsParts(n, options = {}) {
+  const num = Number(n) || 0;
+  const unitWord = num === 1 ? 'unit' : 'units';
+  const ml = Math.round(num * ML_PER_UNIT);
+
+  const useLitres = typeof options === 'boolean'
+    ? options
+    : options.useLitres !== undefined
+      ? Boolean(options.useLitres)
+      : ml >= 1000;
+
+  let volStr;
+  if (useLitres && ml >= 1000) {
+    const litres = (Math.round((ml / 1000) * 10) / 10).toFixed(1);
+    volStr = `${litres} L`;
+  } else {
+    volStr = `${ml} ml`;
+  }
+
+  return {
+    num,
+    unitWord,
+    unitsText: `${num} ${unitWord}`,
+    volumeText: `≈ ${volStr}`,
+    full: `${num} ${unitWord} (≈ ${volStr})`,
+  };
+}
+
