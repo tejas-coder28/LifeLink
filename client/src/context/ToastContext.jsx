@@ -190,7 +190,7 @@ export const ToastProvider = ({ children }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-2xl bg-surface/95 dark:bg-[#111A2E]/95 text-primary shadow-spatial-floating ${config.border}`}
+                className={`pointer-events-auto flex items-start space-x-3 p-4 rounded-2xl border backdrop-blur-2xl bg-surface/95 dark:bg-surface/95 text-primary shadow-spatial-floating ${config.border}`}
                 role="status"
                 aria-live="polite"
               >

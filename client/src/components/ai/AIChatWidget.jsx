@@ -270,6 +270,9 @@ const AIChatWidget = () => {
     if (action.tab && !targetUrl.includes('tab=')) {
       targetUrl += (targetUrl.includes('?') ? '&' : '?') + `tab=${encodeURIComponent(action.tab)}`;
     }
+    if (action.query) {
+      targetUrl += (targetUrl.includes('?') ? '&' : '?') + action.query;
+    }
     navigate(targetUrl);
     if (window.innerWidth < 640) {
       setIsOpen(false);
@@ -306,7 +309,7 @@ const AIChatWidget = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
             transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-            className="w-[calc(100vw-2rem)] sm:w-[410px] bg-surface/95 dark:bg-[#111A2E]/95 rounded-3xl border border-hairline shadow-spatial-overlay flex flex-col h-[520px] max-h-[85vh] backdrop-blur-2xl overflow-hidden"
+            className="w-[calc(100vw-2rem)] sm:w-[410px] bg-surface/95 dark:bg-surface/95 rounded-3xl border border-hairline shadow-spatial-overlay flex flex-col h-[520px] max-h-[85vh] backdrop-blur-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="bg-raised/80 px-4 py-3.5 border-b border-hairline flex items-center justify-between shrink-0">

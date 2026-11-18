@@ -61,8 +61,8 @@ const Navbar = () => {
     <>
       {/* Floating Pill Navbar Container */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 pointer-events-none transition-all duration-300 flex justify-center ${
-          scrolled ? 'pt-2 sm:pt-3' : 'pt-3 sm:pt-5'
+        className={`sticky top-0 z-50 pointer-events-none transition-all duration-300 flex justify-center items-start min-h-[var(--navbar-height)] ${
+          scrolled ? 'pt-2 sm:pt-2.5' : 'pt-2.5 sm:pt-3'
         } px-3 sm:px-6`}
       >
         <nav

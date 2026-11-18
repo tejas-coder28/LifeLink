@@ -17,6 +17,7 @@ export const requestApi = {
   issueCompatibleUnits: (id, bloodGroup, units) => axiosClient.post(`/requests/${id}/issue-compatible`, { bloodGroup, units }),
   issuePatientUnits: (id, units = 1) => axiosClient.post(`/requests/${id}/issue-patient`, { units }),
   pledgeDonation: (data) => axiosClient.post('/donations/pledge', data),
+  cancelPledge: (id) => axiosClient.delete(`/donations/${id}/pledge`),
   completeDonation: (id) => axiosClient.patch(`/donations/${id}/complete`, {}),
   declineDonation: (id) => axiosClient.patch(`/donations/${id}/decline`, {}),
   getHospitalPledges: () => axiosClient.get('/donations/hospital'),

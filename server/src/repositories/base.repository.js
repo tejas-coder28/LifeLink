@@ -347,7 +347,16 @@ class BaseRepository {
             else if (value.$nin && Array.isArray(value.$nin)) additionalInMemory.push(doc => !value.$nin.includes(doc[key]));
           } else {
             const eqVal = value && typeof value === 'object' && value._id ? value._id.toString() : value;
-            fallbackQuery = fallbackQuery.where(key, '==', eqVal);
+            try {
+              fallbackQuery = fallbackQuery.where(key, '==', eqVal);
+            } catch (_) {}
+            additionalInMemory.push(doc => {
+              const docVal = doc[key] && typeof doc[key] === 'object' && doc[key]._id
+                ? doc[key]._id.toString()
+                : (doc[key] !== undefined && doc[key] !== null ? doc[key].toString() : doc[key]);
+              const targetVal = eqVal !== null && eqVal !== undefined ? eqVal.toString() : eqVal;
+              return docVal === targetVal;
+            });
           }
         }
         snapshot = await fallbackQuery.get();

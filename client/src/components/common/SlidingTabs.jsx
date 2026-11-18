@@ -10,8 +10,24 @@ const SlidingTabs = ({
   activeTab,
   onChange,
   layoutId = 'active-tab-indicator',
+  accent,
   className = '',
 }) => {
+  const getActiveIconClass = (isUrgent) => {
+    if (isUrgent) return 'text-danger';
+    if (accent === 'donor') return 'text-accent-donor';
+    if (accent === 'hospital') return 'text-accent-hospital';
+    if (accent === 'admin') return 'text-accent-admin';
+    return 'text-info';
+  };
+
+  const getIndicatorBorder = () => {
+    if (accent === 'donor') return 'border-accent-donor/30';
+    if (accent === 'hospital') return 'border-accent-hospital/30';
+    if (accent === 'admin') return 'border-accent-admin/30';
+    return 'border-hairline';
+  };
+
   return (
     <div
       className={`tab-list flex items-center p-1 rounded-2xl border border-hairline bg-surface/40 backdrop-blur-md overflow-x-auto ${className}`}
@@ -36,7 +52,7 @@ const SlidingTabs = ({
             {isActive && (
               <motion.div
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-xl bg-surface shadow-card border border-hairline"
+                className={`absolute inset-0 rounded-xl bg-surface shadow-card border ${getIndicatorBorder()}`}
                 style={{ zIndex: -1 }}
                 transition={{
                   type: 'spring',
@@ -48,7 +64,7 @@ const SlidingTabs = ({
             {Icon && (
               <Icon
                 className={`w-4 h-4 ${
-                  isActive ? (isUrgent ? 'text-danger' : 'text-info') : 'text-muted'
+                  isActive ? getActiveIconClass(isUrgent) : 'text-muted'
                 }`}
               />
             )}
@@ -62,7 +78,7 @@ const SlidingTabs = ({
                     ? isActive
                       ? 'bg-danger text-white'
                       : 'bg-danger/15 text-danger border border-danger/30'
-                    : 'bg-info/15 text-[#165CA8] dark:text-ice border border-info/30'
+                    : 'bg-info/15 text-info dark:text-ice border border-info/30'
                 }`}
               >
                 {badgeValue}

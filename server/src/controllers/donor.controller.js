@@ -1,5 +1,16 @@
 const donorService = require('../services/donor.service');
+const donorBadgeService = require('../services/donorBadge.service');
 const { sendSuccess, sendError, isDbError } = require('../utils/responseHandler');
+
+const getBadges = async (req, res, next) => {
+  try {
+    const badges = await donorBadgeService.getAllDonorBadges(req.user._id);
+    return sendSuccess(res, 'Donor badges fetched successfully', badges);
+  } catch (error) {
+    if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);
+    return sendError(res, error.message, error.statusCode || 400);
+  }
+};
 
 const getProfile = async (req, res, next) => {
   try {
@@ -53,4 +64,5 @@ module.exports = {
   updateProfile,
   searchDonors,
   getAllDonors,
+  getBadges,
 };

@@ -2,6 +2,7 @@ const DonorProfile = require('../repositories/donorProfile.repository');
 const User = require('../repositories/user.repository');
 const { compatibleDonorGroups } = require('../utils/bloodCompatibility');
 const { calculateHaversineDistance } = require('../utils/geo');
+const { isProfileComplete } = require('./donorBadge.service');
 
 const getProfileByUserId = async (userId) => {
   let profile = await DonorProfile.findOne({ user: userId }).populate('user', 'name email phone accountType hospitalId');
@@ -10,8 +11,10 @@ const getProfileByUserId = async (userId) => {
     if (!user) throw new Error('User not found');
     profile = await DonorProfile.create({
       user: userId,
-      bloodGroup: 'O+',
+      bloodGroup: '',
+      bloodGroupConfirmed: false,
       contactNumber: user.phone || '',
+      profileComplete: false,
       location: {
         type: 'Point',
         coordinates: [77.2090, 28.6139],
@@ -19,18 +22,38 @@ const getProfileByUserId = async (userId) => {
     });
     profile = await profile.populate('user', 'name email phone accountType hospitalId');
   }
-  return profile;
+  const complete = isProfileComplete(profile);
+  return {
+    ...profile,
+    profileComplete: profile.profileComplete !== undefined ? profile.profileComplete : complete,
+  };
 };
 
 const updateProfileByUserId = async (userId, updateData) => {
-  const { bloodGroup, coordinates, address, lastDonationDate, isAvailable, age, gender, healthFlags, contactNumber } = updateData;
+  const {
+    bloodGroup,
+    coordinates,
+    address,
+    lastDonationDate,
+    isAvailable,
+    age,
+    gender,
+    healthFlags,
+    contactNumber,
+    is18Plus,
+    isWeight50KgPlus,
+    consentContact,
+    dob,
+  } = updateData;
 
   let profile = await DonorProfile.findOne({ user: userId });
   if (!profile) {
     profile = await DonorProfile.create({
       user: userId,
-      bloodGroup: bloodGroup || 'O+',
+      bloodGroup: bloodGroup || '',
+      bloodGroupConfirmed: Boolean(bloodGroup),
       contactNumber: contactNumber || '',
+      profileComplete: false,
     });
   }
 
@@ -54,9 +77,19 @@ const updateProfileByUserId = async (userId, updateData) => {
     profile.contactNumber = contactNumber;
     await User.findByIdAndUpdate(userId, { phone: contactNumber });
   }
+  if (is18Plus !== undefined) profile.is18Plus = Boolean(is18Plus);
+  if (isWeight50KgPlus !== undefined) profile.isWeight50KgPlus = Boolean(isWeight50KgPlus);
+  if (consentContact !== undefined) profile.consentContact = Boolean(consentContact);
+  if (dob !== undefined) profile.dob = dob;
+
+  profile.profileComplete = isProfileComplete(profile);
 
   await profile.save();
-  return await profile.populate('user', 'name email phone accountType hospitalId');
+  const populated = await profile.populate('user', 'name email phone accountType hospitalId');
+  return {
+    ...populated,
+    profileComplete: profile.profileComplete,
+  };
 };
 
 const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly = true }) => {

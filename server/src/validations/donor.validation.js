@@ -15,6 +15,11 @@ const donorProfileSchema = z.object({
   gender: z.enum(['male', 'female', 'other']).optional(),
   healthFlags: z.array(z.string()).optional(),
   contactNumber: z.string().optional(),
+  is18Plus: z.boolean().optional(),
+  isWeight50KgPlus: z.boolean().optional(),
+  consentContact: z.boolean().optional(),
+  bloodGroupConfirmed: z.boolean().optional(),
+  dob: z.union([z.string(), z.null()]).optional(),
 });
 
 module.exports = {

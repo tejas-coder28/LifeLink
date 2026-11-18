@@ -3,21 +3,19 @@
 ## 1. Overview
 The LifeLink Design System is an Apple-inspired Liquid Glass & Spatial UI language built for life-critical healthcare and blood donation networks. It balances visceral, cinematic depth with clinical calm, trustworthy authority, and uncompromising WCAG AA/AAA readability across **both Dark and Light themes**.
 
-### Direction: "Midnight Navy + Crimson + Ice"
+### Direction: "Midnight Navy + Crimson + Ice" with Purposeful Role & Medical Accents
 - **Clinical, Trustworthy, Calm**: Midnight Navy (`#0A0F1C`) dark foundation and Cool White (`#F4F7FB`) light canvas base, structured with silver-blue neutrals and ice blue accents.
-- **10% Emergency Crimson Budget**: Crimson is reserved strictly for life-critical signals (primary CTAs, emergency/critical badges, urgent request status indicators, active navigation indicator). It represents $\le 10\%$ of any screen budget, preserving its immediate visceral urgency.
-- **Semantic Mapping**:
-  - `ONLINE / Verified Facility / Confirmed / Fulfilled` $\rightarrow$ `success`
-  - `Cooldown / Low Stock / Pending` $\rightarrow$ `warning`
-  - `Critical Stock / Emergency Request` $\rightarrow$ `danger`
-  - `Informational / System State / Active Filter` $\rightarrow$ `info`
-  - Always paired with explicit text labels or icons; never communicates status through color alone.
+- **10% Emergency Crimson Budget**: Crimson is reserved strictly for life-critical signals (primary emergency CTAs, critical shortage badges, emergency status pings). It represents $\le 10\%$ of any screen budget, preserving its visceral urgency.
+- **Max 3 Accent Hues Visible per Screen**: Dashboards use role-specific accents to maintain visual tranquility and eliminate cognitive overload.
+- **Never Rely on Color Alone**: All status chips, urgency levels, and blood group indicators are accompanied by explicit text labels and semantic icons.
 
 ---
 
 ## 2. Palette & Semantic Design Tokens
 
 Every token is defined as a semantic CSS variable in `client/src/index.css` and exported through `client/src/theme/tokens.js`, providing a single source of truth across Tailwind classes and JavaScript chart themes:
+
+### 2.1 Foundation & Semantic States
 
 | Token | Dark Mode | Light Mode | Usage & Purpose | WCAG Contrast |
 |---|---|---|---|---|
@@ -31,100 +29,78 @@ Every token is defined as a semantic CSS variable in `client/src/index.css` and 
 | `specular rim` | `rgba(255,255,255,0.08)` | `rgba(255,255,255,0.90)` | Top-edge optical specular highlight | Specular reflection |
 | `danger` | `#E5484D` | `#C8102E` | Critical shortages, emergency badges | $\ge 3.5:1$ Dark / $\ge 5.0:1$ Light (AA) |
 | `danger-solid` | `#D13438` | `#C8102E` | Primary emergency CTAs with white text | $\ge 4.9:1$ Dark / $\ge 5.8:1$ Light (AA) |
-| `danger hover` | `#FF6166` | `#A80D26` | Interactive hover state for danger buttons | Interactive |
-| `danger pressed` | `#B82C30` | `#8A0A1F` | Pressed active state for danger buttons | Interactive |
 | `success` | `#34D399` | `#0A7A62` | ONLINE status, verified facilities, fulfilled | $\ge 7.2:1$ Dark / $\ge 4.5:1$ Light (AA) |
 | `warning` | `#FBBF24` | `#9A5B00` | Cooldown warnings, low stock, pending | $\ge 8.2:1$ Dark / $\ge 4.6:1$ Light (AA) |
 | `info / focus` | `#60A5FA` | `#1D6FD6` | Keyboard focus ring (2px offset 2px), info pills | $\ge 5.4:1$ Dark / $\ge 4.2:1$ Light (AA) |
-| `ice` (accent) | `#A5D8FF` | `#1D6FD6` | AI assistance, secondary highlights | $\ge 9.1:1$ Dark / $\ge 4.2:1$ Light (AA) |
+| `ice` | `#A5D8FF` | `#1D6FD6` | AI assistance, secondary highlights | $\ge 9.1:1$ Dark / $\ge 4.2:1$ Light (AA) |
 
----
+### 2.2 Role Accents
 
-## 3. Atmospheric Ground & Mesh Canvas
-
-### 3.1 Harmonic Drifting Orbs
-Replaced vibrant violet/teal/sky with harmonized clinical tones:
-- **Orb 1 (Dim Crimson)**: Urgency beacon, strictly muted (`opacity <= 12%` Dark / `<= 8%` Light).
-- **Orb 2 (Royal Blue `#2B4C8C`)**: Trust, clinical reliability, hospital logistics.
-- **Orb 3 (Ice Blue `#A5D8FF`)**: Technical intelligence, AI assistant, fluid clarity.
-- **Orb 4 (Silver-Blue `#93A1BD`)**: Neutral structure, depth separation.
-
-### 3.2 Performance & Accessibility
-- The background mesh layer is hardware-accelerated (`transform: translate3d(..., 0)` with `will-change: transform`) and runs non-synchronous orbital cycles (20s, 24s, 28s, 32s).
-- **Reduced Motion Fallback**: Under `@media (prefers-reduced-motion: reduce)`, orbital animations freeze gracefully (`animation: none`), preserving readability and eliminating motion sickness.
-
----
-
-## 4. Spatial Depth & 5 Elevation Tiers
-
-| Level | Name | Backdrop Blur | Border & Specular | Shadow (Light / Dark) | Primary Application |
+| Token | Dark Solid | Dark Subtle BG / Border | Light Solid | Light Subtle BG / Border | Usage |
 |---|---|---|---|---|---|
-| **0** | `elevation-canvas` | None | None | None | Page foundation, background mesh |
-| **1** | `elevation-base` | 20px / 170% sat | 1px hairline + top highlight | `0 1px 2px rgba(15,26,46,.06)` / Card shadow | Content cards, data rows, list tiles |
-| **2** | `elevation-raised` | 24px / 180% sat | 1px hairline + specular edge | `0 4px 12px rgba(15,26,46,.07)` / Raised shadow | Active items, form panels, filter cards |
-| **3** | `elevation-floating` | 28px / 190% sat | 1px hairline + specular edge | `0 8px 24px rgba(15,26,46,.08)` / Floating shadow | Floating navbar, AI widget, toast notifications |
-| **4** | `elevation-overlay` | 32px / 200% sat | 1px hairline + specular edge | `0 16px 40px rgba(15,26,46,.12)` / Modal shadow | Dialog modals, full-screen drawers |
+| `accent-donor` | `#2DD4BF` | `rgba(45,212,191,0.14)` / `0.28` | `#0F766E` | `rgba(15,118,110,0.08)` / `0.22` | Donor dashboard dot, hero gradient tint, tab indicator |
+| `accent-hospital` | `#60A5FA` | `rgba(96,165,250,0.14)` / `0.28` | `#1D6FD6` | `rgba(29,111,214,0.08)` / `0.22` | Hospital command center dot, hero tint, tab indicator |
+| `accent-admin` | `#A78BFA` | `rgba(167,139,250,0.14)` / `0.28` | `#6D28D9` | `rgba(109,40,217,0.08)` / `0.22` | Admin governance center dot, hero tint, tab indicator |
 
-> [!NOTE]
-> In light mode, glass elevation relies on genuine spatial drop shadows rather than glow, because light cannot cast a visible luminous glow against bright backgrounds.
+### 2.3 Urgency Scale
 
----
+Every urgency chip renders its solid color on its subtle background with a border, paired with an explicit icon and capitalized text label:
 
-## 5. Liquid Glass Material Anatomy
+| Level | Dark Color | Light Color | Icon | Text Label |
+|---|---|---|---|---|
+| `urgency-critical` | `#E5484D` | `#C8102E` | `AlertCircle` | `Critical` |
+| `urgency-high` | `#FB923C` | `#B45309` | `ArrowUp` | `High` |
+| `urgency-medium` | `#FBBF24` | `#9A5B00` | `Minus` | `Medium` |
+| `urgency-low` | `#7DD3FC` | `#0369A1` | `ArrowDown` | `Low` |
 
-1. **Substrate Fill**:
-   - **Dark Mode**: Neutral navy-tinted glass (`rgba(147, 180, 255, 0.05)`) with backdrop blur (`blur(26px) saturate(180%)`).
-   - **Light Mode**: Pure cool-white translucent substrate (`rgba(255, 255, 255, 0.75)`) with soft diffusion.
-2. **Double-Edge Optical Rim**:
-   - `border-top`: 1px specular highlight (`rgba(255, 255, 255, 0.90)` in Light / `rgba(255, 255, 255, 0.08)` in Dark).
-   - `border-bottom`: 1px hairline border (`rgba(15, 26, 46, 0.12)` in Light / `rgba(147, 161, 189, 0.16)` in Dark).
-3. **Inner Specular Reflection**: Multi-stop inset shadow creating a glass prism rim:
-   `box-shadow: inset 0 1px 1px 0 rgba(255,255,255,0.28), inset 0 -1px 1px 0 rgba(0,0,0,0.20)`.
-4. **Liquid Lens Refraction**:
-   SVG displacement map filter (`#liquid-refraction`) applied to floating navigation and hero spotlight components, gracefully degrading to clean backdrop blur when unsupported or when `prefers-reduced-motion` is active.
+### 2.4 Blood Group Family Hues (ABO System)
 
----
+All blood group chips display explicit text (e.g., `O+`, `AB-`) and are grouped by ABO family:
+- **Rh+ (Positive)**: Solid subtle background fill + border from family hue.
+- **Rh- (Negative)**: Outlined (transparent background + solid family border & text).
 
-## 6. Typography & Contrast Compliance
+| ABO Family | Blood Types | Dark Solid / Subtle | Light Solid / Subtle | Fill Style |
+|---|---|---|---|---|
+| `abo-o` | O+, O- | `#2DD4BF` / `0.14` | `#0F766E` / `0.08` | O+ subtle fill, O- outlined |
+| `abo-a` | A+, A- | `#60A5FA` / `0.14` | `#1D6FD6` / `0.08` | A+ subtle fill, A- outlined |
+| `abo-b` | B+, B- | `#A78BFA` / `0.14` | `#6D28D9` / `0.08` | B+ subtle fill, B- outlined |
+| `abo-ab` | AB+, AB- | `#FBBF24` / `0.14` | `#9A5B00` / `0.08` | AB+ subtle fill, AB- outlined |
 
-- **Display & Headings**: `Plus Jakarta Sans` / `Sora` (`font-heading`). Weight: 700 to 900.
-- **Body & Data**: `Inter` (`font-sans`). Weight: 400 to 600.
-- **Tabular Numerics**: `tabular-nums` applied to all countdowns, stock units, blood group counts, and coordinates to prevent layout jitter.
-- **WCAG 2.1 AA/AAA Verified Contrast**:
-  - Body Text (`text-primary`): $\ge 11.88:1$ Dark / $\ge 15.03:1$ Light (exceeds AAA $7.0:1$).
-  - Captions & Secondary Text (`text-muted`): $\ge 5.93:1$ Dark / $\ge 6.00:1$ Light (exceeds AA $4.5:1$).
-  - Button Fill Text (`White` on `danger-solid`): $4.93:1$ Dark (`#D13438`) / $5.88:1$ Light (`#C8102E`) (exceeds AA $4.5:1$).
-  - Focus Ring: 2px `--info` with 2px offset ($7.52:1$ Dark / $4.55:1$ Light, exceeds $3.0:1$).
+### 2.5 Inventory Stock Levels
+
+Hospital blood inventory displays enforce standardized semantic thresholds:
+- `0 units`: **Critical Deficit** (`urgency-critical` / label: `0 units Critical`)
+- `1-3 units`: **Low Stock Warning** (`urgency-medium` / label: `N units Low`)
+- `4+ units`: **Adequate Reserve** (`success` / label: `N units In Stock` / `N units Adequate`)
 
 ---
 
-## 7. Charts & Recharts Integration (`useChartTheme`)
+## 3. Atmospheric Ground & Spatial Elevations
 
-- **Default Series**:
-  - Primary Series: `colors.info` (`#60A5FA` Dark / `#1D6FD6` Light)
-  - Secondary Series: `colors.ice` (`#A5D8FF` Dark / `#1D6FD6` Light)
-  - Recovery / Fulfillment: `colors.teal` (`#34D399` Dark / `#0A7A62` Light)
-  - Baseline / Standard: `colors.silver` (`#9DAAC6` Dark / `#4A5A78` Light)
-- **Emergency Crimson Reserved**: Crimson (`colors.crimson`) is reserved exclusively for critical shortage indicators and unfulfilled emergency requests.
-- **Adaptive Tooltip**: High-density blurred surface with mode-adaptive background and specular border.
+### 3.1 Hero Cards & Gradient Tint
+- Hero banners on Donor, Hospital, and Admin dashboards apply a subtle gradient (`hero-donor`, `hero-hospital`, `hero-admin`):
+  `linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-*-subtle) 100%)`.
+- Ordinary cards remain neutral with no gradients (`border-hairline`).
+
+### 3.2 Stat Cards
+- Value number remains `text-primary` always.
+- Only the icon tile is tinted according to the metric category (`info`, `success`, `violet`, `warning`, `critical`).
+- Card border is strictly `border-hairline` (no colored top borders).
 
 ---
 
-## 8. Reusable Component Rules
+## 4. Charts & Recharts Integration (`useChartTheme`)
 
-1. **GlassCard**: Always specify `elevation` level (`1`, `2`, `3`, or `4`). Use `hover` prop for interactive lift.
-2. **GlassNavbar**: Floating pill structure (`top-4`, `mx-auto`, `max-w-7xl`). Shrinks on scroll.
-3. **GlassModal**: Teleport to `document.body` via React portal. Full-screen backdrop blur overlay, body scroll lock, Esc key handler, spring scale-in.
-4. **GlassInput & GlassSelect**: Always use semantic tokens for border, text, and surface. Native `<select>` must declare `color-scheme: light dark` and `<option>` elements must receive theme-aware background.
-5. **AIChatWidget (LifeLink AI Assistant)**:
-   - **Floating Placement**: Bottom-right floating pill (`fixed bottom-6 right-6 z-40`, Level 3 spatial elevation) with backdrop blur and active network indicator.
-   - **User Bubbles**: Solid filled `bg-raised` with hairline border and `text-primary` (`rounded-2xl rounded-br-none`).
-   - **Assistant Bubbles**: Surface container `bg-surface` with hairline border and `text-primary` (`rounded-2xl rounded-bl-none`).
-   - **One-Click Action Buttons**: Info/Ice secondary pills (`bg-info/10 hover:bg-info/20 text-info border border-info/30`) with navigation icons, triggering React Router deep-links without reloading.
-   - **Role Suggestion Chips**: Horizontal scrollable container with `bg-raised` chips and `hover:border-info/40` transitions.
-   - **Accessibility & Keyboard**: `role="log"` and `aria-live="polite"` on message list; Esc key closes widget; Enter sends message without Shift key.
-6. **Motion Guidelines**:
-   - Only animate `transform` and `opacity`.
-   - Micro-interactions max `250ms`.
-   - Never stack more than 2 blurred layers.
-   - Respect `prefers-reduced-motion: reduce`.
+Charts consume the 6-color purposeful series in exact order. Light-mode values are deepened to guarantee $\ge 3:1$ non-text contrast against the white `#FFFFFF` surface:
+
+| Series Index | Dark Hue | Light Hue | Purpose / Category | Contrast (vs Surface) |
+|---|---|---|---|---|
+| **1** | `#60A5FA` | `#1D6FD6` | Primary volume / donations | $6.86:1$ Dark / $4.89:1$ Light |
+| **2** | `#34D399` | `#059669` | Fulfillment / completed | $9.38:1$ Dark / $3.75:1$ Light |
+| **3** | `#FBBF24` | `#B45309` | Pledges / pending review | $9.91:1$ Dark / $5.02:1$ Light |
+| **4** | `#A78BFA` | `#6D28D9` | Verified institutions / admin | $6.23:1$ Dark / $7.12:1$ Light |
+| **5** | `#F472B6` | `#BE185D` | Distribution secondary | $5.86:1$ Dark / $6.01:1$ Light |
+| **6** | `#94A3B8` | `#475569` | Baseline / neutral demands | $6.63:1$ Dark / $7.56:1$ Light |
+
+> [!IMPORTANT]
+> Crimson (`#E5484D` / `#C8102E`) is strictly reserved for critical shortage data or emergency deficits and never appears in standard data series.

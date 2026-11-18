@@ -58,6 +58,28 @@ export const formatStatusLabel = (status) => {
 };
 
 /**
+ * Returns descriptive explanatory status text for donation/pledge history cards.
+ */
+export const getDonationStatusExplanatory = (status) => {
+  const norm = (status || '').toString().toLowerCase().trim();
+  switch (norm) {
+    case 'pledged':
+      return 'Pledged — awaiting hospital confirmation';
+    case 'completed':
+    case 'fulfilled':
+      return 'Completed — donation verified & units received';
+    case 'released':
+      return 'Released — request cancelled or closed';
+    case 'cancelled':
+      return 'Cancelled — pledge withdrawn';
+    case 'rejected':
+      return 'Not fulfilled';
+    default:
+      return formatStatusLabel(status) || 'Recorded';
+  }
+};
+
+/**
  * Get the design system badge CSS class for a status
  * @param {string} status
  * @returns {string}

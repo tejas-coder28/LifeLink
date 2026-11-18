@@ -72,8 +72,8 @@ const Register = () => {
   };
 
   return (
-    <PageTransition className="min-h-[calc(100vh-10rem)] flex flex-col items-center justify-center p-3 sm:p-6 pt-6 sm:pt-10 md:pt-12 pb-12">
-      <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated relative z-10 mt-3 sm:mt-5">
+    <PageTransition className="min-h-[calc(100vh-var(--navbar-height)-6rem)] flex flex-col items-center justify-center p-3 sm:p-6 pb-12">
+      <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated relative z-10">
         {/* Left Visual Branding Panel (Midnight Navy Foundation) */}
         <div
           className="dark md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-[#0A0F1C]"

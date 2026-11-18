@@ -3,6 +3,7 @@ import GlassModal from '../common/GlassModal';
 import Badge from '../common/Badge';
 import { MAX_UNITS_PER_DONOR_PER_PLEDGE, formatUnits } from '../../constants/bloodUnits';
 import { DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
+import { formatDate } from '../../utils/dateFormatter';
 import {
   Heart,
   Building2,
@@ -72,7 +73,7 @@ const PledgeModal = ({
     if (daysSince < DONATION_COOLDOWN_DAYS) {
       isEligible = false;
       daysLeft = DONATION_COOLDOWN_DAYS - daysSince;
-      nextEligibleDate = new Date(lastDate.getTime() + DONATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toLocaleDateString();
+      nextEligibleDate = formatDate(new Date(lastDate.getTime() + DONATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000));
       eligibilityMessage = `In 90-day cooldown: ${daysLeft} day(s) remaining. Next eligible date: ${nextEligibleDate}.`;
     }
   }

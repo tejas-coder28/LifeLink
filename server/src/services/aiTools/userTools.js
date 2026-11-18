@@ -3,6 +3,7 @@ const BloodRequest = require('../../repositories/bloodRequest.repository');
 const User = require('../../repositories/user.repository');
 const donationService = require('../donation.service');
 const notificationService = require('../notification.service');
+const donorBadgeService = require('../donorBadge.service');
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
 const { calculateHaversineDistance } = require('../../utils/geo');
 const { canSeekDonors } = require('../../utils/requestRules');
@@ -73,6 +74,7 @@ async function getEligibility(context) {
 
 /**
  * Returns open, matching, or partially fulfilled requests compatible with this donor's blood group.
+ * Shared with Donor Dashboard badge calculation via donorBadgeService.
  * Nearest first, without exposing private patient contacts or exact coordinates.
  */
 async function getOpenRequestsForMe(context) {
@@ -80,49 +82,35 @@ async function getOpenRequestsForMe(context) {
   const donorBloodGroup = profile?.bloodGroup || 'O+';
   const donorCoords = profile?.location?.coordinates || [77.2090, 28.6139];
 
-  const requests = await BloodRequest.find({
-    status: { $in: ['open', 'matching', 'partially_fulfilled'] },
-  })
-    .populate('targetHospital', 'name address')
-    .sort({ createdAt: -1 });
+  // Use the shared badge service function for requests parity
+  const compatibleRaw = await donorBadgeService.getCompatibleRequests(context.userId, profile);
 
-  const donorUserIdStr = context.userId.toString();
-
-  const compatibleRequests = requests
-    .filter((req) => {
-      // Exclude donor's own requests
-      const reqUserId = req.requester?._id ? req.requester._id.toString() : req.requester?.toString();
-      if (reqUserId && reqUserId === donorUserIdStr) return false;
-      // Must satisfy canSeekDonors rules (same as live emergency requests feed in UI)
-      if (!canSeekDonors(req)) return false;
-      // RBC compatibility check
-      return canDonate(donorBloodGroup, req.bloodGroup);
-    })
-    .map((req) => {
-      const reqCoords = req.location?.coordinates || [77.2090, 28.6139];
-      const distanceKm = Math.round(calculateHaversineDistance(donorCoords, reqCoords) * 10) / 10;
-      return {
-        id: req._id.toString(),
-        patientName: req.patientName || 'Emergency Patient',
-        bloodGroup: req.bloodGroup,
-        unitsNeeded: req.unitsNeeded,
-        volumeMlNeeded: req.unitsNeeded * ML_PER_UNIT,
-        formattedUnitsNeeded: formatUnits(req.unitsNeeded),
-        unitsFulfilled: req.unitsFulfilled || 0,
-        volumeMlFulfilled: (req.unitsFulfilled || 0) * ML_PER_UNIT,
-        formattedUnitsFulfilled: formatUnits(req.unitsFulfilled || 0),
-        urgency: req.urgency,
-        hospitalName: req.targetHospital?.name || 'LifeLink Medical Center',
-        address: req.address || req.targetHospital?.address || 'City Center',
-        distanceKm,
-        status: req.status,
-      };
-    });
+  const compatibleRequests = compatibleRaw.map((req) => {
+    const reqCoords = req.location?.coordinates || [77.2090, 28.6139];
+    const distanceKm = Math.round(calculateHaversineDistance(donorCoords, reqCoords) * 10) / 10;
+    return {
+      id: req._id.toString(),
+      patientName: req.patientName || 'Emergency Patient',
+      bloodGroup: req.bloodGroup,
+      unitsNeeded: req.unitsNeeded,
+      volumeMlNeeded: req.unitsNeeded * ML_PER_UNIT,
+      formattedUnitsNeeded: formatUnits(req.unitsNeeded),
+      unitsFulfilled: req.unitsFulfilled || 0,
+      volumeMlFulfilled: (req.unitsFulfilled || 0) * ML_PER_UNIT,
+      formattedUnitsFulfilled: formatUnits(req.unitsFulfilled || 0),
+      urgency: req.urgency,
+      hospitalName: req.targetHospital?.name || 'LifeLink Medical Center',
+      address: req.address || req.targetHospital?.address || 'City Center',
+      distanceKm,
+      status: req.status,
+    };
+  });
 
   compatibleRequests.sort((a, b) => a.distanceKm - b.distanceKm);
 
   return {
     donorBloodGroup,
+    count: compatibleRequests.length,
     totalMatchingRequests: compatibleRequests.length,
     requests: compatibleRequests.slice(0, 6),
   };
@@ -159,9 +147,11 @@ async function getMyRequests(context) {
 async function getMyDonationHistory(context) {
   const history = await donationService.getUserDonationHistory(context.userId);
   const records = Array.isArray(history) ? history : [];
+  const totalDonations = await donorBadgeService.getHistoryBadgeCount(context.userId);
 
   return {
-    totalDonations: records.length,
+    count: totalDonations,
+    totalDonations,
     completedDonations: records.filter((r) => r.status === 'completed').length,
     records: records.slice(0, 6).map((item) => ({
       id: item._id?.toString(),
@@ -183,9 +173,11 @@ async function getMyDonationHistory(context) {
 async function getMyAlerts(context) {
   const notifs = await notificationService.getUserNotifications(context.userId);
   const list = Array.isArray(notifs) ? notifs : [];
+  const unreadCount = await donorBadgeService.getAlertsBadgeCount(context.userId);
 
   return {
-    unreadCount: list.filter((n) => !n.isRead).length,
+    count: unreadCount,
+    unreadCount,
     alerts: list.slice(0, 5).map((n) => ({
       id: n._id?.toString(),
       title: n.title,
@@ -196,6 +188,91 @@ async function getMyAlerts(context) {
   };
 }
 
+/**
+ * Returns real-time donor badge counts identical to the dashboard tabs.
+ */
+async function getMyBadges(context) {
+  return await donorBadgeService.getAllDonorBadges(context.userId);
+}
+
+/**
+ * Returns donor's active pending pledges awaiting hospital confirmation.
+ */
+async function getMyPendingPledges(context) {
+  const Donation = require('../../repositories/donation.repository');
+  const pledges = await Donation.find({
+    donor: context.userId,
+    status: 'pledged',
+  }).populate('request', 'patientName bloodGroup targetHospital unitsNeeded').populate('hospital', 'name');
+
+  return {
+    count: pledges.length,
+    pledges: pledges.map((p) => ({
+      id: p._id.toString(),
+      patientName: p.request?.patientName || 'Emergency Patient',
+      bloodGroup: p.request?.bloodGroup || 'Unknown',
+      hospitalName: p.hospital?.name || 'Partner Hospital',
+      unitsPledged: p.unitsDonated || 1,
+      pledgedAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
+      status: 'Awaiting Hospital Confirmation',
+    })),
+  };
+}
+
+/**
+ * Recommends the concrete next action for the donor based on profile, cooldown, or active pledges.
+ */
+async function getNextSteps(context) {
+  const profile = await DonorProfile.findOne({ user: context.userId });
+  const Donation = require('../../repositories/donation.repository');
+  const pendingPledge = await Donation.findOne({ donor: context.userId, status: 'pledged' }).populate('hospital', 'name address');
+
+  if (pendingPledge) {
+    return {
+      stage: 'pending_pledge',
+      title: 'Active Donation Pledge',
+      nextAction: `Visit ${pendingPledge.hospital?.name || 'the medical facility'} to complete your blood donation.`,
+      actionButton: 'donor-history',
+      actionLabel: 'View Pledge Details',
+    };
+  }
+
+  if (!profile || !profile.bloodGroupConfirmed) {
+    return {
+      stage: 'profile_incomplete',
+      title: 'Complete Profile',
+      nextAction: 'Confirm your blood group and standby status in Profile & Health.',
+      actionButton: 'donor-profile',
+      actionLabel: 'Go to Profile',
+    };
+  }
+
+  const { DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
+  if (profile.lastDonationDate) {
+    const lastDate = new Date(profile.lastDonationDate);
+    const diffMs = Date.now() - lastDate.getTime();
+    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.max(0, (DONATION_COOLDOWN_DAYS || 90) - daysSince);
+    if (daysLeft > 0) {
+      return {
+        stage: 'cooldown',
+        title: 'Rest & Recovery',
+        nextAction: `You are in rest cooldown for ${daysLeft} more day(s). Thank you for saving lives!`,
+        actionButton: 'donor-profile',
+        actionLabel: 'View Health Info',
+      };
+    }
+  }
+
+  return {
+    stage: 'ready_to_donate',
+    title: 'Ready for Emergency Standby',
+    nextAction: 'You are eligible to donate! Review open community blood requests or keep standby status online.',
+    actionButton: 'donor-requests',
+    actionLabel: 'View Open Requests',
+  };
+}
+
 module.exports = {
   getMyProfile,
   getEligibility,
@@ -203,5 +280,8 @@ module.exports = {
   getMyRequests,
   getMyDonationHistory,
   getMyAlerts,
+  getMyBadges,
+  getMyPendingPledges,
+  getNextSteps,
 };
 

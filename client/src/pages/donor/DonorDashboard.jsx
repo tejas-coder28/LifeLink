@@ -23,6 +23,8 @@ import Skeleton from '../../components/common/Skeleton';
 import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
+import { formatDate, formatTime, formatDateTime } from '../../utils/dateFormatter';
+import { getDonationStatusExplanatory } from '../../utils/statusHelper';
 
 import {
   Heart,
@@ -70,6 +72,12 @@ const DonorDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const [pendingPings, setPendingPings] = useState([]);
+  const [badgeCounts, setBadgeCounts] = useState({
+    requests: 0,
+    forYou: 0,
+    alerts: 0,
+    history: 0,
+  });
 
   // Loaders
   const [loadingLive, setLoadingLive] = useState(true);
@@ -85,6 +93,7 @@ const DonorDashboard = () => {
   const [highlightedRequestId, setHighlightedRequestId] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [respondingPingId, setRespondingPingId] = useState(null);
+  const [cancellingPledgeId, setCancellingPledgeId] = useState(null);
 
   const fetchDonorProfile = async () => {
     try {
@@ -186,6 +195,17 @@ const DonorDashboard = () => {
     }
   };
 
+  const fetchBadges = async () => {
+    try {
+      const res = await donorApi.getBadges();
+      if (res.data && res.data.success) {
+        setBadgeCounts(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch badges:', err);
+    }
+  };
+
   useEffect(() => {
     fetchDonorProfile();
     fetchPendingPings();
@@ -193,12 +213,13 @@ const DonorDashboard = () => {
     fetchHistory();
     fetchNotifications();
     fetchHospitals();
+    fetchBadges();
   }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tabHeadingRef.current) {
-      tabHeadingRef.current.focus();
+      tabHeadingRef.current.focus({ preventScroll: true });
     }
   }, [activeTab]);
 
@@ -247,7 +268,18 @@ const DonorDashboard = () => {
     return new Set(Object.keys(pledgedUnitsByRequestId));
   }, [pledgedUnitsByRequestId]);
 
+  const hasPendingPledge = useMemo(() => {
+    return (donationHistory || []).some((d) => d.status === 'pledged');
+  }, [donationHistory]);
+
+  const isProfileIncomplete = Boolean(profile && profile.profileComplete === false);
+
   const handleOpenPledgeModal = (req) => {
+    if (isProfileIncomplete) {
+      showError('Please complete your donor profile before pledging.');
+      setTab('profile');
+      return;
+    }
     const reqId = (req._id || req.id)?.toString();
     if (pledgedUnitsByRequestId[reqId]) {
       showSuccess(`You have already pledged ${formatUnits(pledgedUnitsByRequestId[reqId])} to this request.`);
@@ -276,6 +308,7 @@ const DonorDashboard = () => {
           fetchLiveRequests(),
           fetchDonorProfile(),
           fetchHistory(),
+          fetchBadges(),
         ]);
         if (selectedRequest) setSelectedRequest(null);
       }
@@ -285,6 +318,25 @@ const DonorDashboard = () => {
       showError(msg);
     } finally {
       setIsSubmittingPledge(false);
+    }
+  };
+
+  const handleCancelPledge = async (donationId) => {
+    setCancellingPledgeId(donationId);
+    try {
+      const res = await requestApi.cancelPledge(donationId);
+      if (res.data && res.data.success) {
+        showSuccess('Pledge cancelled successfully.');
+        await Promise.all([
+          fetchLiveRequests(),
+          fetchHistory(),
+          fetchBadges(),
+        ]);
+      }
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to cancel pledge');
+    } finally {
+      setCancellingPledgeId(null);
     }
   };
 
@@ -328,6 +380,7 @@ const DonorDashboard = () => {
       if (res.data && res.data.success) {
         setProfile(res.data.data);
         showSuccess('Donor profile updated successfully!');
+        fetchBadges();
       }
     } catch (err) {
       const errMsg = err.response?.data?.errors?.map((e) => e.message).filter(Boolean).join('. ')
@@ -343,6 +396,7 @@ const DonorDashboard = () => {
     try {
       await notificationApi.markRead(id);
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
+      fetchBadges();
     } catch (err) {
       console.error('Failed to mark read:', err);
     }
@@ -350,11 +404,11 @@ const DonorDashboard = () => {
 
   const donorTabs = [
     { id: 'overview',       icon: Activity,  label: 'Overview' },
-    { id: 'requests',       icon: Heart,     label: 'Requests', count: liveRequests.length },
-    { id: 'pings',          icon: Send,      label: 'For You', count: pendingPings.length },
+    { id: 'requests',       icon: Heart,     label: 'Requests', count: badgeCounts.requests },
+    { id: 'pings',          icon: Send,      label: 'For You', count: badgeCounts.forYou },
     { id: 'profile',        icon: User,      label: 'Profile & Health' },
-    { id: 'history',        icon: Clock,     label: 'History', count: donationHistory.length },
-    { id: 'notifications',  icon: Bell,      label: 'Alerts', count: notifications.filter(n => !n.isRead).length },
+    { id: 'history',        icon: Clock,     label: 'History', count: badgeCounts.history },
+    { id: 'notifications',  icon: Bell,      label: 'Alerts', count: badgeCounts.alerts },
     { id: 'camps',          icon: Building2, label: 'Hospitals' },
   ];
 
@@ -362,10 +416,13 @@ const DonorDashboard = () => {
     <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
       {/* Banner Header */}
-      <div className="glass-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-glass shadow-card">
+      <div className="glass-card hero-donor p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-glass shadow-card">
         <div className="space-y-2">
           <div className="flex items-center flex-wrap gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading">Donor Portal</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading flex items-center gap-2">
+              <span>Donor Portal</span>
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-accent-donor shrink-0 shadow-sm" aria-hidden="true" />
+            </h1>
             <Badge accountType="donor" />
             {profile?.bloodGroup && <Badge bloodGroup={profile.bloodGroup} />}
           </div>
@@ -388,7 +445,7 @@ const DonorDashboard = () => {
                 onClick={handleToggleAvailability}
                 className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                   profile.isAvailable
-                    ? 'bg-success text-white dark:text-[#0A0F1C] shadow-glow-success'
+                    ? 'bg-success text-white dark:text-on-primary shadow-glow-success'
                     : 'bg-surface text-secondary border border-hairline hover:bg-surface/80'
                 }`}
               >
@@ -398,6 +455,30 @@ const DonorDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* One-time Profile Completion Banner */}
+      {isProfileIncomplete && (
+        <div
+          role="alert"
+          className="p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-warning/15 border-2 border-warning/40 text-primary shadow-sm animate-fadeIn"
+        >
+          <div className="flex items-start space-x-3.5">
+            <AlertCircle className="w-5 h-5 shrink-0 text-warning mt-0.5" />
+            <div>
+              <span className="font-extrabold text-sm text-primary block">Complete your donor profile</span>
+              <span className="text-xs text-secondary mt-0.5 block leading-relaxed">
+                Please verify your blood group, age (18+), weight (50kg+), city/location, and emergency contact details to activate standby matching and pledge donations.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setTab('profile')}
+            className="btn-primary text-xs px-4 py-2 rounded-xl whitespace-nowrap shrink-0 self-start sm:self-center"
+          >
+            Complete Profile Now →
+          </button>
+        </div>
+      )}
 
       {/* One-time Blood Group Confirmation Banner for Unconfirmed Accounts */}
       {profile && !profile.bloodGroupConfirmed && !dismissedConfirmBanner && (
@@ -431,6 +512,7 @@ const DonorDashboard = () => {
         tabs={donorTabs}
         activeTab={activeTab}
         onChange={setTab}
+        accent="donor"
         className="w-full"
       />
 
@@ -482,11 +564,11 @@ const DonorDashboard = () => {
             />
             <StatCard
               title="Last Donation"
-              value={profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None'}
+              value={formatDate(profile?.lastDonationDate)}
               icon={Calendar}
               color="sky"
               onClick={() => setTab('history')}
-              ariaLabel={`Open Donation History (Last donation: ${profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None'})`}
+              ariaLabel={`Open Donation History (Last donation: ${formatDate(profile?.lastDonationDate)})`}
             />
             <StatCard
               title="Completed donations"
@@ -541,10 +623,13 @@ const DonorDashboard = () => {
                         donorBloodGroup={profile?.bloodGroup}
                         onSelect={() => setTab('requests', { request: reqId })}
                         onPledge={() => handleOpenPledgeModal(req)}
+                        hasPendingPledge={hasPendingPledge}
                         isPledged={hasPledged}
                         pledgedAmount={myPledgedUnits}
                         onViewPledge={() => setTab('history')}
                         pledgeText="Respond / Pledge"
+                        isProfileIncomplete={isProfileIncomplete}
+                        disabledReason="Please complete your donor profile to pledge blood."
                       />
                     </div>
                   );
@@ -587,10 +672,13 @@ const DonorDashboard = () => {
                       donorBloodGroup={profile?.bloodGroup}
                       onSelect={setSelectedRequest}
                       onPledge={() => handleOpenPledgeModal(req)}
+                      hasPendingPledge={hasPendingPledge}
                       isPledged={hasPledged}
                       pledgedAmount={myPledgedUnits}
                       onViewPledge={() => setTab('history')}
                       pledgeText="Respond / Pledge"
+                      isProfileIncomplete={isProfileIncomplete}
+                      disabledReason="Please complete your donor profile to pledge blood."
                     />
                   </div>
                 );
@@ -645,23 +733,48 @@ const DonorDashboard = () => {
                     </div>
                     <div className="text-xs space-y-1.5 text-secondary">
                       <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 shrink-0 text-muted" />
+                        <span className="truncate font-semibold text-primary">
+                          {item.hospitalName || item.request?.targetHospital?.name || item.hospital?.name || item.request?.hospitalName || (() => {
+                            console.error('[DonorDashboard Error] Hospital unavailable for donation record', item._id);
+                            return 'Hospital unavailable';
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 shrink-0 text-muted" />
                         <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="font-mono text-[11px]">Pledged on: {new Date(item.createdAt).toLocaleDateString()}</span>
+                        <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
+                      </div>
+                      <div className="text-[11px] font-semibold text-info pt-0.5">
+                        {getDonationStatusExplanatory(item.status)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                    <span className="text-sm font-black text-success block tracking-tight">
-                      {formatUnits(item.unitsDonated || 1)}
-                    </span>
-                    <span className="text-[11px] text-muted block font-mono mt-0.5">
-                      ID: {item._id.slice(-6)}
-                    </span>
+                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex flex-col items-end gap-2">
+                    <div className="w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
+                      <span className="text-sm font-black text-success block tracking-tight">
+                        {formatUnits(item.unitsDonated || 1)}
+                      </span>
+                      <span className="text-[11px] text-secondary font-medium block mt-0.5">
+                        {formatDate(item.createdAt)}
+                      </span>
+                    </div>
+
+                    {item.status === 'pledged' && (
+                      <button
+                        type="button"
+                        disabled={cancellingPledgeId === item._id}
+                        onClick={() => handleCancelPledge(item._id)}
+                        className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer text-center"
+                      >
+                        {cancellingPledgeId === item._id ? 'Cancelling...' : 'Cancel Pledge'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -700,7 +813,7 @@ const DonorDashboard = () => {
                     </div>
                     <p className="text-xs leading-relaxed text-secondary">{notif.message}</p>
                     <span className="text-[10px] block text-muted">
-                      {new Date(notif.createdAt).toLocaleString()}
+                      {formatDateTime(notif.createdAt)}
                     </span>
                   </div>
 
@@ -776,6 +889,25 @@ const DonorDashboard = () => {
               </p>
             </div>
           </div>
+
+          {!profile?.address && (
+            <div className="glass-card p-6 text-center space-y-3 border border-info/30 rounded-2xl bg-info/5">
+              <MapPin className="w-8 h-8 text-info mx-auto" />
+              <div>
+                <p className="font-bold text-primary">Add your location to view nearby requests</p>
+                <p className="text-xs text-secondary mt-1">
+                  "For You" shows emergency requests within 25 km of your location. Update your address or city in Profile &amp; Health.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTab('profile')}
+                className="btn-primary text-xs px-4 py-2 rounded-xl"
+              >
+                Add Location in Profile →
+              </button>
+            </div>
+          )}
 
           {loadingPings ? (
             <Loader text="Loading your incoming request pings..." />
@@ -908,7 +1040,7 @@ const DonorDashboard = () => {
               </div>
               <div>
                 <span className="block font-semibold mb-0.5 text-muted">Required By</span>
-                <span className="font-bold text-primary text-sm">{new Date(selectedRequest.requiredByDate).toLocaleString()}</span>
+                <span className="font-bold text-primary text-sm">{formatDateTime(selectedRequest.requiredByDate)}</span>
               </div>
               <div className="col-span-2">
                 <span className="block font-semibold mb-0.5 text-muted">Hospital Location</span>

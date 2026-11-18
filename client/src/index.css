@@ -12,6 +12,10 @@
 :root {
   color-scheme: light;
 
+  /* Global Navbar & Spatial Layout Metrics */
+  --navbar-height: 5.25rem;
+  --content-top-spacing: calc(var(--navbar-height) + 1rem);
+
   /* Base Canvas & Surfaces (Light) */
   --canvas:           #F4F7FB;
   --surface:          #FFFFFF;
@@ -30,6 +34,8 @@
   --text-muted:       #4A5A78;
   --text-secondary:   #4A5A78;
   --text:             #0F1A2E;
+  --text-on-primary:  #FFFFFF;
+  --on-primary:       #FFFFFF;
 
   /* Borders & Specular Optics */
   --hairline:         rgba(15, 26, 46, 0.12);
@@ -80,10 +86,52 @@
   --semantic-danger:  #C8102E;
   --semantic-info:    #1D6FD6;
 
-  --urgency-critical: #C8102E;
-  --urgency-high:     #C8102E;
-  --urgency-medium:   #9A5B00;
-  --urgency-low:      #1D6FD6;
+  /* Role Accents (Light) */
+  --accent-donor:             #0F766E;
+  --accent-donor-subtle:      rgba(15, 118, 110, 0.08);
+  --accent-donor-border:      rgba(15, 118, 110, 0.22);
+  --accent-hospital:          #1D6FD6;
+  --accent-hospital-subtle:   rgba(29, 111, 214, 0.08);
+  --accent-hospital-border:   rgba(29, 111, 214, 0.22);
+  --accent-admin:             #6D28D9;
+  --accent-admin-subtle:      rgba(109, 40, 217, 0.08);
+  --accent-admin-border:      rgba(109, 40, 217, 0.22);
+
+  /* Urgency Scale (Light) */
+  --urgency-critical:         #C8102E;
+  --urgency-critical-subtle:  rgba(200, 16, 46, 0.08);
+  --urgency-critical-border:  rgba(200, 16, 46, 0.22);
+  --urgency-high:             #B45309;
+  --urgency-high-subtle:      rgba(180, 83, 9, 0.07);
+  --urgency-high-border:      rgba(180, 83, 9, 0.22);
+  --urgency-medium:           #9A5B00;
+  --urgency-medium-subtle:    rgba(154, 91, 0, 0.08);
+  --urgency-medium-border:    rgba(154, 91, 0, 0.22);
+  --urgency-low:              #0369A1;
+  --urgency-low-subtle:       rgba(3, 105, 161, 0.08);
+  --urgency-low-border:       rgba(3, 105, 161, 0.22);
+
+  /* Blood-Group Family Hues (Light) */
+  --abo-o:                    #0F766E;
+  --abo-o-subtle:             rgba(15, 118, 110, 0.08);
+  --abo-o-border:             rgba(15, 118, 110, 0.22);
+  --abo-a:                    #1D6FD6;
+  --abo-a-subtle:             rgba(29, 111, 214, 0.08);
+  --abo-a-border:             rgba(29, 111, 214, 0.22);
+  --abo-b:                    #6D28D9;
+  --abo-b-subtle:             rgba(109, 40, 217, 0.08);
+  --abo-b-border:             rgba(109, 40, 217, 0.22);
+  --abo-ab:                   #9A5B00;
+  --abo-ab-subtle:            rgba(154, 91, 0, 0.08);
+  --abo-ab-border:            rgba(154, 91, 0, 0.22);
+
+  /* Chart Series (Light - >= 3:1 against surface #FFFFFF) */
+  --chart-1:                  #1D6FD6;
+  --chart-2:                  #059669;
+  --chart-3:                  #B45309;
+  --chart-4:                  #6D28D9;
+  --chart-5:                  #BE185D;
+  --chart-6:                  #475569;
 
   /* Glass - Light Mode */
   --glass-bg:               rgba(255, 255, 255, 0.75);
@@ -140,6 +188,8 @@ html.dark {
   --text-muted:       #9DAAC6;
   --text-secondary:   #9DAAC6;
   --text:             #E8EEF9;
+  --text-on-primary:  #0A0F1C;
+  --on-primary:       #0A0F1C;
 
   /* Borders & Specular Optics (Dark) */
   --hairline:         rgba(147, 161, 189, 0.16);
@@ -190,10 +240,52 @@ html.dark {
   --semantic-danger:  #E5484D;
   --semantic-info:    #60A5FA;
 
-  --urgency-critical: #E5484D;
-  --urgency-high:     #E5484D;
-  --urgency-medium:   #FBBF24;
-  --urgency-low:      #60A5FA;
+  /* Role Accents (Dark) */
+  --accent-donor:             #2DD4BF;
+  --accent-donor-subtle:      rgba(45, 212, 191, 0.14);
+  --accent-donor-border:      rgba(45, 212, 191, 0.28);
+  --accent-hospital:          #60A5FA;
+  --accent-hospital-subtle:   rgba(96, 165, 250, 0.14);
+  --accent-hospital-border:   rgba(96, 165, 250, 0.28);
+  --accent-admin:             #A78BFA;
+  --accent-admin-subtle:      rgba(167, 139, 250, 0.14);
+  --accent-admin-border:      rgba(167, 139, 250, 0.28);
+
+  /* Urgency Scale (Dark) */
+  --urgency-critical:         #E5484D;
+  --urgency-critical-subtle:  rgba(229, 72, 77, 0.14);
+  --urgency-critical-border:  rgba(229, 72, 77, 0.28);
+  --urgency-high:             #FB923C;
+  --urgency-high-subtle:      rgba(251, 146, 60, 0.14);
+  --urgency-high-border:      rgba(251, 146, 60, 0.28);
+  --urgency-medium:           #FBBF24;
+  --urgency-medium-subtle:    rgba(251, 191, 36, 0.14);
+  --urgency-medium-border:    rgba(251, 191, 36, 0.28);
+  --urgency-low:              #7DD3FC;
+  --urgency-low-subtle:       rgba(125, 211, 252, 0.14);
+  --urgency-low-border:       rgba(125, 211, 252, 0.28);
+
+  /* Blood-Group Family Hues (Dark) */
+  --abo-o:                    #2DD4BF;
+  --abo-o-subtle:             rgba(45, 212, 191, 0.14);
+  --abo-o-border:             rgba(45, 212, 191, 0.28);
+  --abo-a:                    #60A5FA;
+  --abo-a-subtle:             rgba(96, 165, 250, 0.14);
+  --abo-a-border:             rgba(96, 165, 250, 0.28);
+  --abo-b:                    #A78BFA;
+  --abo-b-subtle:             rgba(167, 139, 250, 0.14);
+  --abo-b-border:             rgba(167, 139, 250, 0.28);
+  --abo-ab:                   #FBBF24;
+  --abo-ab-subtle:            rgba(251, 191, 36, 0.14);
+  --abo-ab-border:            rgba(251, 191, 36, 0.28);
+
+  /* Chart Series (Dark - >= 3:1 against surface #111A2E) */
+  --chart-1:                  #60A5FA;
+  --chart-2:                  #34D399;
+  --chart-3:                  #FBBF24;
+  --chart-4:                  #A78BFA;
+  --chart-5:                  #F472B6;
+  --chart-6:                  #94A3B8;
 
   /* Glass - Dark Mode */
   --glass-bg:               rgba(147, 180, 255, 0.05);
@@ -233,6 +325,7 @@ html.dark {
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--navbar-height) + 1.5rem);
   }
 
   body {
@@ -797,50 +890,66 @@ html.dark .bg-orb-4 {
     color: var(--ice);
   }
 
-  /* ══ 8 Blood-Group Pills (Balanced Ice & Neutral System) ══════════════ */
-  .blood-pill {
+  /* ══ 8 Blood-Group Pills (ABO Family System: Rh+ subtle fill, Rh- outline) ══ */
+  .blood-pill,
+  .blood-chip {
     @apply inline-flex items-center gap-1 px-3 py-1 rounded-xl font-black text-xs;
     border-width: 1px;
     border-style: solid;
     font-variant-numeric: tabular-nums;
-    background: rgba(96, 165, 250, 0.08);
-    color: var(--text-primary);
-    border-color: var(--hairline-strong);
+    transition: all var(--t-fast) ease;
   }
 
-  .blood-Ap, .blood-Bp, .blood-ABp, .blood-Op {
-    background: rgba(96, 165, 250, 0.10);
-    color: var(--text-primary);
-    border-color: rgba(96, 165, 250, 0.35);
+  /* ABO-O Family (O+, O-) */
+  .blood-Op, .blood-chip-o-pos {
+    background: var(--abo-o-subtle);
+    color: var(--abo-o);
+    border-color: var(--abo-o-border);
   }
-  html.dark .blood-Ap, html.dark .blood-Bp, html.dark .blood-ABp, html.dark .blood-Op {
-    background: rgba(96, 165, 250, 0.15);
-    color: var(--ice);
-    border-color: rgba(96, 165, 250, 0.40);
-  }
-
-  .blood-Am, .blood-Bm, .blood-ABm {
-    background: rgba(147, 161, 189, 0.08);
-    color: var(--text-primary);
-    border-color: var(--hairline-strong);
-  }
-  html.dark .blood-Am, html.dark .blood-Bm, html.dark .blood-ABm {
-    background: rgba(147, 161, 189, 0.12);
-    color: var(--text-primary);
-    border-color: var(--hairline-strong);
-  }
-
-  /* Universal Donor O- : Emergency indicator */
-  .blood-Om {
-    background: rgba(229, 72, 77, 0.12);
-    color: var(--danger);
-    border-color: var(--danger);
+  .blood-Om, .blood-chip-o-neg {
+    background: transparent;
+    color: var(--abo-o);
+    border-color: var(--abo-o);
     border-width: 1.5px;
   }
-  html.dark .blood-Om {
-    background: rgba(229, 72, 77, 0.20);
-    color: var(--red-text);
-    border-color: var(--danger);
+
+  /* ABO-A Family (A+, A-) */
+  .blood-Ap, .blood-chip-a-pos {
+    background: var(--abo-a-subtle);
+    color: var(--abo-a);
+    border-color: var(--abo-a-border);
+  }
+  .blood-Am, .blood-chip-a-neg {
+    background: transparent;
+    color: var(--abo-a);
+    border-color: var(--abo-a);
+    border-width: 1.5px;
+  }
+
+  /* ABO-B Family (B+, B-) */
+  .blood-Bp, .blood-chip-b-pos {
+    background: var(--abo-b-subtle);
+    color: var(--abo-b);
+    border-color: var(--abo-b-border);
+  }
+  .blood-Bm, .blood-chip-b-neg {
+    background: transparent;
+    color: var(--abo-b);
+    border-color: var(--abo-b);
+    border-width: 1.5px;
+  }
+
+  /* ABO-AB Family (AB+, AB-) */
+  .blood-ABp, .blood-chip-ab-pos {
+    background: var(--abo-ab-subtle);
+    color: var(--abo-ab);
+    border-color: var(--abo-ab-border);
+  }
+  .blood-ABm, .blood-chip-ab-neg {
+    background: transparent;
+    color: var(--abo-ab);
+    border-color: var(--abo-ab);
+    border-width: 1.5px;
   }
 
   /* ══ Stat Card Top-Edge Glows (Neutral hairline default) ══════════════ */
@@ -854,6 +963,17 @@ html.dark .bg-orb-4 {
     border-top: 1px solid var(--specular-rim);
   }
 
+  /* ══ Hero Cards with Role Accent Tint (6-8% gradient) ══════════════ */
+  .hero-donor {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-donor-subtle) 100%) !important;
+  }
+  .hero-hospital {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-hospital-subtle) 100%) !important;
+  }
+  .hero-admin {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-admin-subtle) 100%) !important;
+  }
+
   /* ══ Semantic Badges & Status Chips (Rule 3) ═════════════════════════ */
   .badge-base {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase;
@@ -862,43 +982,43 @@ html.dark .bg-orb-4 {
     transition: all 0.2s ease;
   }
 
-  /* Critical / Urgent -> Danger */
+  /* Urgency: Critical (#E5484D / #C8102E) */
   .badge-critical,
-  .badge-high,
   .badge-danger {
-    background: rgba(200, 16, 46, 0.08);
-    color: #A80D26;
-    border-color: rgba(200, 16, 46, 0.30);
-    box-shadow: 0 0 16px -2px rgba(200, 16, 46, 0.20);
-    animation: pulseGlowDanger 2s ease-in-out infinite;
+    background: var(--urgency-critical-subtle);
+    color: var(--urgency-critical);
+    border-color: var(--urgency-critical-border);
+    box-shadow: 0 0 16px -2px rgba(229, 72, 77, 0.20);
   }
-  html.dark .badge-critical,
-  html.dark .badge-high,
-  html.dark .badge-danger {
-    color: #FFA3A6;
-    background: rgba(229, 72, 77, 0.16);
-    border-color: rgba(229, 72, 77, 0.45);
-    box-shadow: 0 0 20px -2px rgba(229, 72, 77, 0.35);
+  @media (prefers-reduced-motion: no-preference) {
+    .badge-critical {
+      animation: pulseGlowDanger 2s ease-in-out infinite;
+    }
   }
 
-  /* Warning / Pending / Cooldown / Low stock -> Warning (#FBBF24 / #9A5B00) */
-  .badge-warning,
+  /* Urgency: High (#FB923C / #B45309) */
+  .badge-high {
+    background: var(--urgency-high-subtle);
+    color: var(--urgency-high);
+    border-color: var(--urgency-high-border);
+  }
+
+  /* Urgency: Medium (#FBBF24 / #9A5B00) */
   .badge-medium,
+  .badge-warning,
   .badge-pending,
   .badge-cooldown,
   .badge-low-stock {
-    background: rgba(154, 91, 0, 0.08);
-    color: #9A5B00;
-    border-color: rgba(154, 91, 0, 0.28);
+    background: var(--urgency-medium-subtle);
+    color: var(--urgency-medium);
+    border-color: var(--urgency-medium-border);
   }
-  html.dark .badge-warning,
-  html.dark .badge-medium,
-  html.dark .badge-pending,
-  html.dark .badge-cooldown,
-  html.dark .badge-low-stock {
-    color: #FCD34D;
-    background: rgba(251, 191, 36, 0.14);
-    border-color: rgba(251, 191, 36, 0.38);
+
+  /* Urgency: Low (#7DD3FC / #0369A1) */
+  .badge-low {
+    background: var(--urgency-low-subtle);
+    color: var(--urgency-low);
+    border-color: var(--urgency-low-border);
   }
 
   /* Success: ONLINE / Verified / Confirmed / Fulfilled / Completed (#34D399 / #0A7A62) */
@@ -923,11 +1043,10 @@ html.dark .bg-orb-4 {
     border-color: rgba(52, 211, 153, 0.35);
   }
 
-  /* Info / Informational / Open / Matching / Low (#60A5FA / #1D6FD6) */
+  /* Info / Informational / Open / Matching (#60A5FA / #1D6FD6) */
   .badge-info,
   .badge-open,
   .badge-matching,
-  .badge-low,
   .badge-pledged {
     background: rgba(29, 111, 214, 0.08);
     color: #124B8A;
@@ -936,7 +1055,6 @@ html.dark .bg-orb-4 {
   html.dark .badge-info,
   html.dark .badge-open,
   html.dark .badge-matching,
-  html.dark .badge-low,
   html.dark .badge-pledged {
     color: var(--ice);
     background: rgba(96, 165, 250, 0.14);
@@ -961,38 +1079,23 @@ html.dark .bg-orb-4 {
     border-color: var(--hairline);
   }
 
-  /* Role Badges */
+  /* Role Badges (Tailored Role Accents) */
   .badge-donor {
-    background: rgba(29, 111, 214, 0.08);
-    color: #124B8A;
-    border-color: rgba(29, 111, 214, 0.25);
-  }
-  html.dark .badge-donor {
-    color: var(--ice);
-    background: rgba(96, 165, 250, 0.14);
-    border-color: rgba(96, 165, 250, 0.35);
+    background: var(--accent-donor-subtle);
+    color: var(--accent-donor);
+    border-color: var(--accent-donor-border);
   }
 
   .badge-hospital {
-    background: rgba(10, 122, 98, 0.08);
-    color: #076351;
-    border-color: rgba(10, 122, 98, 0.25);
-  }
-  html.dark .badge-hospital {
-    color: var(--success);
-    background: rgba(52, 211, 153, 0.14);
-    border-color: rgba(52, 211, 153, 0.35);
+    background: var(--accent-hospital-subtle);
+    color: var(--accent-hospital);
+    border-color: var(--accent-hospital-border);
   }
 
   .badge-admin {
-    background: rgba(200, 16, 46, 0.08);
-    color: #8A0A1F;
-    border-color: rgba(200, 16, 46, 0.28);
-  }
-  html.dark .badge-admin {
-    background: rgba(209, 52, 56, 0.15);
-    color: #FFA3A6;
-    border-color: rgba(209, 52, 56, 0.35);
+    background: var(--accent-admin-subtle);
+    color: var(--accent-admin);
+    border-color: var(--accent-admin-border);
   }
 
   /* ══ Skeleton Shimmer ═════════════════════════════════════════════════ */
@@ -1087,4 +1190,12 @@ html.dark .bg-orb-4 {
 }
 .text-theme-muted {
   color: var(--text-muted) !important;
+}
+.text-on-primary,
+.text-inverted {
+  color: var(--on-primary) !important;
+}
+.filter-pill-active {
+  background-color: var(--text-primary) !important;
+  color: var(--on-primary) !important;
 }

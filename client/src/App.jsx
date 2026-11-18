@@ -122,7 +122,7 @@ function App() {
               </div>
 
               <Navbar />
-              <main className="flex-1 pt-28 sm:pt-32 md:pt-36 pb-12">
+              <main className="flex-1 pt-4 sm:pt-6 pb-12">
                 <ErrorBoundary>
                   <AnimatedRoutes />
                 </ErrorBoundary>

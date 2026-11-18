@@ -250,8 +250,9 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   await DonorProfile.create({
     user: user._id,
     bloodGroup,
-    bloodGroupConfirmed: true,
+    bloodGroupConfirmed: Boolean(bloodGroup),
     contactNumber: phone || '',
+    profileComplete: false, // First-time Google user requires one-time full profile completion step
     location: {
       type: 'Point',
       coordinates: [77.2090, 28.6139],

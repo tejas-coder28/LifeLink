@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { donorApi } from '../../api/donorApi';
 import { hospitalApi } from '../../api/hospitalApi';
 import { useToast } from '../../context/ToastContext';
@@ -10,11 +11,24 @@ import { Users, Building2, ShieldCheck, Phone, MapPin, Check, X, Ban, Eye } from
 
 const UserManagement = () => {
   const { showSuccess, showError } = useToast();
-  const [subTab, setSubTab] = useState('donors'); // 'donors' | 'hospitals'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subTabParam = searchParams.get('subTab');
+  const [subTab, setSubTab] = useState(subTabParam === 'hospitals' ? 'hospitals' : 'donors');
+
+  useEffect(() => {
+    if (subTabParam === 'hospitals' || subTabParam === 'donors') {
+      setSubTab(subTabParam);
+    }
+  }, [subTabParam]);
 
   const [donors, setDonors] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const statusParam = searchParams.get('status');
+  const displayedDonors = statusParam === 'active'
+    ? donors.filter((d) => d.isAvailable === true)
+    : donors;
 
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, hospital: null, loading: false });
@@ -93,10 +107,15 @@ const UserManagement = () => {
       {/* Subtab Toggle */}
       <div className="flex items-center space-x-2 border-b border-hairline pb-3">
         <button
-          onClick={() => setSubTab('donors')}
+          onClick={() => {
+            setSubTab('donors');
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('subTab');
+            setSearchParams(newParams);
+          }}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'donors'
-              ? 'bg-surface text-primary border border-hairline shadow-sm'
+              ? 'bg-primary text-on-primary shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -105,10 +124,15 @@ const UserManagement = () => {
         </button>
 
         <button
-          onClick={() => setSubTab('hospitals')}
+          onClick={() => {
+            setSubTab('hospitals');
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('subTab', 'hospitals');
+            setSearchParams(newParams);
+          }}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'hospitals'
-              ? 'bg-surface text-primary border border-hairline shadow-sm'
+              ? 'bg-primary text-on-primary shadow-sm'
               : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
           }`}
         >
@@ -116,6 +140,27 @@ const UserManagement = () => {
           <span>Medical Facilities ({hospitals.length})</span>
         </button>
       </div>
+
+      {subTab === 'donors' && statusParam === 'active' && (
+        <div className="flex items-center justify-between p-3 px-4 rounded-xl bg-info/10 border border-info/30 text-xs text-primary animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-info" />
+            <span>Showing only <strong>Active Standby Donors ({displayedDonors.length})</strong></span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const newParams = new URLSearchParams(searchParams);
+              newParams.delete('status');
+              setSearchParams(newParams);
+            }}
+            className="flex items-center gap-1 text-[11px] font-bold text-secondary hover:text-primary cursor-pointer px-2 py-1 rounded-md hover:bg-surface"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Clear filter</span>
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <Loader text="Loading directory..." />
@@ -134,7 +179,7 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme font-medium">
-                {donors.map((item) => (
+                {displayedDonors.map((item) => (
                   <tr key={item._id} className="hover:bg-surface transition-colors">
                     <td className="px-5 py-3.5 font-bold text-primary">
                       {item.user?.name || 'Registered Donor'}
@@ -268,17 +313,23 @@ const UserManagement = () => {
                   Inventory Reserve Breakdown:
                 </span>
                 <div className="grid grid-cols-4 gap-2">
-                  {selectedHospital.inventory.map((inv) => (
-                    <div
-                      key={inv.bloodGroup}
-                      className="p-2.5 rounded-xl text-center bg-surface border border-hairline"
-                    >
-                      <span className="text-[10px] font-extrabold block text-muted">{inv.bloodGroup}</span>
-                      <span className={`text-xs font-black ${inv.units === 0 ? 'text-danger' : inv.units <= 2 ? 'text-warning' : 'text-primary'}`}>
-                        {inv.units} units
-                      </span>
-                    </div>
-                  ))}
+                  {selectedHospital.inventory.map((inv) => {
+                    const isCrit = inv.units === 0;
+                    const isWarn = inv.units >= 1 && inv.units <= 3;
+                    const label = isCrit ? '0 units Critical' : isWarn ? `${inv.units} units Low` : `${inv.units} units Adequate`;
+                    const colorClass = isCrit ? 'text-urgency-critical' : isWarn ? 'text-urgency-medium' : 'text-success';
+                    return (
+                      <div
+                        key={inv.bloodGroup}
+                        className="p-2.5 rounded-xl text-center bg-surface border border-hairline"
+                      >
+                        <span className="text-[10px] font-extrabold block text-muted">{inv.bloodGroup}</span>
+                        <span className={`text-xs font-black block ${colorClass}`}>
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

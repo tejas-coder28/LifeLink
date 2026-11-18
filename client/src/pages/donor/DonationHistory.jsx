@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import PageTransition from '../../components/common/PageTransition';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
-import { Heart, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { Heart, Calendar, MapPin, Loader2, Building2 } from 'lucide-react';
 import { requestApi } from '../../api/requestApi';
 import { formatUnits } from '../../constants/bloodUnits';
+import { formatDate } from '../../utils/dateFormatter';
+import { getDonationStatusExplanatory } from '../../utils/statusHelper';
 
 const DonationHistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -64,12 +66,24 @@ const DonationHistoryPage = () => {
                 </div>
                 <div className="text-xs space-y-1.5 text-secondary">
                   <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 shrink-0 text-muted" />
+                    <span className="truncate font-semibold text-primary">
+                      {item.hospitalName || item.request?.targetHospital?.name || item.hospital?.name || item.request?.hospitalName || (() => {
+                        console.error('[DonationHistory Error] Hospital unavailable for donation record', item._id);
+                        return 'Hospital unavailable';
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 shrink-0 text-muted" />
                     <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                    <span className="font-mono text-[11px]">Pledged on: {new Date(item.createdAt).toLocaleDateString()}</span>
+                    <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
+                  </div>
+                  <div className="text-[11px] font-semibold text-info pt-0.5">
+                    {getDonationStatusExplanatory(item.status)}
                   </div>
                 </div>
               </div>
@@ -78,8 +92,8 @@ const DonationHistoryPage = () => {
                 <span className="text-sm font-black text-success block tracking-tight">
                   {formatUnits(item.unitsDonated || 1)}
                 </span>
-                <span className="text-[11px] text-muted block font-mono mt-0.5">
-                  ID: {item._id.slice(-6)}
+                <span className="text-[11px] text-secondary font-medium block mt-0.5">
+                  {formatDate(item.createdAt)}
                 </span>
               </div>
             </div>

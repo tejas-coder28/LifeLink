@@ -35,6 +35,12 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
     throw err;
   }
 
+  if (donorProfile.profileComplete === false) {
+    const err = new Error('Please complete your donor profile before pledging.');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const existingPledges = await Donation.find({
     donor: donorUserId,
     request: requestId,
@@ -46,6 +52,35 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
     err.statusCode = 409;
     throw err;
   }
+
+  // Check for existing active pledge to ANY other request
+  const activePledges = await Donation.find({ donor: donorUserId, status: 'pledged' });
+  const otherActivePledge = activePledges.find(p => {
+    const pReqId = p.request?._id ? p.request._id.toString() : p.request?.toString();
+    return pReqId !== requestId.toString();
+  });
+  if (otherActivePledge) {
+    // Try to fetch request name for friendly message
+    let reqLabel = 'another request';
+    try {
+      const existingReq = await BloodRequest.findById(otherActivePledge.request);
+      reqLabel = existingReq?.patientName || existingReq?._id?.toString()?.slice(-6) || reqLabel;
+    } catch (_) {}
+    const err = new Error(`You already have a pending pledge for "${reqLabel}". Cancel it before pledging to a new request.`);
+    err.statusCode = 409;
+    throw err;
+  }
+
+  // Pre-fetch hospital name for history display
+  let resolvedHospitalName = null;
+  try {
+    const bloodReqForHosp = await BloodRequest.findById(requestId.toString());
+    const hospitalId = bloodReqForHosp?.targetHospital || bloodReqForHosp?.hospital;
+    if (hospitalId) {
+      const hospDoc = await Hospital.findById(hospitalId.toString?.() || hospitalId);
+      resolvedHospitalName = hospDoc?.name || null;
+    }
+  } catch (_) {}
 
   const txResult = await db.runTransaction(async (transaction) => {
     const reqRef = BloodRequest.collection.doc(requestId.toString());
@@ -72,6 +107,11 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
     }
 
     const currentProfile = dpSnap && dpSnap.exists ? DonorProfile.normalize(dpSnap) : donorProfile;
+    if (currentProfile && currentProfile.profileComplete === false) {
+      const err = new Error('Please complete your donor profile before pledging.');
+      err.statusCode = 400;
+      throw err;
+    }
 
     // Calculate remaining units needed from donors
     const totalNeeded = Number(request.unitsNeeded || request.unitsRequired || request.units || 1);
@@ -129,6 +169,7 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
       request: requestId.toString(),
       unitsDonated: pledgeUnits,
       status: 'pledged',
+      hospitalName: resolvedHospitalName || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -610,23 +651,78 @@ const getDonationsByRequest = async (requestId, callerUser = null) => {
 };
 
 const getUserDonationHistory = async (userId) => {
-  return await Donation.find({ donor: userId })
+  const donations = await Donation.find({ donor: userId })
     .populate({
       path: 'request',
       populate: [
         { path: 'requester', select: 'name email phone' },
         { path: 'hospital', select: 'name phone address' },
+        { path: 'targetHospital', select: 'name phone address' },
       ],
     })
     .sort({ createdAt: -1 });
+
+  return donations.map(d => {
+    const plain = typeof d.toObject === 'function' ? d.toObject() : { ...d };
+    if (!plain.hospitalName) {
+      plain.hospitalName = plain.request?.targetHospital?.name || plain.request?.hospital?.name || plain.hospital?.name || null;
+    }
+    return plain;
+  });
 };
 
 const getAllDonations = async () => {
   return await Donation.find()
     .populate('donor', 'name email phone')
     .populate('donorProfile', 'bloodGroup phone location')
-    .populate('request', 'patientName bloodGroup unitsNeeded unitsFulfilled urgency address status hospital')
+    .populate('request', 'patientName bloodGroup unitsNeeded unitsFulfilled urgency address status hospital targetHospital')
     .sort({ createdAt: -1 });
+};
+
+const cancelPledge = async (donorUserId, donationId) => {
+  const donation = await Donation.findById(donationId);
+  if (!donation) {
+    const err = new Error('Pledge not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  const ownerStr = donation.donor?._id ? donation.donor._id.toString() : donation.donor?.toString();
+  if (ownerStr !== donorUserId.toString()) {
+    const err = new Error('You can only cancel your own pledge');
+    err.statusCode = 403;
+    throw err;
+  }
+  if (donation.status !== 'pledged') {
+    const err = new Error(`Cannot cancel a pledge with status '${donation.status}'`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const db = getDb();
+  const donationRef = Donation.collection.doc(donationId.toString());
+  const now = new Date();
+  const requestId = donation.request?._id || donation.request;
+
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(donationRef);
+    if (!snap.exists) throw Object.assign(new Error('Pledge not found'), { statusCode: 404 });
+    transaction.update(donationRef, { status: 'cancelled', cancelledAt: now, updatedAt: now });
+  });
+
+  // If request was in matching status and there are no other active pledges, restore to open
+  if (requestId) {
+    const reqDoc = await BloodRequest.findById(requestId.toString());
+    if (reqDoc && reqDoc.status === 'matching') {
+      const allPledges = await Donation.find({ request: reqDoc._id });
+      const activePledges = allPledges.filter(p => p.status === 'pledged');
+      if (activePledges.length === 0 && (Number(reqDoc.unitsFulfilled) || 0) < Number(reqDoc.unitsNeeded)) {
+        reqDoc.status = 'open';
+        await reqDoc.save();
+      }
+    }
+  }
+
+  return await Donation.findById(donationId);
 };
 
 module.exports = {
@@ -637,4 +733,5 @@ module.exports = {
   getDonationsByRequest,
   getUserDonationHistory,
   getAllDonations,
+  cancelPledge,
 };

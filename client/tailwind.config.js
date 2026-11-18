@@ -17,6 +17,7 @@ export default {
 
         // Typography
         primary: 'var(--text-primary)',
+        'on-primary': 'var(--on-primary)',
         secondary: 'var(--text-secondary)',
         muted: 'var(--text-muted)',
         hairline: 'var(--hairline)',
@@ -104,10 +105,85 @@ export default {
 
         // Urgency mapping
         urgency: {
-          critical: 'var(--danger)',
-          high:     'var(--danger)',
-          medium:   'var(--warning)',
-          low:      'var(--info)',
+          critical: 'var(--urgency-critical)',
+          'critical-subtle': 'var(--urgency-critical-subtle)',
+          'critical-border': 'var(--urgency-critical-border)',
+          high:     'var(--urgency-high)',
+          'high-subtle': 'var(--urgency-high-subtle)',
+          'high-border': 'var(--urgency-high-border)',
+          medium:   'var(--urgency-medium)',
+          'medium-subtle': 'var(--urgency-medium-subtle)',
+          'medium-border': 'var(--urgency-medium-border)',
+          low:      'var(--urgency-low)',
+          'low-subtle': 'var(--urgency-low-subtle)',
+          'low-border': 'var(--urgency-low-border)',
+        },
+        'urgency-critical': 'var(--urgency-critical)',
+        'urgency-critical-subtle': 'var(--urgency-critical-subtle)',
+        'urgency-critical-border': 'var(--urgency-critical-border)',
+        'urgency-high': 'var(--urgency-high)',
+        'urgency-high-subtle': 'var(--urgency-high-subtle)',
+        'urgency-high-border': 'var(--urgency-high-border)',
+        'urgency-medium': 'var(--urgency-medium)',
+        'urgency-medium-subtle': 'var(--urgency-medium-subtle)',
+        'urgency-medium-border': 'var(--urgency-medium-border)',
+        'urgency-low': 'var(--urgency-low)',
+        'urgency-low-subtle': 'var(--urgency-low-subtle)',
+        'urgency-low-border': 'var(--urgency-low-border)',
+
+        // Role accents
+        'accent-donor': {
+          DEFAULT: 'var(--accent-donor)',
+          subtle: 'var(--accent-donor-subtle)',
+          border: 'var(--accent-donor-border)',
+        },
+        'accent-hospital': {
+          DEFAULT: 'var(--accent-hospital)',
+          subtle: 'var(--accent-hospital-subtle)',
+          border: 'var(--accent-hospital-border)',
+        },
+        'accent-admin': {
+          DEFAULT: 'var(--accent-admin)',
+          subtle: 'var(--accent-admin-subtle)',
+          border: 'var(--accent-admin-border)',
+        },
+
+        // Blood-group family hues
+        abo: {
+          o: 'var(--abo-o)',
+          'o-subtle': 'var(--abo-o-subtle)',
+          'o-border': 'var(--abo-o-border)',
+          a: 'var(--abo-a)',
+          'a-subtle': 'var(--abo-a-subtle)',
+          'a-border': 'var(--abo-a-border)',
+          b: 'var(--abo-b)',
+          'b-subtle': 'var(--abo-b-subtle)',
+          'b-border': 'var(--abo-b-border)',
+          ab: 'var(--abo-ab)',
+          'ab-subtle': 'var(--abo-ab-subtle)',
+          'ab-border': 'var(--abo-ab-border)',
+        },
+        'abo-o': 'var(--abo-o)',
+        'abo-o-subtle': 'var(--abo-o-subtle)',
+        'abo-o-border': 'var(--abo-o-border)',
+        'abo-a': 'var(--abo-a)',
+        'abo-a-subtle': 'var(--abo-a-subtle)',
+        'abo-a-border': 'var(--abo-a-border)',
+        'abo-b': 'var(--abo-b)',
+        'abo-b-subtle': 'var(--abo-b-subtle)',
+        'abo-b-border': 'var(--abo-b-border)',
+        'abo-ab': 'var(--abo-ab)',
+        'abo-ab-subtle': 'var(--abo-ab-subtle)',
+        'abo-ab-border': 'var(--abo-ab-border)',
+
+        // Chart series
+        chart: {
+          1: 'var(--chart-1)',
+          2: 'var(--chart-2)',
+          3: 'var(--chart-3)',
+          4: 'var(--chart-4)',
+          5: 'var(--chart-5)',
+          6: 'var(--chart-6)',
         },
       },
 

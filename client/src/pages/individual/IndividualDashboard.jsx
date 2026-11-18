@@ -12,6 +12,8 @@ import EmptyState from '../../components/common/EmptyState';
 import RequestCard from '../../components/cards/RequestCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import { canSeekDonors } from '../../utils/requestRules';
+import { formatDate } from '../../utils/dateFormatter';
+import { getDonationStatusExplanatory } from '../../utils/statusHelper';
 import {
   Heart,
   Activity,
@@ -254,7 +256,7 @@ const IndividualDashboard = () => {
                 onClick={handleToggleAvailability}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   profile.isAvailable
-                    ? 'bg-success text-white dark:text-[#0A0F1C] shadow-glow-success'
+                    ? 'bg-success text-white dark:text-on-primary shadow-glow-success'
                     : 'btn-secondary text-xs'
                 }`}
               >
@@ -390,7 +392,7 @@ const IndividualDashboard = () => {
             <Card hover={false}>
               <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Last Donation</span>
               <span className="text-sm font-bold text-secondary block mt-2">
-                {profile?.lastDonationDate ? new Date(profile.lastDonationDate).toLocaleDateString() : 'None Recorded'}
+                {formatDate(profile?.lastDonationDate, 'None Recorded')}
               </span>
             </Card>
           </div>
@@ -539,7 +541,10 @@ const IndividualDashboard = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="font-mono text-[11px]">Pledged on: {new Date(item.createdAt).toLocaleDateString()}</span>
+                        <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
+                      </div>
+                      <div className="text-[11px] font-semibold text-info pt-0.5">
+                        {getDonationStatusExplanatory(item.status)}
                       </div>
                     </div>
                   </div>
@@ -548,8 +553,8 @@ const IndividualDashboard = () => {
                     <span className="text-base font-black text-success block tracking-tight">
                       {item.unitsDonated} Unit(s)
                     </span>
-                    <span className="text-[11px] text-muted block font-mono mt-0.5">
-                      ID: {item._id.slice(-6)}
+                    <span className="text-[11px] text-secondary font-medium block mt-0.5">
+                      {formatDate(item.createdAt)}
                     </span>
                   </div>
                 </div>

@@ -3,21 +3,24 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import useChartTheme from '../../hooks/useChartTheme';
 
 const StatusPie = ({ data = [] }) => {
-  const { tooltipStyle, colors } = useChartTheme();
+  const { tooltipStyle, colors, series } = useChartTheme();
 
   const getColorForUrgency = (entry, index) => {
     const key = (entry?.urgency || entry?.status || '').toLowerCase();
     if (key.includes('critical') || key.includes('emergency') || key.includes('shortage')) {
       return colors.crimson;
     }
-    if (key.includes('urgent') || key.includes('high') || key.includes('warning') || key.includes('pending')) {
-      return colors.warning;
+    if (key.includes('urgent') || key.includes('high')) {
+      return colors.urgencyHigh || colors.warning;
+    }
+    if (key.includes('warning') || key.includes('pending') || key.includes('medium')) {
+      return colors.urgencyMedium || colors.warning;
     }
     if (key.includes('complete') || key.includes('fulfilled') || key.includes('verified')) {
-      return colors.teal;
+      return colors.teal || colors.success;
     }
-    const defaultSeries = [colors.info, colors.ice, colors.teal, colors.silver];
-    return defaultSeries[index % defaultSeries.length];
+    const chartSeries = series || [colors.info, colors.teal, colors.warning, colors.violet, colors.magenta, colors.slate];
+    return chartSeries[index % chartSeries.length];
   };
 
   return (

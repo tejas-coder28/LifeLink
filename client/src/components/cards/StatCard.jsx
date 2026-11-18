@@ -3,6 +3,40 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import AnimatedCounter from '../common/AnimatedCounter';
 
+const getIconTileClasses = (color, isCritical) => {
+  if (isCritical) {
+    return 'bg-urgency-critical-subtle text-urgency-critical border-urgency-critical-border';
+  }
+  switch (color) {
+    case 'info':
+    case 'sky':
+    case 'blue':
+      return 'bg-info/10 text-info border-info/25';
+    case 'success':
+    case 'emerald':
+    case 'green':
+      return 'bg-success/10 text-success border-success/25';
+    case 'violet':
+    case 'purple':
+    case 'admin':
+      return 'bg-accent-admin-subtle text-accent-admin border-accent-admin-border';
+    case 'warning':
+    case 'amber':
+    case 'yellow':
+      return 'bg-warning/10 text-warning border-warning/25';
+    case 'danger':
+    case 'critical':
+    case 'rose':
+    case 'red':
+      return 'bg-urgency-critical-subtle text-urgency-critical border-urgency-critical-border';
+    case 'slate':
+    case 'muted':
+      return 'bg-surface text-muted border-hairline';
+    default:
+      return 'bg-info/10 text-info border-info/25';
+  }
+};
+
 const StatCard = ({
   title,
   value,
@@ -28,11 +62,7 @@ const StatCard = ({
           <span className="text-[11px] font-extrabold uppercase tracking-wider block text-muted truncate">
             {title}
           </span>
-          <span
-            className={`text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1 ${
-              isCritical ? 'text-danger' : 'text-primary'
-            }`}
-          >
+          <span className="text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1 text-primary">
             <AnimatedCounter value={value} />
           </span>
         </div>
@@ -59,11 +89,7 @@ const StatCard = ({
         )}
         {Icon && (
           <div
-            className={`p-3 rounded-2xl shrink-0 transition-colors shadow-sm border ${
-              isCritical
-                ? 'bg-danger/10 text-danger border-danger/30'
-                : 'bg-info/10 text-info border-info/20'
-            }`}
+            className={`p-3 rounded-2xl shrink-0 transition-colors shadow-sm border ${getIconTileClasses(color, isCritical)}`}
           >
             <Icon className="w-5 h-5" />
           </div>
@@ -72,9 +98,7 @@ const StatCard = ({
     </>
   );
 
-  const baseClasses = `glass-card p-5 sm:p-6 flex items-start justify-between min-h-[110px] w-full text-left rounded-2xl border transition-colors duration-150 ${
-    isCritical ? 'border-t-2 border-t-danger shadow-glow-danger/20' : 'border-hairline'
-  } ${
+  const baseClasses = `glass-card p-5 sm:p-6 flex items-start justify-between min-h-[110px] w-full text-left rounded-2xl border border-hairline transition-colors duration-150 ${
     isClickable
       ? 'group cursor-pointer hover:border-info/40 hover:bg-surface/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       : ''

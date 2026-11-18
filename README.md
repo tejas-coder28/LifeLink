@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-320_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-352_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -25,7 +25,7 @@ LifeLink is an emergency response web application powered by **Google Cloud Fire
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
 - 💎 **Liquid Glass & Spatial UI**: Apple-inspired translucent glass aesthetic with 5 spatial elevation tiers, 4 harmonic drifting atmospheric orbs, dynamic refraction filters, and full light/dark mode support.
 - 📊 **AI Insights & Platform Analytics**: Administrative dashboard with emergency response time indicators, platform health metrics, shortage prediction alerts, and an interactive AI Chatbot assistant.
-- 🧪 **Comprehensive Automated Testing & QA**: 333 automated Jest + Supertest backend tests (23 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 🧪 **Comprehensive Automated Testing & QA**: 352 automated Jest + Supertest backend tests (25 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
 
 ---
 
@@ -38,7 +38,7 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
   - **10% Emergency Crimson Budget**: Crimson is reserved strictly for life-critical signals (primary CTAs, emergency/critical badges, urgent request status indicators, active nav indicator). It represents $\le 10\%$ of any viewport, preserving its immediate urgency.
   - **Semantic Mapping**: ONLINE / Verified Facility / Confirmed / Fulfilled $\rightarrow$ `success`; cooldown / low stock / pending $\rightarrow$ `warning`; critical stock / urgent request $\rightarrow$ `danger`; informational / focus $\rightarrow$ `info`. Always paired with icons and text labels (never color alone).
 
-### Semantic Design Tokens (Single Source of Truth)
+### Semantic Design Tokens & Extended Accents (Single Source of Truth)
 
 | Token | Dark Mode | Light Mode | Usage & Purpose |
 |---|---|---|---|
@@ -58,6 +58,18 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 | `warning` | `#FBBF24` | `#9A5B00` | Cooldown warnings, low stock, pending reviews |
 | `info / focus` | `#60A5FA` | `#1D6FD6` | Keyboard focus ring (2px with 2px offset), info pills |
 | `ice` (accent) | `#A5D8FF` | `#1D6FD6` | AI assistance, secondary highlights, subtle glow accents |
+| `accent-donor` | `#2DD4BF` | `#0F766E` | Donor portal title dot, hero gradient tint, tab indicator |
+| `accent-hospital` | `#60A5FA` | `#1D6FD6` | Hospital command center title dot, hero tint, tab indicator |
+| `accent-admin` | `#A78BFA` | `#6D28D9` | Admin governance center title dot, hero tint, tab indicator |
+| `urgency-critical` | `#E5484D` | `#C8102E` | Emergency shortage chip (`AlertCircle` icon + `Critical` label) |
+| `urgency-high` | `#FB923C` | `#B45309` | High urgency chip (`ArrowUp` icon + `High` label) |
+| `urgency-medium` | `#FBBF24` | `#9A5B00` | Medium urgency chip (`Minus` icon + `Medium` label) |
+| `urgency-low` | `#7DD3FC` | `#0369A1` | Low urgency chip (`ArrowDown` icon + `Low` label) |
+| `abo-o` | `#2DD4BF` | `#0F766E` | O family blood pills (O+ subtle fill, O- outlined) |
+| `abo-a` | `#60A5FA` | `#1D6FD6` | A family blood pills (A+ subtle fill, A- outlined) |
+| `abo-b` | `#A78BFA` | `#6D28D9` | B family blood pills (B+ subtle fill, B- outlined) |
+| `abo-ab` | `#FBBF24` | `#9A5B00` | AB family blood pills (AB+ subtle fill, AB- outlined) |
+| `chart-series (1-6)` | `#60A5FA`, `#34D399`, `#FBBF24`, `#A78BFA`, `#F472B6`, `#94A3B8` | `#1D6FD6`, `#059669`, `#B45309`, `#6D28D9`, `#BE185D`, `#475569` | Purposeful chart series ($\ge 3:1$ contrast against surface) |
 
 - **5-Tier Spatial Elevation System**:
   - `elevation-canvas` (Level 0): Viewport foundation and atmospheric canvas.
@@ -93,6 +105,16 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 
 > [!NOTE]
 > **Role Elevation Guard:** Google Sign-In strictly provisions accounts with `accountType: "user"`. Hospital and Admin accounts cannot be provisioned via Google Sign-In, protecting elevated system roles.
+
+---
+
+## 🗄️ Data Architecture & Lifecycles
+
+LifeLink pairs **Google Cloud Firestore** (`lifelink-f6f3b`) with Firebase Authentication, signed 30-day JWT sessions, and read-only AI tools:
+- **Persistence**: Firestore collections (`users`, `emails`, `donorProfiles`, `hospitals`, `bloodRequests`, `donations`, `notifications`, `aiInsights`, `inventoryTransactions`, `loginAuditLogs`).
+- **Security & Privacy**: Passwords hashed with `bcryptjs` (10 rounds); donor contact details (phone, email) strictly masked from public and AI model responses.
+- **AI Mesh**: Google Gemini operates exclusively via read-only function tools; conversation history lives ephemerally in React client memory.
+- **Detailed Specification & Lifecycle Diagrams**: See [docs/data-model.md](docs/data-model.md) for full collection schemas, the request state machine, and the donor pledge sequence diagram.
 
 ---
 

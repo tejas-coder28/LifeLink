@@ -33,16 +33,17 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {items.map((item) => {
           const isCritical = item.units === 0;
-          const isLow = item.units > 0 && item.units <= 2;
+          const isWarning = item.units >= 1 && item.units <= 3;
+          const isSuccess = item.units >= 4;
           const bgKey = item.bloodGroup.replace('+', 'p').replace('-', 'm');
           return (
             <div
               key={item.bloodGroup}
               className={`p-4 rounded-2xl flex flex-col items-center justify-between space-y-3 transition-all ${
                 isCritical
-                  ? 'bg-danger/10 border-2 border-danger/50 shadow-sm'
-                  : isLow
-                  ? 'bg-warning/10 border-2 border-warning/50 shadow-sm'
+                  ? 'bg-urgency-critical-subtle border-2 border-urgency-critical-border shadow-sm'
+                  : isWarning
+                  ? 'bg-urgency-medium-subtle border-2 border-urgency-medium-border shadow-sm'
                   : 'glass-card border-hairline'
               }`}
             >
@@ -60,7 +61,7 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
                 </button>
                 <span
                   className={`text-2xl font-black min-w-[32px] text-center tabular-nums ${
-                    isCritical ? 'text-danger' : isLow ? 'text-warning' : 'text-primary'
+                    isCritical ? 'text-urgency-critical' : isWarning ? 'text-urgency-medium' : 'text-success'
                   }`}
                 >
                   {item.units}
@@ -76,10 +77,10 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
               </div>
               <span
                 className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                  isCritical ? 'text-danger dark:text-[#FF6166] font-black' : isLow ? 'text-warning dark:text-[#FCD34D] font-black' : 'text-muted'
+                  isCritical ? 'text-urgency-critical font-black' : isWarning ? 'text-urgency-medium font-black' : 'text-success'
                 }`}
               >
-                {isCritical ? '🚨 Critical Deficit' : isLow ? '⚠️ Low Stock' : 'Reserve Units'}
+                {isCritical ? '0 units Critical' : isWarning ? `${item.units} units Low` : `${item.units} units In Stock`}
               </span>
             </div>
           );

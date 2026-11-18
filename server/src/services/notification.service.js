@@ -50,7 +50,11 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
 
 const getUserNotifications = async (userId) => {
   const uId = userId && userId._id ? userId._id.toString() : userId.toString();
-  return await Notification.findByRecipient(uId, 20);
+  const list = await Notification.findByRecipient(uId, 20);
+  return (list || []).filter((n) => {
+    const rId = n.recipient && n.recipient._id ? n.recipient._id.toString() : n.recipient?.toString();
+    return rId === uId;
+  });
 };
 
 const markAsRead = async (notificationId, userId) => {
