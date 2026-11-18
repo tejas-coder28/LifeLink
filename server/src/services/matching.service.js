@@ -33,6 +33,14 @@ function isDonorCandidate(request, donor) {
     };
   }
 
+  // 2b. Profile completion check: incomplete profiles cannot appear in matching
+  if (donor.profileComplete === false) {
+    return {
+      isCandidate: false,
+      reason: 'Donor profile incomplete (must complete donor profile first)',
+    };
+  }
+
   // 3. Exclude requester (cannot match or donate to own request)
   if (donor.user && request.requester) {
     const donorUserId = donor.user._id ? donor.user._id.toString() : donor.user.toString();

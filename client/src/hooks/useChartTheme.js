@@ -1,15 +1,22 @@
 import { useTheme } from '../context/ThemeContext';
 
 /**
- * useChartTheme — "Midnight Navy + Crimson + Ice" tokens for Recharts:
- * Default series: info, ice, teal (success), silver; reserve crimson strictly
- * for critical data only (shortages, unfulfilled urgent requests).
+ * useChartTheme — Purposeful Chart Accent System for Recharts:
+ * Series: #60A5FA, #34D399, #FBBF24, #A78BFA, #F472B6, #94A3B8 (dark)
+ * Light-mode equivalents darkened to meet >= 3:1 against surface (#FFFFFF):
+ * #1D6FD6, #059669, #B45309, #6D28D9, #BE185D, #475569.
+ * Crimson is strictly reserved for critical/shortage data only.
  */
 export const useChartTheme = () => {
   const { isDark } = useTheme();
 
+  const series = isDark
+    ? ['#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6', '#94A3B8']
+    : ['#1D6FD6', '#059669', '#B45309', '#6D28D9', '#BE185D', '#475569'];
+
   return {
     isDark,
+    series,
     gridStroke: isDark ? 'rgba(147, 161, 189, 0.12)' : 'rgba(15, 26, 46, 0.08)',
     axisStroke: isDark ? '#9DAAC6' : '#4A5A78',
     tooltipStyle: {
@@ -27,11 +34,12 @@ export const useChartTheme = () => {
       fontWeight: 600,
     },
     colors: {
+      series,
       info:      isDark ? '#60A5FA' : '#1D6FD6',
       ice:       isDark ? '#A5D8FF' : '#1D6FD6',
-      teal:      isDark ? '#34D399' : '#0A7A62',
+      teal:      isDark ? '#34D399' : '#059669',
       success:   isDark ? '#34D399' : '#0A7A62',
-      silver:    isDark ? '#9DAAC6' : '#4A5A78',
+      silver:    isDark ? '#94A3B8' : '#475569',
       warning:   isDark ? '#FBBF24' : '#9A5B00',
       crimson:   isDark ? '#E5484D' : '#C8102E', // critical / shortage only
       danger:    isDark ? '#E5484D' : '#C8102E',
@@ -39,16 +47,27 @@ export const useChartTheme = () => {
       redText:   isDark ? '#FF6166' : '#C8102E',
       silverDim: isDark ? '#4A5A78' : '#9DAAC6',
 
+      // Role accents
+      accentDonor:    isDark ? '#2DD4BF' : '#0F766E',
+      accentHospital: isDark ? '#60A5FA' : '#1D6FD6',
+      accentAdmin:    isDark ? '#A78BFA' : '#6D28D9',
+
+      // Urgency scale
+      urgencyCritical: isDark ? '#E5484D' : '#C8102E',
+      urgencyHigh:     isDark ? '#FB923C' : '#B45309',
+      urgencyMedium:   isDark ? '#FBBF24' : '#9A5B00',
+      urgencyLow:      isDark ? '#7DD3FC' : '#0369A1',
+
       // Backward compatible aliases
       ruby:      isDark ? '#E5484D' : '#C8102E',
-      violet:    isDark ? '#60A5FA' : '#1D6FD6',
-      cyan:      isDark ? '#A5D8FF' : '#1D6FD6',
+      violet:    isDark ? '#A78BFA' : '#6D28D9',
+      cyan:      isDark ? '#7DD3FC' : '#0369A1',
       amber:     isDark ? '#FBBF24' : '#9A5B00',
-      magenta:   isDark ? '#E5484D' : '#C8102E',
+      magenta:   isDark ? '#F472B6' : '#BE185D',
       rose:      isDark ? '#E5484D' : '#C8102E',
       roseLight: isDark ? '#FF6166' : '#C8102E',
-      sky:       isDark ? '#A5D8FF' : '#1D6FD6',
-      slate:     isDark ? '#9DAAC6' : '#4A5A78',
+      sky:       isDark ? '#7DD3FC' : '#0369A1',
+      slate:     isDark ? '#94A3B8' : '#475569',
     },
   };
 };

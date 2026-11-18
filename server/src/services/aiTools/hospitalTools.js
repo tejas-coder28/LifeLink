@@ -295,11 +295,91 @@ async function getCancelledRequests(context) {
   };
 }
 
+/**
+ * Returns pending donor pledges awaiting hospital intake and confirmation.
+ * Returns donor first name only, blood group, units, and timestamp.
+ */
+async function getPledgesAwaitingConfirmation(context) {
+  const hospital = await Hospital.findOne({ user: context.userId });
+  if (!hospital) {
+    return { error: 'Hospital profile not found' };
+  }
+
+  const myReqs = await BloodRequest.find({
+    $or: [{ requester: context.userId }, { targetHospital: hospital._id }, { hospital: hospital._id }],
+  }).select('_id');
+
+  const reqIds = myReqs.map((r) => r._id);
+  if (reqIds.length === 0) {
+    return { count: 0, pendingPledgesCount: 0, pledges: [] };
+  }
+
+  const pledges = await Donation.find({
+    request: { $in: reqIds },
+    status: 'pledged',
+  })
+    .populate('donor', 'name')
+    .populate('donorProfile', 'bloodGroup')
+    .populate('request', 'patientName bloodGroup')
+    .sort({ createdAt: -1 });
+
+  return {
+    count: pledges.length,
+    pendingPledgesCount: pledges.length,
+    pledges: pledges.slice(0, 10).map((p) => {
+      const fullName = p.donor?.name || 'Donor';
+      const firstName = fullName.split(' ')[0];
+      const bg = p.donorProfile?.bloodGroup || p.request?.bloodGroup || 'Blood Donor';
+      const units = p.unitsDonated || 1;
+      const time = p.createdAt ? new Date(p.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+
+      return {
+        id: p._id.toString(),
+        donorFirstName: firstName,
+        bloodGroup: bg,
+        units,
+        time,
+        patientName: p.request?.patientName || 'Emergency Patient',
+      };
+    }),
+  };
+}
+
+/**
+ * Returns recent requests created or handled by this hospital.
+ */
+async function getRecentRequests(context) {
+  const hospital = await Hospital.findOne({ user: context.userId });
+  if (!hospital) {
+    return { error: 'Hospital profile not found' };
+  }
+
+  const requests = await BloodRequest.find({
+    $or: [{ requester: context.userId }, { targetHospital: hospital._id }, { hospital: hospital._id }],
+  }).sort({ createdAt: -1 }).limit(10);
+
+  return {
+    count: requests.length,
+    requests: requests.map((r) => ({
+      id: r._id.toString(),
+      patientName: r.patientName,
+      bloodGroup: r.bloodGroup,
+      unitsNeeded: r.unitsNeeded,
+      unitsFulfilled: r.unitsFulfilled || 0,
+      urgency: r.urgency,
+      status: r.status,
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '',
+    })),
+  };
+}
+
 module.exports = {
   getInventory,
   getIncomingDemands,
   getActiveRequests,
   getPendingPledges,
+  getPledgesAwaitingConfirmation,
+  getRecentRequests,
   getMatchingDonors,
   getMyVerificationStatus,
   getCancelledRequests,

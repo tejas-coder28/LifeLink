@@ -110,10 +110,17 @@ STRICT OPERATIONAL BOUNDARIES:
 2. REFUSAL RULE: If the user asks about ANYTHING ELSE (including but not limited to sports, news, politics, entertainment, coding, software development, math, recipes, weather, movies, jokes, general knowledge, or personal advice), you MUST refuse with this EXACT sentence and nothing else:
 "${FIXED_REFUSAL}"
 3. READ-ONLY SCOPE: You have read-only tools to retrieve real-time data for the current user's role. You CANNOT perform database writes, modify inventories, or execute requests.
-4. ROLE BOUNDARIES: You must only discuss information accessible to the current role (${role}). A donor cannot inspect another user's contact information or hospital inventory.
+4. ROLE BOUNDARIES: You must only discuss information accessible to the current role (${role}). A donor cannot inspect another user's contact information (email/phone) or hospital inventory.
 5. NAVIGATION GUIDANCE: When the user asks where a feature is located or how to access something, tell them where it is located in the app and call the "getHowToGuide" tool with the topic so a direct navigation button is rendered.
 6. CONCISE & CLINICAL: Keep your answers concise, empathetic, medically accurate, and clinical. Format numbers and blood groups clearly (e.g. O+, A-).
-7. DATA FIRST: For ANY question about counts, status, or the user's own data (requests, inventory, donors, pledges, history, alerts, eligibility, etc.), you MUST call the relevant data tool FIRST before composing a reply. Lead with the actual numbers or status (e.g. "0 active requests." or "2 O+ units in stock."), then add brief context. NEVER answer a data question with only a navigation hint — always include the data value. Only respond with navigation alone when the user is asking purely "where do I find..." with no data intent.`;
+7. DATA FIRST & STRUCTURED FORMAT:
+For ANY question asking for data or lists, you MUST call the relevant tool first and structure your reply in this 4-part format (max ~120 words):
+1) One-line summary with headline numbers (e.g. "There are 5 active standby donors available right now:").
+2) Up to 5 short detail lines with bullet points; if more exist, append "and N more".
+3) One line explaining meaning or next steps.
+4) Relevant deep-link action button(s).
+8. EXPLAIN QUESTIONS:
+When asked to explain concepts (cooldown, standby, fulfillment rate, etc.), call the getAppGlossary tool. Provide a plain-language explanation (max ~120 words) combining the glossary definition, the user's own data (e.g. donor's next eligible date), and clear next steps.`;
 }
 
 /**
@@ -234,15 +241,43 @@ async function generateChatReply(message, history = [], userContext = {}) {
                     });
                     if (pledgeAct) collectedActions.push(pledgeAct);
                   }
-                } else if (fc.name === 'getMyDonationHistory') {
+                } else if (fc.name === 'getMyDonationHistory' || fc.name === 'getMyPendingPledges') {
                   const act = buildAction('donor-history');
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getNextSteps' && toolResult?.actionButton) {
+                  const act = buildAction(toolResult.actionButton, { label: toolResult.actionLabel });
                   if (act) collectedActions.push(act);
                 } else if (fc.name === 'getPlatformStats') {
                   const act = buildAction('admin-analytics');
                   if (act) collectedActions.push(act);
-                } else if (fc.name === 'getPendingHospitals') {
+                } else if (fc.name === 'getActiveDonors') {
+                  const act = buildAction('admin-users', { label: 'Donors & Hospitals', query: { tab: 'users', status: 'active' } });
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getDonorsByBloodGroup' || fc.name === 'getPendingHospitals' || fc.name === 'getHospitalsOverview') {
                   const act = buildAction('admin-users');
                   if (act) collectedActions.push(act);
+                } else if (fc.name === 'getRequestList' || fc.name === 'getRequestOverview') {
+                  const status = fc.args?.status || 'open';
+                  const act = buildAction('admin-requests', { label: 'Blood Request Master', query: { status } });
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getRecentActivity') {
+                  const act = buildAction('admin-overview');
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getPledgesAwaitingConfirmation') {
+                  const act = buildAction('hospital-active-requests', { label: 'Awaiting Confirmation', query: { tab: 'active', filter: 'pledges' } });
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getRecentRequests') {
+                  const act = buildAction('hospital-active-requests');
+                  if (act) collectedActions.push(act);
+                } else if (fc.name === 'getAppGlossary') {
+                  const term = (fc.args?.term || '').toLowerCase();
+                  if (term.includes('cooldown') || term.includes('standby')) {
+                    const act = buildAction('donor-profile', { label: 'Profile & Health' });
+                    if (act) collectedActions.push(act);
+                  } else if (term.includes('fulfillment') || term.includes('score')) {
+                    const act = buildAction('admin-analytics', { label: 'Platform Analytics' });
+                    if (act) collectedActions.push(act);
+                  }
                 } else if (fc.name === 'getShortageAlerts') {
                   const act = buildAction('admin-ai-insights');
                   if (act) collectedActions.push(act);

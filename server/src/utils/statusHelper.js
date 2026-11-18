@@ -83,6 +83,25 @@ function formatStatusLabel(status) {
     .join(' ');
 }
 
+function getDonationStatusExplanatory(status) {
+  const norm = (status || '').toString().toLowerCase().trim();
+  switch (norm) {
+    case 'pledged':
+      return 'Pledged — awaiting hospital confirmation';
+    case 'completed':
+    case 'fulfilled':
+      return 'Completed — donation verified & units received';
+    case 'released':
+      return 'Released — request cancelled or closed';
+    case 'cancelled':
+      return 'Cancelled — pledge withdrawn';
+    case 'rejected':
+      return 'Not fulfilled';
+    default:
+      return formatStatusLabel(status) || 'Recorded';
+  }
+}
+
 module.exports = {
   ACTIVE_REQUEST_STATUSES,
   INCOMING_REQUEST_STATUSES,
@@ -90,10 +109,11 @@ module.exports = {
   CANCEL_REASONS,
   CANCEL_LABELS,
   STATUS_LABELS,
+  formatStatusLabel,
+  getDonationStatusExplanatory,
   isActiveRequest,
   isIncomingRequest,
   isClosedRequest,
   canSeekDonors,
-  formatStatusLabel,
 };
 

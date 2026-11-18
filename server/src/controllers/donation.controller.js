@@ -82,6 +82,17 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const cancelPledge = async (req, res, next) => {
+  try {
+    const donation = await donationService.cancelPledge(req.user._id, req.params.id);
+    return sendSuccess(res, 'Pledge cancelled successfully', donation);
+  } catch (error) {
+    if (error.statusCode) return sendError(res, error.message, error.statusCode);
+    console.error(`[Cancel Pledge Error] ${error.name || 'Error'}:`, error.message);
+    return sendError(res, 'Unable to cancel pledge. Please try again.', 500);
+  }
+};
+
 module.exports = {
   pledge,
   complete,
@@ -90,4 +101,5 @@ module.exports = {
   getByRequest,
   getMyHistory,
   getAll,
+  cancelPledge,
 };

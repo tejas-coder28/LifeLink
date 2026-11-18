@@ -18,9 +18,10 @@ const FieldLabel = ({ children, icon: Icon }) => (
 );
 
 const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
-  const [bloodGroup, setBloodGroup]         = useState(initialData.bloodGroup || 'O+');
+  const [bloodGroup, setBloodGroup]         = useState(initialData.bloodGroup || '');
   const [contactNumber, setContactNumber]   = useState(initialData.contactNumber || initialData.user?.phone || '');
   const [age, setAge]                       = useState(initialData.age || '');
+  const [dob, setDob]                       = useState(initialData.dob || '');
   const [gender, setGender]                 = useState(initialData.gender || 'male');
   const [address, setAddress]               = useState(initialData.address || '');
   const [lastDonationDate, setLastDonationDate] = useState(
@@ -28,6 +29,9 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
   );
   const [isAvailable, setIsAvailable]       = useState(initialData.isAvailable !== false);
   const [healthFlags, setHealthFlags]       = useState(initialData.healthFlags || ['none']);
+  const [is18Plus, setIs18Plus]             = useState(Boolean(initialData.is18Plus || (initialData.age && Number(initialData.age) >= 18)));
+  const [isWeight50KgPlus, setIsWeight50KgPlus] = useState(Boolean(initialData.isWeight50KgPlus));
+  const [consentContact, setConsentContact] = useState(Boolean(initialData.consentContact));
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -36,6 +40,7 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
         setContactNumber(initialData.contactNumber || initialData.user?.phone || '');
       }
       if (initialData.age !== undefined) setAge(initialData.age || '');
+      if (initialData.dob) setDob(initialData.dob);
       if (initialData.gender) setGender(initialData.gender);
       if (initialData.address !== undefined) setAddress(initialData.address || '');
       if (initialData.lastDonationDate) {
@@ -43,6 +48,9 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
       }
       if (initialData.isAvailable !== undefined) setIsAvailable(initialData.isAvailable);
       if (initialData.healthFlags) setHealthFlags(initialData.healthFlags);
+      if (initialData.is18Plus !== undefined) setIs18Plus(Boolean(initialData.is18Plus));
+      if (initialData.isWeight50KgPlus !== undefined) setIsWeight50KgPlus(Boolean(initialData.isWeight50KgPlus));
+      if (initialData.consentContact !== undefined) setConsentContact(Boolean(initialData.consentContact));
     }
   }, [initialData]);
 
@@ -61,6 +69,21 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
     e.preventDefault();
     setFormError('');
 
+    if (!bloodGroup) {
+      setFormError('Please select your blood group.');
+      return;
+    }
+
+    if (!contactNumber.trim()) {
+      setFormError('Please enter a valid contact phone number.');
+      return;
+    }
+
+    if (!address.trim()) {
+      setFormError('Please enter your city / location address.');
+      return;
+    }
+
     let parsedAge = undefined;
     if (age !== '' && age !== null && age !== undefined) {
       const num = Number(age);
@@ -69,6 +92,21 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
         return;
       }
       parsedAge = num;
+    }
+
+    if (!is18Plus && !(parsedAge && parsedAge >= 18) && !dob) {
+      setFormError('Please confirm that you are at least 18 years of age (or enter your date of birth / age).');
+      return;
+    }
+
+    if (!isWeight50KgPlus) {
+      setFormError('Please confirm that your body weight is 50 kg or above to ensure safe blood donation.');
+      return;
+    }
+
+    if (!consentContact) {
+      setFormError('Please give consent to be contacted for emergency blood donation requests.');
+      return;
     }
 
     if (lastDonationDate) {
@@ -91,6 +129,10 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
       lastDonationDate: lastDonationDate ? new Date(lastDonationDate).toISOString() : null,
       isAvailable,
       healthFlags,
+      is18Plus: Boolean(is18Plus || (parsedAge && parsedAge >= 18)),
+      isWeight50KgPlus: Boolean(isWeight50KgPlus),
+      consentContact: Boolean(consentContact),
+      dob: dob || undefined,
       coordinates: initialData.location?.coordinates || initialData.coordinates || [77.2090, 28.6139],
     };
 
@@ -119,7 +161,7 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
           onClick={() => setIsAvailable(!isAvailable)}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
             isAvailable
-              ? 'bg-success text-white dark:text-[#0A0F1C] shadow-sm'
+              ? 'bg-success text-white dark:text-on-primary shadow-sm'
               : 'bg-surface text-secondary border border-hairline'
           }`}
         >
@@ -294,6 +336,52 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
             );
           })}
         </div>
+      </div>
+
+      {/* Required Eligibility & Consent Confirmations */}
+      <div className="p-4 rounded-2xl bg-surface/80 border border-hairline space-y-3">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary block">
+          Required Donor Confirmations
+        </span>
+
+        {/* 18+ confirmation */}
+        <label className="flex items-start space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={is18Plus}
+            onChange={(e) => setIs18Plus(e.target.checked)}
+            className="mt-0.5 rounded border-hairline text-info focus:ring-info w-4 h-4"
+          />
+          <span className="text-xs text-secondary group-hover:text-primary transition-colors leading-relaxed">
+            I confirm that I am at least <strong>18 years of age</strong> (eligible donor age is 18–65 years).
+          </span>
+        </label>
+
+        {/* Weight 50kg+ confirmation */}
+        <label className="flex items-start space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={isWeight50KgPlus}
+            onChange={(e) => setIsWeight50KgPlus(e.target.checked)}
+            className="mt-0.5 rounded border-hairline text-info focus:ring-info w-4 h-4"
+          />
+          <span className="text-xs text-secondary group-hover:text-primary transition-colors leading-relaxed">
+            I confirm that my body weight is <strong>50 kg or above</strong> (clinical safety requirement for whole blood donation).
+          </span>
+        </label>
+
+        {/* Consent to be contacted */}
+        <label className="flex items-start space-x-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={consentContact}
+            onChange={(e) => setConsentContact(e.target.checked)}
+            className="mt-0.5 rounded border-hairline text-info focus:ring-info w-4 h-4"
+          />
+          <span className="text-xs text-secondary group-hover:text-primary transition-colors leading-relaxed">
+            I consent to be contacted by LifeLink and verified hospitals for urgent blood donation emergencies.
+          </span>
+        </label>
       </div>
 
       {formError && (

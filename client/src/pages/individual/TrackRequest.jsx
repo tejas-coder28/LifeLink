@@ -9,6 +9,7 @@ import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import { formatUnits } from '../../constants/bloodUnits';
+import { formatDate } from '../../utils/dateFormatter';
 import {
   Activity,
   CheckCircle2,
@@ -592,7 +593,7 @@ const TrackRequest = () => {
                           </span>
                         )}
                         <span>•</span>
-                        <span className="font-mono text-[11px]">Date: {new Date(don.createdAt).toLocaleDateString()}</span>
+                        <span className="font-mono text-[11px]">Date: {formatDate(don.createdAt)}</span>
                       </div>
                     </div>
                   </div>

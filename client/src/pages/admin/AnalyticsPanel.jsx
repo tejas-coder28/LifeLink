@@ -35,10 +35,10 @@ const AnalyticsPanel = ({ data }) => {
   const { gridStroke, axisStroke, tooltipStyle, colors } = useChartTheme();
 
   const urgencyColors = {
-    CRITICAL: colors.crimson,
-    HIGH: colors.warning,
-    MEDIUM: colors.info,
-    LOW: colors.teal || colors.success,
+    CRITICAL: colors.urgencyCritical || colors.crimson,
+    HIGH: colors.urgencyHigh || colors.warning,
+    MEDIUM: colors.urgencyMedium || colors.warning,
+    LOW: colors.urgencyLow || colors.info,
     STANDARD: colors.silver,
   };
   const summary = data?.summary || {

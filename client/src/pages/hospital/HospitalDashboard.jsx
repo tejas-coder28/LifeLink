@@ -22,6 +22,7 @@ import { canSeekDonors } from '../../utils/requestRules';
 import { createSmartPolling } from '../../utils/networkHealth';
 import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
 import { CANCEL_LABELS, formatStatusLabel } from '../../utils/statusHelper';
+import { formatDate, formatTime, formatDateTime } from '../../utils/dateFormatter';
 
 import {
   Building2,
@@ -269,7 +270,7 @@ const HospitalDashboard = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tabHeadingRef.current) {
-      tabHeadingRef.current.focus();
+      tabHeadingRef.current.focus({ preventScroll: true });
     }
   }, [activeTab]);
 
@@ -788,10 +789,13 @@ const HospitalDashboard = () => {
       )}
 
       {/* Banner */}
-      <div className="hero-glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="hero-glass-card hero-hospital flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading">Hospital Command Center</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading flex items-center gap-2">
+              <span>Hospital Command Center</span>
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-accent-hospital shrink-0 shadow-sm" aria-hidden="true" />
+            </h1>
             <Badge accountType="hospital" />
             <Badge
               status={hospitalProfile?.isVerified ? 'verified' : 'pending'}
@@ -834,6 +838,7 @@ const HospitalDashboard = () => {
         activeTab={activeTab}
         onChange={(id) => setTab(id)}
         layoutId="hospital-dashboard-tabs"
+        accent="hospital"
       />
 
       {/* TAB 1: OVERVIEW */}
@@ -1036,7 +1041,7 @@ const HospitalDashboard = () => {
                 onClick={() => setIncomingFilter('pending')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'pending'
-                    ? 'bg-surface text-primary border border-hairline shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'text-secondary hover:text-primary'
                 }`}
               >
@@ -1046,7 +1051,7 @@ const HospitalDashboard = () => {
                 onClick={() => setIncomingFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'all'
-                    ? 'bg-surface text-primary border border-hairline shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'text-secondary hover:text-primary'
                 }`}
               >
@@ -1142,12 +1147,12 @@ const HospitalDashboard = () => {
                       <div>
                         <span className="text-muted block font-semibold text-[10px] uppercase">Required By</span>
                         <span className="font-bold text-secondary">
-                          {req.requiredByDate ? new Date(req.requiredByDate).toLocaleString() : 'Immediate'}
+                          {formatDateTime(req.requiredByDate, 'Immediate')}
                         </span>
                       </div>
                       <div className="col-span-2 pt-1 border-t border-theme flex items-center justify-between text-muted text-[11px]">
                         <span>Contact: <strong>{req.requester?.phone || 'No phone provided'}</strong></span>
-                        <span>{new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{formatTime(req.createdAt)}</span>
                       </div>
                     </div>
 
@@ -1284,11 +1289,11 @@ const HospitalDashboard = () => {
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'active' && !urlFilter
-                    ? 'bg-primary text-inverted shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
                 }`}
               >
-                Active Requests ({activeRequestsCount})
+                Active ({activeRequestsCount})
               </button>
               <button
                 type="button"
@@ -1298,7 +1303,7 @@ const HospitalDashboard = () => {
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   isFilterPledges
-                    ? 'bg-primary text-inverted shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
                 }`}
               >
@@ -1312,7 +1317,7 @@ const HospitalDashboard = () => {
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'fulfilled' && !urlFilter
-                    ? 'bg-primary text-inverted shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
                 }`}
               >
@@ -1326,7 +1331,7 @@ const HospitalDashboard = () => {
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'closed_cancelled' && !urlFilter
-                    ? 'bg-primary text-inverted shadow-sm'
+                    ? 'bg-primary text-on-primary shadow-sm'
                     : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
                 }`}
               >
@@ -1588,12 +1593,7 @@ const HospitalDashboard = () => {
                             {isPositive ? `+${tx.change}` : tx.change} Unit{Math.abs(tx.change) !== 1 ? 's' : ''}
                           </span>
                           <span className="text-[10px] text-muted block font-mono">
-                            {new Date(tx.createdAt).toLocaleDateString([], {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {formatDateTime(tx.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -2025,7 +2025,7 @@ const HospitalDashboard = () => {
               <div>
                 <span className="text-muted block font-semibold text-[10px] uppercase">Required By</span>
                 <span className="font-bold text-secondary">
-                  {selectedDetailRequest.requiredByDate ? new Date(selectedDetailRequest.requiredByDate).toLocaleString() : 'Immediate'}
+                  {formatDateTime(selectedDetailRequest.requiredByDate, 'Immediate')}
                 </span>
               </div>
               <div>

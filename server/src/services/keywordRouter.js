@@ -269,22 +269,26 @@ function handleOffTopic(userContext = {}, options = {}) {
 }
 
 /**
- * Helpful capability reply for in-scope LifeLink messages that do not match a specific data tool.
- * Provides role-scoped guidance and suggestion chips instead of an off-topic refusal.
+ * Helpful capability reply for capability queries ("what can you do") or clarifying question for unmatched in-scope queries.
  */
 function handleInScopeHelp(userContext = {}, options = {}) {
   const role = userContext.role || 'public';
   const suggestions = getSuggestionsForRole(role);
   let reply = '';
 
-  if (role === 'hospital') {
-    reply = 'I can help you check blood bank inventory reserves, review incoming patient demands, track active emergency requests broadcast to donors, or navigate the hospital command center. Here are some things you can ask:';
-  } else if (role === 'admin') {
-    reply = 'I can help you review platform stats, inspect blood shortage alerts, approve pending hospitals, manage users, or review system analytics. Here are some things you can ask:';
-  } else if (['donor', 'user', 'individual', 'recipient'].includes(role)) {
-    reply = 'I can help you check your donation eligibility, find blood requests matching your blood group, view your donation history, check alerts, or navigate the donor portal. Here are some things you can ask:';
+  if (options.isCapability) {
+    if (role === 'hospital') {
+      reply = 'I can help you check blood bank inventory reserves, review incoming patient demands, track active emergency requests broadcast to donors, or navigate the hospital command center. Here are some things you can ask:';
+    } else if (role === 'admin') {
+      reply = 'I can help you review platform stats, inspect blood shortage alerts, approve pending hospitals, manage users, or review system analytics. Here are some things you can ask:';
+    } else if (['donor', 'user', 'individual', 'recipient'].includes(role)) {
+      reply = 'I can help you check your donation eligibility, find blood requests matching your blood group, view your donation history, check alerts, or navigate the donor portal. Here are some things you can ask:';
+    } else {
+      reply = 'I can help you find compatible donors, locate nearby hospitals, learn how blood donation works, or request emergency blood. Here are some things you can ask:';
+    }
   } else {
-    reply = 'I can help you find compatible donors, locate nearby hospitals, learn how blood donation works, or request emergency blood. Here are some things you can ask:';
+    // In-scope unmatched queries return 1 short clarifying question with 3 chips
+    reply = 'Could you please clarify what specific details you need regarding blood requests, donors, or hospital inventory?';
   }
 
   const response = {
@@ -393,6 +397,75 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     };
   }
 
+  // Role Isolation Guard: Non-admins cannot query donor lists or personal donor data
+  const isQueryingDonorList =
+    (norm.includes('donor') || norm.includes('active donor') || norm.includes('who is active') || norm.includes('who are active')) &&
+    (norm.includes('list') || norm.includes('show') || norm.includes('who') || norm.includes('all') || norm.includes('give me') || norm.includes('tell me'));
+
+  if (isQueryingDonorList && !isAdmin) {
+    return {
+      reply: 'Access restricted: Viewing registered and active donor directories is only accessible to platform administrators.',
+      actions: [],
+      suggestions,
+      provider: 'keyword',
+      fallbackReason,
+    };
+  }
+
+  // Explain LifeLink concepts (cooldown, standby, fulfillment rate, etc.)
+  const isExplainQuery =
+    norm.includes('what is cooldown') ||
+    norm.includes('explain cooldown') ||
+    norm.includes('how does cooldown work') ||
+    norm.includes('what is standby') ||
+    norm.includes('explain standby') ||
+    norm.includes('what is fulfillment rate') ||
+    norm.includes('explain fulfillment rate') ||
+    norm.includes('pledge vs donation') ||
+    norm.includes('what is pledge') ||
+    norm.includes('what is matching score') ||
+    ((norm.includes('explain') || norm.includes('what is') || norm.includes('meaning of') || norm.includes('define')) &&
+      (norm.includes('cooldown') || norm.includes('standby') || norm.includes('fulfillment') || norm.includes('urgency') || norm.includes('unit') || norm.includes('matching') || norm.includes('compatible')));
+
+  if (isExplainQuery) {
+    const term = norm.includes('cooldown') ? 'cooldown'
+      : norm.includes('standby') ? 'standby'
+      : norm.includes('fulfillment') ? 'fulfillment rate'
+      : norm.includes('pledge') ? 'pledge vs donation'
+      : norm.includes('urgency') ? 'urgency levels'
+      : norm.includes('unit') ? 'unit/ml'
+      : norm.includes('matching') ? 'matching score'
+      : norm.includes('compatible') ? 'compatible blood groups'
+      : 'cooldown';
+
+    const glossary = await aiTools.executeTool('getAppGlossary', { term }, userContext);
+    let reply = `${glossary.term ? glossary.term.toUpperCase() : 'COOLDOWN'}: ${glossary.definition}`;
+    const actions = [];
+
+    if (term === 'cooldown' && isDonorUser) {
+      const eligibility = await aiTools.executeTool('getEligibility', {}, userContext);
+      reply += `\n\nYour Status: ${eligibility.rationale} Next eligible date: ${eligibility.nextEligibleDate || 'Eligible today'}.`;
+      const act = buildAction('donor-profile', { label: 'Profile & Health' });
+      if (act) actions.push(act);
+    } else if (term === 'standby' && isDonorUser) {
+      const profile = await aiTools.executeTool('getMyProfile', {}, userContext);
+      reply += `\n\nYour Status: Standby is currently ${profile.isAvailable ? 'ACTIVE (Online)' : 'OFFLINE'}.`;
+      const act = buildAction('donor-profile', { label: 'Toggle Standby' });
+      if (act) actions.push(act);
+    } else if (term === 'fulfillment rate') {
+      const act = isAdmin ? buildAction('admin-analytics') : null;
+      if (act) actions.push(act);
+    }
+
+    return {
+      reply,
+      actions,
+      suggestions,
+      provider: 'keyword',
+      fallbackReason,
+    };
+  }
+
   // 3. User / Donor data intents
   if (isDonorUser) {
     // 3a. Eligibility / Cooldown
@@ -400,6 +473,33 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
       const data = await aiTools.executeTool('getEligibility', {}, userContext);
       const reply = `Eligible to donate: ${data.isEligible ? 'Yes' : 'No'}. Next eligible date: ${data.nextEligibleDate || 'Eligible today'}. Days remaining: ${data.daysLeft}. ${data.rationale}`;
       const action = buildAction('donor-profile');
+      return {
+        reply,
+        actions: action ? [action] : [],
+        suggestions,
+        provider: 'keyword',
+        fallbackReason,
+      };
+    }
+
+    // 3a-2. Next Steps
+    if (norm.includes('next step') || norm.includes('what should i do') || norm.includes('what to do next')) {
+      const data = await aiTools.executeTool('getNextSteps', {}, userContext);
+      const action = data.actionButton ? buildAction(data.actionButton, { label: data.actionLabel }) : null;
+      return {
+        reply: `${data.title}: ${data.nextAction}`,
+        actions: action ? [action] : [],
+        suggestions,
+        provider: 'keyword',
+        fallbackReason,
+      };
+    }
+
+    // 3a-3. Pending Pledges
+    if (norm.includes('my pledge') || norm.includes('my pending pledge') || norm.includes('pledges waiting')) {
+      const data = await aiTools.executeTool('getMyPendingPledges', {}, userContext);
+      const reply = `You have ${data.count} active pending donation pledge(s) awaiting hospital confirmation.`;
+      const action = buildAction('donor-history', { label: 'Donation History' });
       return {
         reply,
         actions: action ? [action] : [],
@@ -605,10 +705,32 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
       };
     }
 
-    if (norm.includes('pledge') || norm.includes('pending pledge')) {
-      const data = await aiTools.executeTool('getPendingPledges', {}, userContext);
-      const reply = `There are ${data.pendingPledgesCount} pending donor pledge(s) awaiting intake and verification.`;
-      const action = buildAction('hospital-active-requests');
+    if (
+      norm.includes('pledge') ||
+      norm.includes('waiting pledge') ||
+      norm.includes('pledge waiting') ||
+      norm.includes('awaiting confirmation') ||
+      norm.includes('pending intake')
+    ) {
+      const data = await aiTools.executeTool('getPledgesAwaitingConfirmation', {}, userContext);
+      if (data.count === 0) {
+        return {
+          reply: 'You have 0 donor pledges awaiting confirmation right now.\n\nAll donor commitments have been verified or no new pledges have been submitted.',
+          actions: [buildAction('hospital-active-requests', { label: 'Awaiting Confirmation', query: { tab: 'active', filter: 'pledges' } })].filter(Boolean),
+          suggestions,
+          provider: 'keyword',
+          fallbackReason,
+        };
+      }
+      const list = (data.pledges || []).slice(0, 5).map((p) =>
+        `• ${p.donorFirstName} • ${p.bloodGroup} • ${p.units} unit(s) • Pledged: ${p.time}`
+      );
+      const more = data.count > 5 ? `\n... and ${data.count - 5} more.` : '';
+      const reply = `You have ${data.count} donor pledge(s) awaiting hospital confirmation:\n${list.join('\n')}${more}\n\nReview and confirm donor arrival to update hospital inventory.`;
+      const action = buildAction('hospital-active-requests', {
+        label: 'Awaiting Confirmation',
+        query: { tab: 'active', filter: 'pledges' },
+      });
       return {
         reply,
         actions: action ? [action] : [],
@@ -634,6 +756,37 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
 
   // 5. Admin data intents
   if (isAdmin) {
+    // Active donors query for Admin
+    const isActiveDonorsQuery =
+      norm.includes('active donor') ||
+      norm.includes('list donor') ||
+      norm.includes('list out the donor') ||
+      norm.includes('who are active') ||
+      norm.includes('who is active') ||
+      norm.includes('show active donor') ||
+      norm.includes('available donor') ||
+      (norm.includes('donor') && (norm.includes('active') || norm.includes('standby') || norm.includes('list') || norm.includes('show') || norm.includes('who') || norm.includes('how many')));
+
+    if (isActiveDonorsQuery) {
+      const data = await aiTools.executeTool('getActiveDonors', {}, userContext);
+      const topList = (data.topDonors || []).slice(0, 5).map((d) =>
+        `• ${d.name} (${d.bloodGroup}) — ${d.city} | Standby: ${d.standbyStatus} | Eligible: ${d.isEligible ? 'Yes' : 'No'}${d.lastDonationDate ? ` (last: ${d.lastDonationDate})` : ''}`
+      );
+      const moreText = data.totalActive > 5 ? `\n... and ${data.totalActive - 5} more.` : '';
+      const reply = `There are ${data.totalActive} active standby donor(s) registered on LifeLink:\n${topList.join('\n')}${moreText}\n\nActive standby donors are immediately reachable for emergency dispatch.`;
+      const action = buildAction('admin-users', {
+        label: 'Donors & Hospitals',
+        query: { tab: 'users', status: 'active' },
+      });
+      return {
+        reply,
+        actions: action ? [action] : [],
+        suggestions,
+        provider: 'keyword',
+        fallbackReason,
+      };
+    }
+
     if (norm.includes('stat') || norm.includes('analytics') || norm.includes('summary') || norm.includes('metric')) {
       const data = await aiTools.executeTool('getPlatformStats', {}, userContext);
       const reply = `Platform Summary: ${data.totalDonors} registered donors (${data.availableDonors} on standby). ${data.totalRequests} total requests (${data.fulfilledRequests} fulfilled, ${data.openRequests} open). Fulfillment rate: ${data.fulfillmentRate}.`;
@@ -704,9 +857,14 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
   }
 
   // 7. In-scope check:
-  // If the message contains ANY LifeLink term or is a capability query, return helpful guidance with chips.
-  if (isCapabilityQuery(raw) || isCapabilityQuery(norm) || hasLifeLinkTerm(raw) || hasLifeLinkTerm(norm)) {
-    return handleInScopeHelp(userContext, options);
+  // If the message is a capability query ("what can you do"), return capability overview.
+  if (isCapabilityQuery(raw) || isCapabilityQuery(norm)) {
+    return handleInScopeHelp(userContext, { ...options, isCapability: true });
+  }
+
+  // If the message contains ANY LifeLink term but was not matched to a specific data tool, return 1 short clarifying question with 3 chips.
+  if (hasLifeLinkTerm(raw) || hasLifeLinkTerm(norm)) {
+    return handleInScopeHelp(userContext, { ...options, isCapability: false });
   }
 
   // 8. Refusal is the LAST resort for completely unrelated queries (e.g. sports, poems, math)

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, CheckCircle2, TrendingUp, Cpu } from 'lucide-react';
 import Card from '../common/Card';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 const InsightCard = ({ insight }) => {
   if (!insight) return null;
@@ -18,7 +19,7 @@ const InsightCard = ({ insight }) => {
             <h3 className="text-lg font-bold text-primary tracking-tight">{title}</h3>
             <p className="text-xs text-secondary flex items-center mt-0.5">
               <Cpu className="w-3.5 h-3.5 mr-1 text-info" />
-              LifeLink AI Service Layer • {new Date(generatedAt).toLocaleString()}
+              LifeLink AI Service Layer • {formatDateTime(generatedAt)}
             </p>
           </div>
         </div>

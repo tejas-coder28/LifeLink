@@ -11,7 +11,7 @@ class DonorProfileRepository extends BaseRepository {
     const payload = {
       ...data,
       user: userId,
-      bloodGroup: data.bloodGroup || 'O+',
+      bloodGroup: data.bloodGroup !== undefined ? data.bloodGroup : '',
       location: data.location || { type: 'Point', coordinates: [77.2090, 28.6139] },
       address: data.address || '',
       lastDonationDate: data.lastDonationDate ? new Date(data.lastDonationDate) : null,
@@ -22,6 +22,11 @@ class DonorProfileRepository extends BaseRepository {
       contactNumber: data.contactNumber || '',
       totalDonations: data.totalDonations || 0,
       bloodGroupConfirmed: data.bloodGroupConfirmed !== undefined ? Boolean(data.bloodGroupConfirmed) : false,
+      profileComplete: data.profileComplete !== undefined ? Boolean(data.profileComplete) : undefined,
+      is18Plus: data.is18Plus !== undefined ? Boolean(data.is18Plus) : false,
+      isWeight50KgPlus: data.isWeight50KgPlus !== undefined ? Boolean(data.isWeight50KgPlus) : false,
+      consentContact: data.consentContact !== undefined ? Boolean(data.consentContact) : false,
+      dob: data.dob || null,
     };
     return await super.create(payload, transaction);
   }
@@ -35,6 +40,7 @@ class DonorProfileRepository extends BaseRepository {
   /**
    * Efficient Firestore query for candidates matching blood group and availability.
    * Keeps reads low by filtering directly on the database layer.
+   * Excludes incomplete profiles from matching candidates.
    */
   async findCandidates(compatibleBloodGroups = null, availableOnly = true) {
     const filter = {};
@@ -44,7 +50,8 @@ class DonorProfileRepository extends BaseRepository {
     if (compatibleBloodGroups && Array.isArray(compatibleBloodGroups) && compatibleBloodGroups.length > 0) {
       filter.bloodGroup = { $in: compatibleBloodGroups };
     }
-    return await this._executeFind(filter);
+    const candidates = await this._executeFind(filter);
+    return candidates.filter((donor) => donor.profileComplete !== false);
   }
 }
 

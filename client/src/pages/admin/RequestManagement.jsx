@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import { formatDate } from '../../utils/dateFormatter';
 
 import {
   FileText,
@@ -265,7 +266,7 @@ const RequestManagement = () => {
                         {req.address || req.city || (typeof req.location === 'string' ? req.location : '') || 'N/A'}
                       </td>
                       <td className="px-5 py-4 text-muted font-mono text-[11px]">
-                        {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent'}
+                        {formatDate(req.createdAt, 'Recent')}
                       </td>
                       <td className="px-5 py-4 text-right">
                         <select

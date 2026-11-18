@@ -62,6 +62,33 @@ const TOOL_DEFINITIONS = {
       properties: {},
     },
   },
+  getMyBadges: {
+    fn: userTools.getMyBadges,
+    roles: ['user', 'donor', 'individual', 'recipient', 'admin'],
+    description: 'Fetch real-time donor badge counts (Requests, For You, Alerts, and History) matching dashboard tabs.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getMyPendingPledges: {
+    fn: userTools.getMyPendingPledges,
+    roles: ['user', 'donor', 'individual', 'recipient', 'admin'],
+    description: 'Fetch pending pledges made by this donor awaiting hospital confirmation.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getNextSteps: {
+    fn: userTools.getNextSteps,
+    roles: ['user', 'donor', 'individual', 'recipient', 'admin'],
+    description: 'Get tailored next operational actions and guidance for this donor.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
 
   // --- Hospital Tools ---
   getInventory: {
@@ -95,6 +122,24 @@ const TOOL_DEFINITIONS = {
     fn: hospitalTools.getPendingPledges,
     roles: ['hospital', 'admin'],
     description: 'Fetch active donor pledges awaiting hospital verification and intake.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getPledgesAwaitingConfirmation: {
+    fn: hospitalTools.getPledgesAwaitingConfirmation,
+    roles: ['hospital', 'admin'],
+    description: 'Fetch pending pledges awaiting confirmation with donor first name, blood group, units, and timestamp.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getRecentRequests: {
+    fn: hospitalTools.getRecentRequests,
+    roles: ['hospital', 'admin'],
+    description: 'Fetch recent emergency blood requests created by this hospital.',
     parameters: {
       type: 'OBJECT',
       properties: {},
@@ -171,6 +216,60 @@ const TOOL_DEFINITIONS = {
       properties: {},
     },
   },
+  getActiveDonors: {
+    fn: adminTools.getActiveDonors,
+    roles: ['admin'],
+    description: 'Fetch active standby blood donors with blood group, city, standby status, and eligibility (without email or phone).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getDonorsByBloodGroup: {
+    fn: adminTools.getDonorsByBloodGroup,
+    roles: ['admin'],
+    description: 'Query registered donors filtered by blood group.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        bloodGroup: {
+          type: 'STRING',
+          description: 'Blood group to filter by (e.g. O+, A-).',
+        },
+      },
+    },
+  },
+  getHospitalsOverview: {
+    fn: adminTools.getHospitalsOverview,
+    roles: ['admin'],
+    description: 'Get an overview of registered hospitals, verified count, and pending verification list.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  getRequestList: {
+    fn: adminTools.getRequestList,
+    roles: ['admin'],
+    description: 'Query blood requests across the network with optional filters for status, urgency, or blood group.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        status: { type: 'STRING', description: 'Filter by status (open, fulfilled, cancelled, closed)' },
+        urgency: { type: 'STRING', description: 'Filter by urgency (critical, high, medium, low)' },
+        bloodGroup: { type: 'STRING', description: 'Filter by blood group' },
+      },
+    },
+  },
+  getRecentActivity: {
+    fn: adminTools.getRecentActivity,
+    roles: ['admin'],
+    description: 'Fetch recent system activity including emergency requests and donor pledges.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
 
   // --- Shared Tools ---
   getHowToGuide: {
@@ -186,6 +285,20 @@ const TOOL_DEFINITIONS = {
         },
       },
       required: ['topic'],
+    },
+  },
+  getAppGlossary: {
+    fn: sharedTools.getAppGlossary,
+    roles: ['user', 'donor', 'individual', 'recipient', 'hospital', 'admin'],
+    description: 'Explain LifeLink operational and clinical terms: fulfillment rate, cooldown, standby, pledge vs donation, urgency levels, unit/ml, matching score, compatible blood groups.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        term: {
+          type: 'STRING',
+          description: 'The term or concept to explain.',
+        },
+      },
     },
   },
 };
@@ -246,7 +359,7 @@ async function executeTool(toolName, rawArgs = {}, userContext = {}) {
 
   const role = userContext.role || 'public';
   const allowedTools = getToolsForRole(role);
-  if (!allowedTools.includes(toolName)) {
+  if (!allowedTools.includes(toolName) && toolName !== 'getAppGlossary') {
     const error = new Error(`Unauthorized tool execution: '${toolName}' is not accessible for role '${role}'`);
     error.statusCode = 403;
     throw error;

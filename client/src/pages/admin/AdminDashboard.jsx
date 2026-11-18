@@ -80,7 +80,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tabHeadingRef.current) {
-      tabHeadingRef.current.focus();
+      tabHeadingRef.current.focus({ preventScroll: true });
     }
   }, [activeTab]);
 
@@ -99,12 +99,13 @@ const AdminDashboard = () => {
   return (
     <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Header Banner */}
-      <div className="hero-glass-card relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-info/10 blur-3xl pointer-events-none" />
+      <div className="hero-glass-card hero-admin relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-accent-admin/10 blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight">
-              Admin <span className="gradient-text-brand">Command Center</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading tracking-tight flex items-center gap-2">
+              <span>Admin Command Center</span>
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-accent-admin shrink-0 shadow-sm" aria-hidden="true" />
             </h1>
             <Badge accountType="admin" />
           </div>
@@ -120,6 +121,7 @@ const AdminDashboard = () => {
         activeTab={activeTab}
         onChange={(id) => setTab(id)}
         layoutId="admin-dashboard-tabs"
+        accent="admin"
       />
 
       {/* TAB 1: OVERVIEW */}

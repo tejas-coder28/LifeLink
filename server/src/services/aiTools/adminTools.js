@@ -77,10 +77,179 @@ async function getRequestOverview(context) {
   };
 }
 
+/**
+ * Returns active standby donors across the platform.
+ * Protected: Admin role only.
+ * Privacy guard: Strips all email and phone fields.
+ */
+async function getActiveDonors(context, args = {}) {
+  const { DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
+  const DonorProfile = require('../../repositories/donorProfile.repository');
+
+  const donors = await DonorProfile.find({ isAvailable: true }).populate('user', 'name');
+  const totalActive = donors.length;
+
+  const breakdown = {};
+  donors.forEach((d) => {
+    const bg = d.bloodGroup || 'Unknown';
+    breakdown[bg] = (breakdown[bg] || 0) + 1;
+  });
+
+  const top10 = donors.slice(0, 10).map((d) => {
+    let isEligible = true;
+    let nextEligibleDate = 'Eligible today';
+    let lastDateStr = null;
+
+    if (d.lastDonationDate) {
+      const lastDate = new Date(d.lastDonationDate);
+      lastDateStr = lastDate.toISOString().split('T')[0];
+      const diffMs = Date.now() - lastDate.getTime();
+      const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.max(0, (DONATION_COOLDOWN_DAYS || 90) - daysSince);
+      isEligible = daysLeft === 0;
+      nextEligibleDate = isEligible
+        ? 'Eligible today'
+        : new Date(lastDate.getTime() + (DONATION_COOLDOWN_DAYS || 90) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+
+    return {
+      name: d.user?.name || 'Registered Donor',
+      bloodGroup: d.bloodGroup || 'O+',
+      city: d.address || 'New Delhi',
+      isAvailable: true,
+      standbyStatus: 'ACTIVE',
+      isEligible,
+      lastDonationDate: lastDateStr,
+      nextEligibleDate,
+      // PRIVACY: email and phone strictly excluded
+    };
+  });
+
+  return {
+    totalActive,
+    breakdown,
+    topDonors: top10,
+    hasMore: totalActive > 10,
+    moreCount: Math.max(0, totalActive - 10),
+  };
+}
+
+/**
+ * Returns donors grouped or filtered by blood group.
+ */
+async function getDonorsByBloodGroup(context, args = {}) {
+  const DonorProfile = require('../../repositories/donorProfile.repository');
+  const bg = (args.bloodGroup || '').toUpperCase().trim();
+  const filter = bg ? { bloodGroup: bg } : {};
+  const donors = await DonorProfile.find(filter).populate('user', 'name');
+
+  const availableCount = donors.filter((d) => d.isAvailable).length;
+  return {
+    bloodGroup: bg || 'All',
+    totalDonors: donors.length,
+    availableDonors: availableCount,
+    donors: donors.slice(0, 10).map((d) => ({
+      name: d.user?.name || 'Registered Donor',
+      bloodGroup: d.bloodGroup,
+      city: d.address || 'New Delhi',
+      isAvailable: !!d.isAvailable,
+    })),
+  };
+}
+
+/**
+ * Returns comprehensive overview of verified and pending hospitals.
+ */
+async function getHospitalsOverview(context) {
+  const Hospital = require('../../repositories/hospital.repository');
+  const hospitals = await Hospital.find().sort({ createdAt: -1 });
+  const verified = hospitals.filter((h) => h.isVerified);
+  const pending = hospitals.filter((h) => !h.isVerified);
+
+  return {
+    totalHospitals: hospitals.length,
+    verifiedCount: verified.length,
+    pendingCount: pending.length,
+    hospitals: hospitals.slice(0, 10).map((h) => ({
+      name: h.name,
+      isVerified: !!h.isVerified,
+      phone: h.phone || '',
+      city: h.address || 'New Delhi',
+    })),
+  };
+}
+
+/**
+ * Returns filtered list of blood requests across platform.
+ */
+async function getRequestList(context, args = {}) {
+  const BloodRequest = require('../../repositories/bloodRequest.repository');
+  const filter = {};
+  if (args.status && args.status !== 'All') filter.status = args.status;
+  if (args.urgency && args.urgency !== 'All') filter.urgency = args.urgency;
+  if (args.bloodGroup && args.bloodGroup !== 'All') filter.bloodGroup = args.bloodGroup;
+
+  const [requests, total] = await Promise.all([
+    BloodRequest.find(filter).sort({ createdAt: -1 }).limit(args.limit || 10).populate('targetHospital', 'name'),
+    BloodRequest.countDocuments(filter),
+  ]);
+
+  return {
+    totalMatching: total,
+    requests: requests.map((r) => ({
+      id: r._id.toString(),
+      patientName: r.patientName,
+      bloodGroup: r.bloodGroup,
+      unitsNeeded: r.unitsNeeded,
+      unitsFulfilled: r.unitsFulfilled || 0,
+      urgency: r.urgency,
+      status: r.status,
+      hospitalName: r.targetHospital?.name || 'Emergency Network',
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '',
+    })),
+  };
+}
+
+/**
+ * Returns platform recent activity (requests and donations).
+ */
+async function getRecentActivity(context) {
+  const BloodRequest = require('../../repositories/bloodRequest.repository');
+  const Donation = require('../../repositories/donation.repository');
+
+  const [recentRequests, recentDonations] = await Promise.all([
+    BloodRequest.find().sort({ createdAt: -1 }).limit(5).populate('targetHospital', 'name'),
+    Donation.find().sort({ createdAt: -1 }).limit(5).populate('donor', 'name').populate('request', 'patientName bloodGroup'),
+  ]);
+
+  return {
+    recentRequests: recentRequests.map((r) => ({
+      type: 'request',
+      id: r._id.toString(),
+      title: `${r.bloodGroup} for ${r.patientName}`,
+      status: r.status,
+      date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '',
+    })),
+    recentPledges: recentDonations.map((d) => ({
+      type: 'pledge',
+      donorName: d.donor?.name || 'Anonymous',
+      patientName: d.request?.patientName || 'Emergency Patient',
+      status: d.status,
+      units: d.unitsDonated || 1,
+      date: d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '',
+    })),
+  };
+}
+
 module.exports = {
   getPlatformStats,
   getPendingHospitals,
   getShortageAlerts,
   getRequestOverview,
+  getActiveDonors,
+  getDonorsByBloodGroup,
+  getHospitalsOverview,
+  getRequestList,
+  getRecentActivity,
 };
 

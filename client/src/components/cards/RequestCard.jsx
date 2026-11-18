@@ -25,14 +25,18 @@ import { canDonate } from '../../utils/bloodCompatibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
 import { formatStatusLabel } from '../../utils/statusHelper';
+import { formatDate, formatTime, formatDateTime } from '../../utils/dateFormatter';
 
 const RequestCard = ({
   request,
   donorBloodGroup,
   isDonorCard = false,
+  isProfileIncomplete = false,
+  disabledReason = '',
   currentStock,
   onSelect,
   onPledge,
+  hasPendingPledge = false,
   isPledging = false,
   isPledged = false,
   pledgedAmount,
@@ -116,9 +120,9 @@ const RequestCard = ({
   const matchedCount = request.matchedDonorsCount;
   const notes = request.notes;
   const dateStr = request.createdAt
-    ? new Date(request.createdAt).toLocaleDateString()
+    ? formatDate(request.createdAt)
     : request.requiredByDate
-    ? `Needed: ${new Date(request.requiredByDate).toLocaleDateString()}`
+    ? `Needed: ${formatDate(request.requiredByDate)}`
     : 'Active Broadcast';
 
   const isCritical = urgency === 'critical';
@@ -149,7 +153,7 @@ const RequestCard = ({
                 {request.isEdited && (
                   <span
                     className="text-[10px] font-bold text-muted bg-surface/80 px-2 py-0.5 rounded-md border border-hairline inline-flex items-center gap-1"
-                    title={request.lastEditedAt ? `Last edited: ${new Date(request.lastEditedAt).toLocaleString()}` : 'Edited'}
+                    title={request.lastEditedAt ? `Last edited: ${formatDateTime(request.lastEditedAt)}` : 'Edited'}
                   >
                     <span>Edited</span>
                   </span>
@@ -358,7 +362,7 @@ const RequestCard = ({
                 const donorName = p.donor?.name || 'Anonymous Donor';
                 const donorBlood = p.donorProfile?.bloodGroup || p.donor?.bloodGroup || request.bloodGroup;
                 const pledgedTime = p.createdAt
-                  ? new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' · ' + new Date(p.createdAt).toLocaleDateString()
+                  ? formatDateTime(p.createdAt)
                   : '';
                 const isActionLoading = actionInProgressId === p._id;
 
@@ -529,22 +533,34 @@ const RequestCard = ({
                   </button>
                 )}
               </div>
+            ) : hasPendingPledge ? (
+              <div className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-surface text-muted border border-hairline font-bold select-none">
+                <span>You have a pending pledge</span>
+              </div>
             ) : onPledge ? (
               <button
                 type="button"
-                onClick={() => isCompatible && onPledge(request._id || request.id)}
-                disabled={isPledging || !isCompatible}
-                title={!isCompatible ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}` : ''}
+                onClick={() => isCompatible && !isProfileIncomplete && onPledge(request._id || request.id)}
+                disabled={isPledging || !isCompatible || isProfileIncomplete}
+                title={
+                  isProfileIncomplete
+                    ? (disabledReason || 'Please complete your donor profile to pledge blood.')
+                    : !isCompatible
+                    ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}`
+                    : ''
+                }
                 className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all ${
-                  !isCompatible
+                  !isCompatible || isProfileIncomplete
                     ? 'bg-surface text-muted cursor-not-allowed border border-hairline shadow-none'
                     : 'btn-primary'
                 }`}
               >
-                <Heart className={`w-3.5 h-3.5 ${!isCompatible ? 'text-muted' : 'fill-white'}`} />
+                <Heart className={`w-3.5 h-3.5 ${!isCompatible || isProfileIncomplete ? 'text-muted' : 'fill-white'}`} />
                 <span>
                   {isPledging
                     ? 'Pledging...'
+                    : isProfileIncomplete
+                    ? 'Complete profile to pledge'
                     : !isCompatible
                     ? 'Not compatible with your blood group'
                     : pledgeText}
