@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { GlobalBeamsCanvas } from './components/ui/global-beams-canvas';
 
 // Router Wrappers
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -113,6 +114,7 @@ function App() {
                 style={{ contain: 'strict' }}
                 aria-hidden="true"
               >
+                <GlobalBeamsCanvas />
                 <div className="bg-noise" />
                 <div className="bg-vignette" />
                 <div className="bg-orb bg-orb-1" />

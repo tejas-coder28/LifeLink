@@ -35,7 +35,7 @@ function getAiConfig() {
   // Allow AI_MODEL to override only the primary model in the chain
   const primaryOverride = process.env.AI_MODEL;
   const modelChain =
-    primaryOverride && primaryOverride !== 'gemini-2.5-flash'
+    primaryOverride && primaryOverride !== 'gemini-3.8-flash'
       ? [primaryOverride, ...MODEL_CHAIN.filter((m) => m !== primaryOverride)]
       : [...MODEL_CHAIN];
 
