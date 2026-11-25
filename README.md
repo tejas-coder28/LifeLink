@@ -4,12 +4,12 @@
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-352_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO_Only-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-369_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
-LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
+LifeLink is an emergency response web application powered by **MongoDB (Mongoose)** and **Express.js / React**, using **Firebase Auth strictly for Google Sign-In**. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
 
 > [!WARNING]
 > **Security Note:** Real credentials and `.env` files are never committed to GitHub. Copy `.env.example` templates to `.env` in both `server/` and `client/` directories and configure your credentials locally.
@@ -25,7 +25,7 @@ LifeLink is an emergency response web application powered by **Google Cloud Fire
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
 - 💎 **Liquid Glass & Spatial UI**: Apple-inspired translucent glass aesthetic with 5 spatial elevation tiers, 4 harmonic drifting atmospheric orbs, dynamic refraction filters, and full light/dark mode support.
 - 📊 **AI Insights & Platform Analytics**: Administrative dashboard with emergency response time indicators, platform health metrics, shortage prediction alerts, and an interactive AI Chatbot assistant.
-- 🧪 **Comprehensive Automated Testing & QA**: 352 automated Jest + Supertest backend tests (25 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 🧪 **Comprehensive Automated Testing & QA**: 369 automated Jest + Supertest backend tests (30 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
 
 ---
 
@@ -88,10 +88,10 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 | Layer | Technologies |
 |---|---|
 | **Frontend** | React 18, Vite 5, Tailwind CSS 3, Framer Motion, Lucide Icons, Recharts, Axios |
-| **Backend** | Node.js, Express.js 4, `firebase-admin` 14, JWT, bcryptjs, Zod validation |
-| **Database & Cloud** | Google Cloud Firestore (Uniform Repository Architecture), Firebase Auth |
+| **Backend** | Node.js, Express.js 4, Mongoose 9, `firebase-admin` 14 (Google SSO only), JWT, bcryptjs, Zod validation |
+| **Database & Cloud** | MongoDB + Mongoose (Uniform Repository Architecture, replica-set transactions) |
 | **Authentication** | Custom JWT + bcryptjs & Google Login (Firebase Auth ID Token verification) |
-| **Testing & QA** | Jest, Supertest, Playwright, `@axe-core/playwright` (333 automated tests) |
+| **Testing & QA** | Jest, Supertest, `mongodb-memory-server`, Playwright, `@axe-core/playwright` (369 automated tests) |
 
 ---
 
@@ -110,8 +110,8 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 
 ## 🗄️ Data Architecture & Lifecycles
 
-LifeLink pairs **Google Cloud Firestore** (`lifelink-f6f3b`) with Firebase Authentication, signed 30-day JWT sessions, and read-only AI tools:
-- **Persistence**: Firestore collections (`users`, `emails`, `donorProfiles`, `hospitals`, `bloodRequests`, `donations`, `notifications`, `aiInsights`, `inventoryTransactions`, `loginAuditLogs`).
+LifeLink pairs **MongoDB** (`lifelink` database with Mongoose schemas & replica-set transactions) with Firebase Authentication (**Google Sign-In only**), signed 30-day JWT sessions, and read-only AI tools:
+- **Persistence**: 11 MongoDB collections (`users`, `donorprofiles`, `hospitals`, `bloodrequests`, `donations`, `inventorytransactions`, `donorrequestpings`, `notifications`, `aiinsights`, `loginlogs`, `audit_logs`).
 - **Security & Privacy**: Passwords hashed with `bcryptjs` (10 rounds); donor contact details (phone, email) strictly masked from public and AI model responses.
 - **AI Mesh**: Google Gemini operates exclusively via read-only function tools; conversation history lives ephemerally in React client memory.
 - **Detailed Specification & Lifecycle Diagrams**: See [docs/data-model.md](docs/data-model.md) for full collection schemas, the request state machine, and the donor pledge sequence diagram.
@@ -122,7 +122,8 @@ LifeLink pairs **Google Cloud Firestore** (`lifelink-f6f3b`) with Firebase Authe
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18.0.0 or higher) and `npm`
-- A [Firebase Project](https://console.firebase.google.com/) with **Cloud Firestore** and **Firebase Authentication** (Email/Password & Google Provider) enabled
+- A **MongoDB** deployment configured as a replica set (MongoDB Atlas or a local `mongod` replica set for multi-document ACID transactions)
+- A [Firebase Project](https://console.firebase.google.com/) with **Firebase Authentication (Google Provider)** enabled *(used exclusively for Google Sign-In ID token verification)*
 
 ---
 
@@ -163,15 +164,17 @@ Copy `server/.env.example` to `server/.env`:
 cp server/.env.example server/.env
 ```
 
-Generate a Firebase Service Account key:
+Generate a Firebase Service Account key (for Google Sign-In verification only):
 1. In the [Firebase Console](https://console.firebase.google.com/), navigate to **Project Settings** > **Service accounts**.
 2. Click **Generate new private key** and download the resulting JSON file.
-3. Save the JSON file securely (e.g. `server/service-account.json` — already included in `.gitignore`).
+3. Save the JSON file securely (e.g. `server/serviceAccountKey.json` — already included in `.gitignore`).
 4. Configure `server/.env`:
 ```env
 PORT=5000
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/lifelink?retryWrites=true&w=majority
+MONGODB_DB_NAME=lifelink
 JWT_SECRET=your_super_secret_jwt_key
-FIREBASE_SERVICE_ACCOUNT_PATH=./service-account.json
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
 NODE_ENV=development
 ```
 
@@ -194,7 +197,21 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 ---
 
-### 4. Database Seeding & Health Check
+### 4. Indexes, Seeding & Health Check
+
+Synchronize MongoDB indexes (unique constraints, 2dsphere geo indexes, and TTL indexes):
+```bash
+npm run indexes:sync --prefix server
+```
+
+Seed initial demo accounts and inventory stock:
+```bash
+# From root
+npm run seed
+
+# Or to reset and re-seed clean data
+npm run seed:reset
+```
 
 Verify backend health:
 ```bash
@@ -205,20 +222,12 @@ Visit `GET http://localhost:5000/api/health` to confirm operational status:
 ```json
 {
   "success": true,
-  "status": "operational",
-  "dbType": "firestore",
+  "status": "connected",
+  "dbType": "mongodb",
+  "dbName": "lifelink",
   "projectId": "your-firebase-project",
   "timestamp": "..."
 }
-```
-
-Seed initial demo accounts and inventory stock:
-```bash
-# From root
-npm run seed
-
-# Or to reset and re-seed clean data
-npm run seed:reset
 ```
 
 ---
@@ -256,14 +265,14 @@ Open your browser at **[http://localhost:5180](http://localhost:5180)**.
 
 LifeLink includes a rigorous automated testing and accessibility assurance suite:
 
-### Backend Automated Tests (Jest + Supertest)
+### Backend Automated Tests (Jest + Supertest + MongoMemoryReplSet)
 ```bash
-# Run 333 automated backend tests
+# Run 369 automated backend tests across 30 suites
 cd server
 npm test
 ```
-- **23 Test Suites / 333 Tests**: 100% pass rate.
-- Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, transaction integrity, rate limiting, and role guards.
+- **30 Test Suites / 369 Tests**: 100% pass rate against `mongodb-memory-server` replica set.
+- Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, multi-document ACID transaction integrity, unique pledge constraints, DB failure 503 guards, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit
 ```bash
@@ -314,7 +323,7 @@ Seeded automatically by `npm run seed`:
 | `/api/analytics` | `GET` | `admin` | Aggregate platform donation metrics and trends |
 | `/api/ai/insights` | `GET` | `admin` | Predictive regional blood supply insights |
 | `/api/ai/chat` | `POST` | Public / Auth | Role-aware, data-aware AI Assistant powered by Google Gemini (strictly read-only) |
-| `/api/health` | `GET` | Public | Backend health check and Firestore connection status |
+| `/api/health` | `GET` | Public | Backend health check and MongoDB connection status |
 
 ---
 
@@ -448,27 +457,30 @@ LifeLink/
 │   ├── vite.config.js               # Vite server configuration & API proxy
 │   └── .env.example
 ├── server/                          # Express API backend (Port 5000)
+│   ├── scripts/
+│   │   └── syncIndexes.js           # Synchronize Mongoose schema & TTL/geo indexes
 │   ├── src/
-│   │   ├── config/                  # Firebase Admin & Firestore initialization
+│   │   ├── config/                  # MongoDB connection (mongo.js) & Firebase Auth (Google SSO)
 │   │   ├── controllers/             # Express route handler controllers
 │   │   ├── middleware/              # JWT Auth, RoleGuard, Zod Validation, RateLimiter
-│   │   ├── repositories/            # Google Cloud Firestore Uniform Repository layer
+│   │   ├── models/                  # 11 Mongoose schemas, indexes, and virtual JSON transforms
+│   │   ├── repositories/            # MongoDB Mongoose Uniform Repository layer (.lean() + sessions)
 │   │   ├── routes/                  # Express API routers
-│   │   ├── services/                # Domain logic, matching engine, atomic transactions
-│   │   ├── utils/                   # ABO/Rh compatibility, geo math, response helpers
+│   │   ├── services/                # Domain logic, matching engine, MongoDB ACID transactions
+│   │   ├── utils/                   # ABO/Rh compatibility, geo math, response & index helpers
 │   │   ├── validations/             # Zod input validation schemas
-│   │   ├── app.js                   # Express application setup
+│   │   ├── app.js                   # Express application setup & Mongo availability 503 guard
 │   │   ├── index.js                 # Server entry point
-│   │   └── seed.js                  # Database seed and reset script
-│   ├── tests/                       # Automated Jest + Supertest suites (333 tests)
+│   │   └── seed.js                  # MongoDB seed and reset script
+│   ├── tests/                       # Automated Jest + Supertest + MongoMemoryReplSet suites (369 tests)
 │   └── .env.example
 ├── docs/                            # Documentation
+│   ├── data-model.md                # MongoDB collections, indexes, and domain lifecycles
 │   ├── design-system.md             # Liquid Glass & Spatial UI specification
 │   └── ui-audit.md                  # Comprehensive UI inventory and audit
 ├── scripts/                         # QA & Verification Tools
 │   ├── check-contrast.js            # Automated WCAG 2.1 AA/AAA token contrast checker
 │   └── audit-pages.js               # Playwright + axe-core full-route auditor
-├── firestore.indexes.json           # Composite Firestore database indexes
 ├── package.json                     # Monorepo management scripts
 └── README.md
 ```
