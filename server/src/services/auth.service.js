@@ -3,6 +3,7 @@ const User = require('../repositories/user.repository');
 const DonorProfile = require('../repositories/donorProfile.repository');
 const Hospital = require('../repositories/hospital.repository');
 const { JWT_SECRET } = require('../middleware/auth.middleware');
+const { withTransaction } = require('../config/mongo');
 
 const generateToken = (id, accountType) => {
   return jwt.sign({ id, accountType }, JWT_SECRET, {
@@ -19,7 +20,6 @@ const registerUser = async (userData) => {
     throw new Error('User already exists with this email address');
   }
 
-  // Support legacy role input mapping
   let accountType = reqAccountType;
   if (!accountType) {
     if (role === 'hospital') accountType = 'hospital';
@@ -27,57 +27,67 @@ const registerUser = async (userData) => {
   }
 
   // Security guard: admin accounts can ONLY be created by the seed script.
-  // Block any attempt to register as admin via the API.
   if (accountType === 'admin') {
-    throw new Error("Admin accounts cannot be created via public registration.");
+    throw new Error('Admin accounts cannot be created via public registration.');
   }
 
-  // Atomically create user with unique email transaction
-  const user = await User.create({
-    name,
-    email: normalizedEmail,
-    password,
-    accountType: accountType || 'user',
-    phone: phone || '',
+  const createdUser = await withTransaction(async (session) => {
+    let user = await User.create(
+      {
+        name,
+        email: normalizedEmail,
+        password,
+        accountType: accountType || 'user',
+        phone: phone || '',
+      },
+      session
+    );
+
+    if (user.accountType === 'user') {
+      await DonorProfile.create(
+        {
+          user: user._id,
+          bloodGroup: bloodGroup || 'O+',
+          bloodGroupConfirmed: Boolean(bloodGroup),
+          contactNumber: user.phone || '',
+          location: {
+            type: 'Point',
+            coordinates: [77.2090, 28.6139],
+          },
+        },
+        session
+      );
+    } else if (user.accountType === 'hospital') {
+      const hospital = await Hospital.create(
+        {
+          user: user._id,
+          name: `${user.name} Medical Center`,
+          phone: user.phone || '',
+          location: {
+            type: 'Point',
+            coordinates: [77.2090, 28.6139],
+          },
+        },
+        session
+      );
+      user = await User.findByIdAndUpdate(user._id, { hospitalId: hospital._id }, {}, session);
+    }
+
+    return user;
   });
 
-  // Automatically create linked domain entity based on accountType
-  if (user.accountType === 'user') {
-    await DonorProfile.create({
-      user: user._id,
-      bloodGroup: bloodGroup || 'O+',
-      bloodGroupConfirmed: Boolean(bloodGroup),
-      contactNumber: user.phone || '',
-      location: {
-        type: 'Point',
-        coordinates: [77.2090, 28.6139],
-      },
-    });
-  } else if (user.accountType === 'hospital') {
-    const hospital = await Hospital.create({
-      user: user._id,
-      name: `${user.name} Medical Center`,
-      phone: user.phone || '',
-      location: {
-        type: 'Point',
-        coordinates: [77.2090, 28.6139],
-      },
-    });
-    user.hospitalId = hospital._id;
-    await user.save();
-  }
-
-  const token = generateToken(user._id, user.accountType);
+  const token = generateToken(createdUser._id, createdUser.accountType);
 
   return {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    accountType: user.accountType,
-    hospitalId: user.hospitalId,
-    role: user.accountType, // Backwards compatibility
-    phone: user.phone,
-    bloodGroup: user.accountType === 'user' ? (bloodGroup || 'O+') : undefined,
+    _id: createdUser._id,
+    id: createdUser._id,
+    name: createdUser.name,
+    email: createdUser.email,
+    accountType: createdUser.accountType,
+    hospitalId: createdUser.hospitalId,
+    role: createdUser.accountType,
+    phone: createdUser.phone,
+    bloodGroup: createdUser.accountType === 'user' ? (bloodGroup || 'O+') : undefined,
     token,
   };
 };
@@ -101,17 +111,18 @@ const loginUser = async ({ email, password }) => {
   try {
     const LoginLog = require('../repositories/loginLog.repository');
     await LoginLog.recordLogin(user._id, user.email);
-  } catch (logErr) {
+  } catch (_) {
     // Non-blocking log recording
   }
 
   return {
     _id: user._id,
+    id: user._id,
     name: user.name,
     email: user.email,
     accountType: user.accountType,
     hospitalId: user.hospitalId,
-    role: user.accountType, // Backwards compatibility
+    role: user.accountType,
     phone: user.phone,
     bloodGroup,
     token,
@@ -138,10 +149,10 @@ const getCurrentUser = async (userId) => {
 };
 
 /**
- * Google Login via Firebase Auth ID token verification.
+ * Google Login via Firebase Auth ID token verification + MongoDB user store.
  * Existing email logs in unchanged.
  * New email returns needsProfile if bloodGroup not provided,
- * then creates a "user" (never admin or hospital) with donor profile.
+ * then creates a "user" (never admin or hospital) with donor profile atomically.
  */
 const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   const crypto = require('crypto');
@@ -155,8 +166,12 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   } catch (err) {
     const errClass = err.name || err.code || 'TokenVerificationError';
     console.error(`[GoogleAuth] Error: ${errClass}`);
-    const error = new Error('Invalid or expired Google authentication token. Please try again.');
-    error.statusCode = 401;
+    const error = new Error(
+      err.statusCode === 503
+        ? err.message
+        : 'Invalid or expired Google authentication token. Please try again.'
+    );
+    error.statusCode = err.statusCode || 401;
     throw error;
   }
 
@@ -181,7 +196,6 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   let user = await User.findByEmail(email);
 
   if (user) {
-    // Existing user: disallow Google sign-in for hospital or admin accounts
     if (user.accountType === 'hospital' || user.accountType === 'admin') {
       console.error('[GoogleAuth] Error: AccountTypeNotAllowedError');
       const error = new Error(`Account type '${user.accountType}' is not permitted to sign in via Google. Please use email and password.`);
@@ -190,7 +204,6 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
       throw error;
     }
 
-    // Existing donor/user logs in unchanged
     let userBloodGroup = undefined;
     if (user.accountType === 'user') {
       const donorProfile = await DonorProfile.findByUserId(user._id);
@@ -202,12 +215,13 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
     try {
       const LoginLog = require('../repositories/loginLog.repository');
       await LoginLog.recordLogin(user._id, user.email);
-    } catch (logErr) {
-      // Non-blocking log recording
+    } catch (_) {
+      // Non-blocking
     }
 
     return {
       _id: user._id,
+      id: user._id,
       name: user.name,
       email: user.email,
       accountType: user.accountType,
@@ -219,7 +233,6 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
     };
   }
 
-  // New user: requires bloodGroup before creating account
   if (!bloodGroup) {
     return {
       needsProfile: true,
@@ -237,26 +250,33 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   const generatedPassword = crypto.randomBytes(24).toString('hex');
   const userName = decoded.name || email.split('@')[0];
 
-  // Strictly create as accountType 'user' (never admin or hospital)
-  // Hospital/admin elevation is impossible via Google sign-in
-  user = await User.create({
-    name: userName,
-    email,
-    password: generatedPassword,
-    accountType: 'user',
-    phone: phone || '',
-  });
+  user = await withTransaction(async (session) => {
+    const created = await User.create(
+      {
+        name: userName,
+        email,
+        password: generatedPassword,
+        accountType: 'user',
+        phone: phone || '',
+      },
+      session
+    );
 
-  await DonorProfile.create({
-    user: user._id,
-    bloodGroup,
-    bloodGroupConfirmed: Boolean(bloodGroup),
-    contactNumber: phone || '',
-    profileComplete: false, // First-time Google user requires one-time full profile completion step
-    location: {
-      type: 'Point',
-      coordinates: [77.2090, 28.6139],
-    },
+    await DonorProfile.create(
+      {
+        user: created._id,
+        bloodGroup,
+        bloodGroupConfirmed: true,
+        contactNumber: phone || '',
+        location: {
+          type: 'Point',
+          coordinates: [77.2090, 28.6139],
+        },
+      },
+      session
+    );
+
+    return created;
   });
 
   const token = generateToken(user._id, user.accountType);
@@ -264,12 +284,13 @@ const loginWithGoogle = async ({ idToken, bloodGroup, phone }) => {
   try {
     const LoginLog = require('../repositories/loginLog.repository');
     await LoginLog.recordLogin(user._id, user.email);
-  } catch (logErr) {
-    // Non-blocking log recording
+  } catch (_) {
+    // Non-blocking
   }
 
   return {
     _id: user._id,
+    id: user._id,
     name: user.name,
     email: user.email,
     accountType: user.accountType,
@@ -285,6 +306,5 @@ module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
-  generateToken,
   loginWithGoogle,
 };

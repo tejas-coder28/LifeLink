@@ -1,121 +1,15 @@
 const path = require('path');
 const fs = require('fs');
+const { connectMongo, disconnectMongo, isMongoConnected, getDbName } = require('./mongo');
 
-let initialized = false;
-let db = null;
+let authInitialized = false;
 let auth = null;
 let activeProjectId = '';
 
 /**
- * Initializes firebase-admin strictly with Firebase credentials for real project.
- * Restricts emulator strictly to automated tests (NODE_ENV === 'test').
- * Exits with fatal error (process.exit(1)) if credentials missing or unreachable in normal runtime.
- */
-function initFirebase() {
-  if (initialized && db && auth) {
-    return { db, auth, projectId: activeProjectId };
-  }
-
-  // 1. Automated Test Environment ONLY: isolated from real cloud project
-  if (process.env.NODE_ENV === 'test') {
-    if (process.env.FIRESTORE_EMULATOR_HOST) {
-      const admin = require('firebase-admin');
-      const { getFirestore } = require('firebase-admin/firestore');
-      const { getAuth } = require('firebase-admin/auth');
-
-      const existingApps = admin.getApps();
-      activeProjectId = process.env.FIREBASE_PROJECT_ID || 'lifelink-test-emulator';
-      const app = existingApps.length ? existingApps[0] : admin.initializeApp({ projectId: activeProjectId });
-      db = getFirestore(app);
-      auth = getAuth(app);
-      initialized = true;
-      console.log(`[Firebase Test] Connected to Firestore Emulator (Project: ${activeProjectId})`);
-      return { admin, db, auth, projectId: activeProjectId };
-    }
-
-    // Isolated test double engine for tests - tests cannot write to the real cloud project
-    const { memoryFirestoreInstance, memoryAuthInstance } = require('../../tests/helpers/inMemoryFirestore');
-    activeProjectId = 'lifelink-test-isolated';
-    db = memoryFirestoreInstance;
-    auth = memoryAuthInstance;
-    initialized = true;
-    return { admin: null, db, auth, projectId: activeProjectId };
-  }
-
-  // 2. Runtime (npm start / npm run dev / production):
-  // Disallow emulator in runtime - must connect strictly to real Firebase cloud project
-  const admin = require('firebase-admin');
-  const { getFirestore } = require('firebase-admin/firestore');
-  const { getAuth } = require('firebase-admin/auth');
-
-  const existingApps = admin.getApps();
-  if (initialized && existingApps.length > 0) {
-    return { admin, db, auth, projectId: activeProjectId };
-  }
-
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  if (!serviceAccountPath) {
-    console.error('========================================================================');
-    console.error('❌ FATAL: Firebase credentials missing!');
-    console.error('FIREBASE_SERVICE_ACCOUNT_PATH is not set in environment variables.');
-    console.error('All data must be stored in Firestore on the real Firebase project.');
-    console.error('In-memory mode and silent fallbacks are disabled.');
-    console.error('Please configure FIREBASE_SERVICE_ACCOUNT_PATH in server/.env pointing to');
-    console.error('your Firebase service account JSON key file.');
-    console.error('========================================================================');
-    process.exit(1);
-  }
-
-  const candidatePaths = [
-    path.isAbsolute(serviceAccountPath) ? serviceAccountPath : path.resolve(process.cwd(), serviceAccountPath),
-    path.resolve(__dirname, '../../', serviceAccountPath),
-    path.resolve(__dirname, '../', serviceAccountPath),
-  ];
-  const resolvedPath = candidatePaths.find((p) => fs.existsSync(p)) || candidatePaths[0];
-
-  if (!fs.existsSync(resolvedPath)) {
-    console.error('========================================================================');
-    console.error(`❌ FATAL: Firebase service account file not found at: ${resolvedPath}`);
-    console.error('Please verify that the file exists and FIREBASE_SERVICE_ACCOUNT_PATH is correct.');
-    console.error('========================================================================');
-    process.exit(1);
-  }
-
-  let serviceAccount;
-  try {
-    const raw = fs.readFileSync(resolvedPath, 'utf8');
-    serviceAccount = JSON.parse(raw);
-  } catch (err) {
-    console.error('========================================================================');
-    console.error(`❌ FATAL: Failed to read/parse Firebase service account JSON: ${err.message}`);
-    console.error('========================================================================');
-    process.exit(1);
-  }
-
-  activeProjectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || 'lifelink-f6f3b';
-
-  let app;
-  if (!existingApps.length) {
-    app = admin.initializeApp({
-      credential: admin.cert(serviceAccount),
-    });
-  } else {
-    app = existingApps[0];
-  }
-
-  db = getFirestore(app);
-  auth = getAuth(app);
-  initialized = true;
-
-  console.log(`Firebase project: ${activeProjectId}`);
-  checkClientProjectId(activeProjectId);
-  return { admin, db, auth, projectId: activeProjectId };
-}
-
-/**
  * Validates that client and server Firebase project IDs align without logging any secrets.
  */
-function checkClientProjectId(activeProjectId) {
+function checkClientProjectId(projectId) {
   try {
     const candidatePaths = [
       path.resolve(__dirname, '../../../client/.env'),
@@ -140,47 +34,130 @@ function checkClientProjectId(activeProjectId) {
       }
     }
 
-    if (clientProjectId && clientProjectId !== activeProjectId) {
-      console.warn(`⚠️  [Firebase Warning] Client project (${clientProjectId}) does not match server project (${activeProjectId}). Google Sign-In will fail if projects differ.`);
+    if (clientProjectId && projectId && clientProjectId !== projectId) {
+      console.warn(`⚠️  [Firebase Auth Warning] Client project (${clientProjectId}) does not match server project (${projectId}). Google Sign-In will fail if projects differ.`);
     }
-  } catch (e) {
+  } catch (_) {
     // Non-blocking diagnostic
   }
 }
 
 /**
- * Connect to Firestore and verify reachability.
- * Exits with clear error if Firestore is unreachable.
+ * Initializes firebase-admin strictly for Google Sign-In (ID token verification).
+ * Firestore initialization is completely removed; all application data lives in MongoDB.
  */
-const connectDB = async () => {
-  const result = initFirebase();
-  if (process.env.NODE_ENV !== 'test') {
-    try {
-      // Fast probe to ensure Firestore cloud connection is live and reachable
-      await result.db.collection('_health').limit(1).get();
-    } catch (err) {
-      console.error('========================================================================');
-      console.error(`❌ FATAL: Firestore is unreachable or credentials unauthorized: ${err.message}`);
-      console.error('Please check your Firebase connection and service account permissions.');
-      console.error('========================================================================');
-      process.exit(1);
-    }
+function initFirebaseAuth() {
+  if (authInitialized && auth) {
+    return { auth, projectId: activeProjectId };
   }
-  return result.db;
+
+  if (process.env.NODE_ENV === 'test') {
+    const { memoryAuthInstance } = require('../../tests/helpers/firebaseAuthMock');
+    activeProjectId = 'lifelink-test-isolated';
+    auth = memoryAuthInstance;
+    authInitialized = true;
+    return { admin: null, auth, projectId: activeProjectId };
+  }
+
+  const admin = require('firebase-admin');
+  const { getAuth } = require('firebase-admin/auth');
+
+  const existingApps = admin.getApps();
+  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+
+  if (!serviceAccountPath) {
+    activeProjectId = process.env.FIREBASE_PROJECT_ID || '';
+    if (activeProjectId && !existingApps.length) {
+      const app = admin.initializeApp({ projectId: activeProjectId });
+      auth = getAuth(app);
+      authInitialized = true;
+      checkClientProjectId(activeProjectId);
+      return { admin, auth, projectId: activeProjectId };
+    }
+    if (existingApps.length > 0) {
+      auth = getAuth(existingApps[0]);
+      authInitialized = true;
+      return { admin, auth, projectId: activeProjectId };
+    }
+    console.warn('⚠️  [Firebase Auth] FIREBASE_SERVICE_ACCOUNT_PATH not configured. Google Sign-In ID token verification will reject tokens until configured.');
+    auth = {
+      verifyIdToken: async () => {
+        const err = new Error('Google Sign-In is not configured on the server.');
+        err.statusCode = 503;
+        throw err;
+      },
+    };
+    authInitialized = true;
+    return { admin, auth, projectId: activeProjectId };
+  }
+
+  const candidatePaths = [
+    path.isAbsolute(serviceAccountPath) ? serviceAccountPath : path.resolve(process.cwd(), serviceAccountPath),
+    path.resolve(__dirname, '../../', serviceAccountPath),
+    path.resolve(__dirname, '../', serviceAccountPath),
+  ];
+  const resolvedPath = candidatePaths.find((p) => fs.existsSync(p)) || candidatePaths[0];
+
+  if (!fs.existsSync(resolvedPath)) {
+    console.warn(`⚠️  [Firebase Auth] Service account file not found at ${resolvedPath}. Google Sign-In disabled until path is valid.`);
+    activeProjectId = process.env.FIREBASE_PROJECT_ID || '';
+    auth = {
+      verifyIdToken: async () => {
+        const err = new Error('Google Sign-In credentials missing on server.');
+        err.statusCode = 503;
+        throw err;
+      },
+    };
+    authInitialized = true;
+    return { admin, auth, projectId: activeProjectId };
+  }
+
+  let serviceAccount;
+  try {
+    const raw = fs.readFileSync(resolvedPath, 'utf8');
+    serviceAccount = JSON.parse(raw);
+  } catch (err) {
+    console.error(`❌ [Firebase Auth] Failed to parse service account JSON: ${err.message}`);
+    throw err;
+  }
+
+  activeProjectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || '';
+
+  const app = existingApps.length
+    ? existingApps[0]
+    : admin.initializeApp({
+        credential: admin.cert(serviceAccount),
+      });
+
+  auth = getAuth(app);
+  authInitialized = true;
+
+  if (activeProjectId) {
+    checkClientProjectId(activeProjectId);
+  }
+
+  return { admin, auth, projectId: activeProjectId };
+}
+
+/**
+ * Primary database connection entry point (MongoDB) + Firebase Auth setup.
+ */
+const connectDB = async (uriOverride = null, options = {}) => {
+  initFirebaseAuth();
+  return await connectMongo(uriOverride, options);
 };
 
 module.exports = connectDB;
-module.exports.initFirebase = initFirebase;
-module.exports.getDb = () => {
-  if (!db) initFirebase();
-  return db;
-};
+module.exports.connectDB = connectDB;
+module.exports.connectMongo = connectMongo;
+module.exports.disconnectMongo = disconnectMongo;
+module.exports.isMongoConnected = isMongoConnected;
+module.exports.getDbName = getDbName;
+module.exports.initFirebaseAuth = initFirebaseAuth;
+module.exports.initFirebase = initFirebaseAuth;
 module.exports.getAuth = () => {
-  if (!auth) initFirebase();
+  if (!auth) initFirebaseAuth();
   return auth;
 };
-module.exports.getAdmin = () => {
-  const admin = require('firebase-admin');
-  return admin;
-};
+module.exports.getAdmin = () => require('firebase-admin');
 module.exports.getProjectId = () => activeProjectId;
