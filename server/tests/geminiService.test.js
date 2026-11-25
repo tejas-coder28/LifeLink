@@ -232,6 +232,14 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       }));
 
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const aiTools = require('../src/services/aiTools');
+      const toolSpy = jest.spyOn(aiTools, 'executeTool').mockResolvedValue({
+        totalActive: 0,
+        breakdown: {},
+        topDonors: [],
+        hasMore: false,
+        moreCount: 0,
+      });
 
       const res = await generateChatReply('How many donors are online?', [], {
         role: 'admin',
@@ -242,6 +250,7 @@ describe('Gemini Service & Fallback (Phase 4 & Refinements)', () => {
       // 4 models in chain → 4 attempts
       expect(mockGenerateContent).toHaveBeenCalledTimes(4);
 
+      toolSpy.mockRestore();
       warnSpy.mockRestore();
     });
 

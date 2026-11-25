@@ -880,7 +880,10 @@ const editRequest = async (requestId, callerUser, updateData = {}) => {
         const populated = await BloodRequest.findById(requestId)
           .populate('requester', 'name email phone')
           .populate('targetHospital', 'name phone address location');
-        await notifyMatchedDonorsForRequest(populated, { customMessage: notifMessage });
+        await notifyMatchedDonorsForRequest(populated, {
+          customMessage: notifMessage,
+          excludeRecipientIds: activePledges.map((p) => p.donor),
+        });
       } catch (err) {
         console.error('Failed to notify matched donors on edit:', err.message);
       }

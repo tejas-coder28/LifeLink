@@ -9,16 +9,16 @@
  * - Cancel conflict: if fulfilled donations exist -> 409, closeRequest works.
  * - Double cancel returns 409.
  * - Undo-create / delete: < 5 min & 0 pledges -> deleted; > 5 min or with pledges -> 400.
- * - Reads-before-writes Firestore transaction spy passes for cancel.
+ * - MongoDB transaction spy passes for cancel.
  * - AI Assistant tools and intent router exclude cancelled requests and provide cancel instructions.
  */
 
 require('./setup');
 
 const request = require('supertest');
+const mongoose = require('mongoose');
 const { connect, clearDatabase, disconnect } = require('./helpers/db');
 const { registerUser, registerHospital } = require('./helpers/auth');
-const { getDb } = require('../src/config/db');
 
 let app;
 let User;
@@ -571,8 +571,8 @@ describe('Blood Request Lifecycle: Edit, Cancel, Undo-Create & Close', () => {
     });
   });
 
-  describe('4. Firestore Reads-Before-Writes Spy for Cancel and Edit', () => {
-    test('Cancel transaction strictly follows read-then-write ordering', async () => {
+  describe('4. MongoDB Transaction Session Spy for Cancel', () => {
+    test('Cancel executes atomically inside a MongoDB session transaction', async () => {
       const hosp = await setupHospital();
       const donor = await setupDonor();
 
@@ -596,43 +596,19 @@ describe('Blood Request Lifecycle: Edit, Cancel, Undo-Create & Close', () => {
         status: 'pledged',
       });
 
-      const db = getDb();
-      const originalRunTransaction = db.runTransaction.bind(db);
+      const originalStartSession = mongoose.startSession.bind(mongoose);
+      let sessionStarted = false;
+      let transactionInvoked = false;
 
-      let writeOccurred = false;
-      let readAfterWriteDetected = false;
-
-      db.runTransaction = async (updateFunction) => {
-        return originalRunTransaction(async (transaction) => {
-          const originalGet = transaction.get.bind(transaction);
-          const originalSet = transaction.set.bind(transaction);
-          const originalUpdate = transaction.update.bind(transaction);
-          const originalDelete = transaction.delete.bind(transaction);
-
-          transaction.get = async (...args) => {
-            if (writeOccurred) {
-              readAfterWriteDetected = true;
-            }
-            return originalGet(...args);
-          };
-
-          transaction.set = (...args) => {
-            writeOccurred = true;
-            return originalSet(...args);
-          };
-
-          transaction.update = (...args) => {
-            writeOccurred = true;
-            return originalUpdate(...args);
-          };
-
-          transaction.delete = (...args) => {
-            writeOccurred = true;
-            return originalDelete(...args);
-          };
-
-          return updateFunction(transaction);
-        });
+      mongoose.startSession = async (...args) => {
+        sessionStarted = true;
+        const session = await originalStartSession(...args);
+        const origWithTx = session.withTransaction.bind(session);
+        session.withTransaction = async (fn, ...rest) => {
+          transactionInvoked = true;
+          return origWithTx(fn, ...rest);
+        };
+        return session;
       };
 
       try {
@@ -642,10 +618,10 @@ describe('Blood Request Lifecycle: Edit, Cancel, Undo-Create & Close', () => {
           .send({ reason: 'wrong_details' });
 
         expect(cancelRes.status).toBe(200);
-        expect(writeOccurred).toBe(true);
-        expect(readAfterWriteDetected).toBe(false);
+        expect(sessionStarted).toBe(true);
+        expect(transactionInvoked).toBe(true);
       } finally {
-        db.runTransaction = originalRunTransaction;
+        mongoose.startSession = originalStartSession;
       }
     });
   });

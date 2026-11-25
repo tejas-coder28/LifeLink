@@ -5,12 +5,16 @@ const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibili
 /**
  * Creates in-app notifications for matched donors when a donor blood request opens
  */
-const notifyMatchedDonorsForRequest = async (bloodRequest) => {
+const notifyMatchedDonorsForRequest = async (bloodRequest, options = {}) => {
   if (!bloodRequest || !bloodRequest.bloodGroup) return { count: 0 };
 
   const requesterId = bloodRequest.requester?._id
     ? bloodRequest.requester._id.toString()
     : bloodRequest.requester?.toString();
+
+  const excludeSet = new Set(
+    (options.excludeRecipientIds || []).map((id) => (id && id._id ? id._id.toString() : id?.toString())).filter(Boolean)
+  );
 
   // Find candidate donors who are available
   const donors = await DonorProfile.find({ isAvailable: true }).populate('user', 'name email phone');
@@ -20,6 +24,7 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
     // Exclude requester from their own request
     const donorUserId = donor.user._id ? donor.user._id.toString() : donor.user.toString();
     if (requesterId && donorUserId === requesterId) return false;
+    if (excludeSet.has(donorUserId)) return false;
     // Compatibility check
     if (!canDonate(donor.bloodGroup, bloodRequest.bloodGroup)) return false;
     // Cooldown check (90 days)
@@ -32,11 +37,18 @@ const notifyMatchedDonorsForRequest = async (bloodRequest) => {
   });
 
   const units = bloodRequest.unitsFromDonors || bloodRequest.unitsNeeded;
+  const title = options.customMessage
+    ? `Blood Request Updated: ${bloodRequest.bloodGroup}`
+    : `🚨 Emergency Blood Request: ${bloodRequest.bloodGroup} Needed`;
+  const message =
+    options.customMessage ||
+    `Urgent request for ${bloodRequest.patientName} (${units} unit(s) needed, ${bloodRequest.urgency.toUpperCase()} urgency) at ${bloodRequest.address}.`;
+
   const notificationsToInsert = compatibleDonors.map(donor => ({
     recipient: donor.user._id || donor.user,
-    title: `🚨 Emergency Blood Request: ${bloodRequest.bloodGroup} Needed`,
-    message: `Urgent request for ${bloodRequest.patientName} (${units} unit(s) needed, ${bloodRequest.urgency.toUpperCase()} urgency) at ${bloodRequest.address}.`,
-    type: 'request_match',
+    title,
+    message,
+    type: options.customMessage ? 'status_update' : 'request_match',
     link: `/requests/${bloodRequest._id}`,
   }));
 

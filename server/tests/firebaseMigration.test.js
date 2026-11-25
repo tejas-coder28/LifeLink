@@ -39,15 +39,15 @@ afterAll(async () => {
   await disconnect();
 });
 
-describe('Firebase Firestore & Auth Verification Suite', () => {
+describe('MongoDB & Google Auth Verification Suite', () => {
   describe('1. Health Check Endpoint', () => {
-    test('GET /api/health returns operational status and dbType="firestore"', async () => {
+    test('GET /api/health returns operational status and dbType="mongodb"', async () => {
       const res = await request(app).get('/api/health');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.status).toBe('connected');
-      expect(res.body.dbType).toBe('firestore');
-      expect(res.body.projectId).toBeDefined();
+      expect(res.body.dbType).toBe('mongodb');
+      expect(res.body.dbName).toBeDefined();
       expect(res.body.timestamp).toBeDefined();
     });
   });

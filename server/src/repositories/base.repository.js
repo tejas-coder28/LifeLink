@@ -348,9 +348,15 @@ class BaseRepository {
       delete updateDoc.$set._id;
     }
 
+    const hasExplicitCreatedAt = Boolean(
+      (updates && updates.createdAt !== undefined) ||
+      (updateDoc.$set && updateDoc.$set.createdAt !== undefined)
+    );
+
     const opts = {
       returnDocument: options.new === false ? 'before' : (options.returnDocument || 'after'),
       runValidators: true,
+      ...(hasExplicitCreatedAt ? { timestamps: false, overwriteImmutable: true } : {}),
       ...options,
       ...(session ? { session } : {}),
     };
@@ -373,9 +379,15 @@ class BaseRepository {
       delete updateDoc.$set._id;
     }
 
+    const hasExplicitCreatedAt = Boolean(
+      (updates && updates.createdAt !== undefined) ||
+      (updateDoc.$set && updateDoc.$set.createdAt !== undefined)
+    );
+
     const opts = {
       returnDocument: options.new === false ? 'before' : (options.returnDocument || 'after'),
       runValidators: true,
+      ...(hasExplicitCreatedAt ? { timestamps: false, overwriteImmutable: true } : {}),
       ...options,
       ...(session ? { session } : {}),
     };
