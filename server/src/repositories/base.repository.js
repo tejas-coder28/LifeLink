@@ -1,75 +1,85 @@
-const { getDb } = require('../config/db');
+const mongoose = require('mongoose');
 
 /**
- * Normalizes Firestore document snapshots into plain JavaScript objects
- * matching Mongoose document ergonomics (_id, id, Date objects, save, toObject, toJSON).
+ * Recursively converts Mongoose ObjectIds to strings while preserving Date instances,
+ * and attaches `id` matching `_id` for stable API responses and deep links.
  */
-function normalizeDoc(docSnapshot, repo = null) {
-  if (!docSnapshot) return null;
-  const rawData = typeof docSnapshot.data === 'function' ? docSnapshot.data() : docSnapshot;
-  if (!rawData && typeof docSnapshot.data === 'function') return null;
-
-  const data = { ...rawData };
-  const docId = docSnapshot.id || data._id || data.id;
-
-  // Convert Firestore Timestamps to JavaScript Date instances
-  for (const [key, val] of Object.entries(data)) {
-    if (val && typeof val.toDate === 'function') {
-      data[key] = val.toDate();
-    } else if (val && typeof val === 'object' && !Array.isArray(val) && val._seconds !== undefined) {
-      data[key] = new Date(val._seconds * 1000 + (val._nanoseconds || 0) / 1e6);
+function normalizePlainValue(val) {
+  if (val === null || val === undefined) return val;
+  if (val instanceof Date) return val;
+  if (val instanceof mongoose.Types.ObjectId || (val && val._bsontype === 'ObjectId')) {
+    return val.toString();
+  }
+  if (Array.isArray(val)) {
+    return val.map(normalizePlainValue);
+  }
+  if (typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (k === '__v') continue;
+      out[k] = normalizePlainValue(v);
     }
+    if (out._id !== undefined && out.id === undefined) {
+      out.id = out._id.toString();
+    }
+    return out;
+  }
+  return val;
+}
+
+/**
+ * Normalizes a Mongoose document or lean object into a plain JS object
+ * with string `_id` and `id`, JavaScript `Date` instances, and ergonomic
+ * `save`, `populate`, `toObject`, `toJSON` helpers.
+ */
+function normalizeDoc(doc, repo = null) {
+  if (!doc) return null;
+  const raw = typeof doc.toObject === 'function' ? doc.toObject({ virtuals: true }) : { ...doc };
+  const data = normalizePlainValue(raw);
+
+  if (data._id !== undefined) {
+    data._id = data._id.toString();
+    data.id = data._id;
+  } else if (data.id !== undefined) {
+    data.id = data.id.toString();
+    data._id = data.id;
   }
 
-  // Ensure timestamps exist
-  if (!data.createdAt) data.createdAt = new Date();
-  if (!data.updatedAt) data.updatedAt = new Date();
-
-  // Mongoose backwards-compatible ID ergonomics
-  data.id = docId;
-  data._id = docId;
-
-  // If relational reference fields were saved as embedded populated maps/objects, normalize to string id
-  for (const f of ['targetHospital', 'hospital', 'requester', 'donor', 'user']) {
-    if (data[f] && typeof data[f] === 'object' && !Array.isArray(data[f]) && (data[f]._id || data[f].id)) {
-      data[f] = (data[f]._id || data[f].id).toString();
-    }
-  }
-
-  // Ergonomic helper methods
   Object.defineProperty(data, 'toObject', {
     value: function () {
-      const copy = { ...this };
-      return copy;
+      return { ...this };
     },
     enumerable: false,
     writable: true,
+    configurable: true,
   });
 
   Object.defineProperty(data, 'toJSON', {
     value: function () {
-      const copy = { ...this };
-      return copy;
+      return { ...this };
     },
     enumerable: false,
     writable: true,
+    configurable: true,
   });
 
   if (repo) {
     Object.defineProperty(data, 'save', {
-      value: async function () {
-        return await repo.findByIdAndUpdate(this._id, this);
+      value: async function (session = null) {
+        return await repo.findByIdAndUpdate(this._id, this, {}, session);
       },
       enumerable: false,
       writable: true,
+      configurable: true,
     });
 
     Object.defineProperty(data, 'populate', {
       value: async function (paths, select) {
-        return await repo.populateDoc(this, paths, select);
+        return await repo.populateDoc(this, select ? { path: paths, select } : paths);
       },
       enumerable: false,
       writable: true,
+      configurable: true,
     });
   }
 
@@ -77,21 +87,22 @@ function normalizeDoc(docSnapshot, repo = null) {
 }
 
 /**
- * Prepares data for writing to Firestore by removing internal ID fields.
+ * Strips internal helper methods and ensures foreign key references are plain IDs.
  */
-function toFirestoreData(data) {
+function toMongoData(data) {
+  if (!data || typeof data !== 'object') return {};
   const payload = { ...data };
-  delete payload._id;
-  delete payload.id;
   delete payload.save;
   delete payload.populate;
   delete payload.toObject;
   delete payload.toJSON;
   delete payload.matchPassword;
+  delete payload.id;
+  delete payload.__v;
 
-  // Guard against populated objects leaking into Firestore foreign key reference fields
-  for (const f of ['targetHospital', 'hospital', 'requester', 'donor', 'user']) {
-    if (payload[f] && typeof payload[f] === 'object' && !Array.isArray(payload[f]) && (payload[f]._id || payload[f].id)) {
+  // Guard against populated objects leaking into foreign key reference fields
+  for (const f of ['targetHospital', 'hospital', 'requester', 'donor', 'donorProfile', 'user', 'request', 'requestId', 'donorId', 'hospitalId', 'actor']) {
+    if (payload[f] && typeof payload[f] === 'object' && !Array.isArray(payload[f]) && !(payload[f] instanceof mongoose.Types.ObjectId) && (payload[f]._id || payload[f].id)) {
       payload[f] = (payload[f]._id || payload[f].id).toString();
     }
   }
@@ -99,19 +110,44 @@ function toFirestoreData(data) {
   return payload;
 }
 
-/**
- * Chainable QueryBuilder enabling Mongoose-like syntax:
- * repo.find(query).populate('requester').sort({ createdAt: -1 }).limit(10)
- */
+function isValidObjectId(val) {
+  if (!val) return false;
+  if (val instanceof mongoose.Types.ObjectId) return true;
+  if (typeof val === 'string') return /^[a-fA-F0-9]{24}$/.test(val);
+  if (typeof val === 'object' && val._id) return isValidObjectId(val._id);
+  return false;
+}
+
+function sanitizeFilter(filter = {}) {
+  if (!filter || typeof filter !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(filter)) {
+    if (v === undefined) continue;
+    if (k === '_id' && typeof v === 'string' && !isValidObjectId(v)) {
+      // Force empty match on invalid ObjectId string rather than throwing CastError
+      out._id = new mongoose.Types.ObjectId('000000000000000000000000');
+      continue;
+    }
+    if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof mongoose.Types.ObjectId) && (v._id || v.id)) {
+      out[k] = (v._id || v.id).toString();
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 class QueryBuilder {
-  constructor(repo, filter = {}, single = false) {
+  constructor(repo, filter = {}, single = false, options = {}) {
     this.repo = repo;
     this.filter = filter || {};
     this.single = single;
     this.populates = [];
     this.sortCriteria = null;
     this.limitCount = null;
+    this.skipCount = null;
     this.selectFields = null;
+    this.sessionObj = options.session || null;
   }
 
   populate(pathOrArray, select) {
@@ -126,7 +162,7 @@ class QueryBuilder {
     } else if (typeof pathOrArray === 'object' && pathOrArray !== null) {
       this.populates.push(pathOrArray);
     } else if (typeof pathOrArray === 'string') {
-      this.populates.push({ path: pathOrArray, select });
+      this.populates.push(select ? { path: pathOrArray, select } : { path: pathOrArray });
     }
     return this;
   }
@@ -141,37 +177,56 @@ class QueryBuilder {
     return this;
   }
 
+  skip(skipCount) {
+    this.skipCount = skipCount;
+    return this;
+  }
+
   select(fields) {
     this.selectFields = fields;
     return this;
   }
 
+  session(sess) {
+    this.sessionObj = sess;
+    return this;
+  }
+
+  lean() {
+    // Queries already execute with .lean() and normalize
+    return this;
+  }
+
   async exec() {
-    let result;
+    const cleanFilter = sanitizeFilter(this.filter);
+    let query = this.single
+      ? this.repo.model.findOne(cleanFilter)
+      : this.repo.model.find(cleanFilter);
+
+    if (this.sessionObj) {
+      query = query.session(this.sessionObj);
+    }
+    if (this.selectFields) {
+      query = query.select(this.selectFields);
+    }
+    if (this.sortCriteria) {
+      query = query.sort(this.sortCriteria);
+    }
+    if (this.skipCount !== null && this.skipCount !== undefined && !this.single) {
+      query = query.skip(this.skipCount);
+    }
+    if (this.limitCount !== null && this.limitCount !== undefined && !this.single) {
+      query = query.limit(this.limitCount);
+    }
+    for (const pop of this.populates) {
+      query = query.populate(pop);
+    }
+
+    const res = await query.lean({ virtuals: true }).exec();
     if (this.single) {
-      result = await this.repo._executeFindOne(this.filter, {
-        sort: this.sortCriteria,
-        select: this.selectFields,
-      });
-    } else {
-      result = await this.repo._executeFind(this.filter, {
-        sort: this.sortCriteria,
-        limit: this.limitCount,
-        select: this.selectFields,
-      });
+      return res ? normalizeDoc(res, this.repo) : null;
     }
-
-    if (!result) return null;
-
-    if (this.populates.length > 0) {
-      if (this.single) {
-        result = await this.repo.populateDoc(result, this.populates);
-      } else {
-        result = await this.repo.populateDocs(result, this.populates);
-      }
-    }
-
-    return result;
+    return (res || []).map((doc) => normalizeDoc(doc, this.repo));
   }
 
   then(resolve, reject) {
@@ -183,397 +238,182 @@ class QueryBuilder {
   }
 }
 
-/**
- * Base Repository providing unified Firestore CRUD operations
- * and explicit join populates.
- */
 class BaseRepository {
-  constructor(collectionName) {
-    this.collectionName = collectionName;
+  constructor(model) {
+    if (!model) {
+      throw new Error('BaseRepository requires a Mongoose model');
+    }
+    this.model = model;
+    this.collectionName = model.collection ? model.collection.collectionName : model.modelName;
   }
 
-  get db() {
-    return getDb();
+  normalize(doc) {
+    return normalizeDoc(doc, this);
   }
 
-  get collection() {
-    return this.db.collection(this.collectionName);
-  }
-
-  normalize(snapshot) {
-    return normalizeDoc(snapshot, this);
-  }
-
-  findById(id, transaction = null) {
+  findById(id, session = null) {
     if (!id) {
-      const q = new QueryBuilder(this, {}, true);
+      const q = new QueryBuilder(this, {}, true, { session });
       q.exec = async () => null;
       return q;
     }
-    const q = new QueryBuilder(this, { _id: id }, true);
-    q.exec = async () => {
-      const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
-      const docRef = this.collection.doc(docId);
-      const snap = transaction ? await transaction.get(docRef) : await docRef.get();
-      if (!snap.exists) return null;
-      let result = this.normalize(snap);
-      if (q.populates.length > 0) {
-        result = await this.populateDoc(result, q.populates);
-      }
-      return result;
+    const idStr = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
+    if (!isValidObjectId(idStr)) {
+      const q = new QueryBuilder(this, {}, true, { session });
+      q.exec = async () => null;
+      return q;
+    }
+    return new QueryBuilder(this, { _id: idStr }, true, { session });
+  }
+
+  findOne(filter = {}, session = null) {
+    return new QueryBuilder(this, filter, true, { session });
+  }
+
+  find(filter = {}, session = null) {
+    return new QueryBuilder(this, filter, false, { session });
+  }
+
+  async paginate(filter = {}, { page = 1, limit = 20, sort = { createdAt: -1 }, populate = [], select = null } = {}) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.max(1, Math.min(200, Number(limit) || 20));
+    const skip = (safePage - 1) * safeLimit;
+
+    let q = this.find(filter).sort(sort).skip(skip).limit(safeLimit);
+    if (select) q = q.select(select);
+    if (populate && populate.length > 0) q = q.populate(populate);
+
+    const [items, total] = await Promise.all([
+      q.exec(),
+      this.countDocuments(filter),
+    ]);
+
+    return {
+      items,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      pages: Math.ceil(total / safeLimit),
     };
-    return q;
   }
 
-  findOne(filter = {}) {
-    return new QueryBuilder(this, filter, true);
+  async create(data, session = null) {
+    const payload = toMongoData(data);
+    if (data._id && isValidObjectId(data._id)) {
+      payload._id = data._id.toString();
+    }
+    const opts = session ? { session } : {};
+    const docs = await this.model.create([payload], opts);
+    return normalizeDoc(docs[0], this);
   }
 
-  find(filter = {}) {
-    return new QueryBuilder(this, filter, false);
-  }
-
-  async _executeFindOne(filter = {}, options = {}) {
-    const list = await this._executeFind(filter, { ...options, limit: 1 });
-    return list.length > 0 ? list[0] : null;
-  }
-
-  async _executeFind(filter = {}, options = {}) {
-    if (filter.$or && Array.isArray(filter.$or)) {
-      const branches = filter.$or;
-      const otherFilters = { ...filter };
-      delete otherFilters.$or;
-      const combinedMap = new Map();
-      for (const branch of branches) {
-        const mergedFilter = { ...otherFilters, ...branch };
-        const branchResults = await this._executeFind(mergedFilter, options);
-        for (const doc of branchResults) {
-          combinedMap.set(doc._id, doc);
-        }
-      }
-      return Array.from(combinedMap.values());
-    }
-
-    let query = this.collection;
-    const inMemoryFilters = [];
-
-    // Parse filter clauses
-    for (const [key, value] of Object.entries(filter)) {
-      if (value === undefined) continue;
-
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-        if (value.$in && Array.isArray(value.$in)) {
-          if (value.$in.length === 0) return [];
-          if (value.$in.length <= 10) {
-            query = query.where(key, 'in', value.$in);
-          } else {
-            inMemoryFilters.push(doc => value.$in.includes(doc[key]));
-          }
-        } else if (value.in && Array.isArray(value.in)) {
-          if (value.in.length === 0) return [];
-          if (value.in.length <= 10) {
-            query = query.where(key, 'in', value.in);
-          } else {
-            inMemoryFilters.push(doc => value.in.includes(doc[key]));
-          }
-        } else if (value.$gte !== undefined) {
-          query = query.where(key, '>=', value.$gte);
-        } else if (value.$lte !== undefined) {
-          query = query.where(key, '<=', value.$lte);
-        } else if (value.$gt !== undefined) {
-          query = query.where(key, '>', value.$gt);
-        } else if (value.$lt !== undefined) {
-          query = query.where(key, '<', value.$lt);
-        } else if (value.$ne !== undefined) {
-          inMemoryFilters.push(doc => {
-            const val = doc[key];
-            const target = value.$ne;
-            const docValStr = val && typeof val === 'object' && val._id ? val._id.toString() : (val !== undefined && val !== null ? val.toString() : val);
-            const targetStr = target && typeof target === 'object' && target._id ? target._id.toString() : (target !== undefined && target !== null ? target.toString() : target);
-            return docValStr !== targetStr;
-          });
-        } else if (value.$nin && Array.isArray(value.$nin)) {
-          inMemoryFilters.push(doc => !value.$nin.includes(doc[key]));
-        } else {
-          // Complex or unknown operator -> filter in memory
-          inMemoryFilters.push(doc => {
-            return JSON.stringify(doc[key]) === JSON.stringify(value);
-          });
-        }
-      } else {
-        // Simple equality
-        const eqVal = value && typeof value === 'object' && value._id ? value._id.toString() : value;
-        query = query.where(key, '==', eqVal);
-      }
-    }
-
-    // Apply sorting if compatible with query
-    if (options.sort) {
-      if (typeof options.sort === 'object') {
-        for (const [sKey, sDir] of Object.entries(options.sort)) {
-          const dir = sDir === -1 || sDir === 'desc' || sDir === 'descending' ? 'desc' : 'asc';
-          try {
-            query = query.orderBy(sKey, dir);
-          } catch (e) {
-            // Index required or unsupported order, fall back to in-memory sort
-          }
-        }
-      }
-    }
-
-    // Apply limit if no in-memory filters
-    if (options.limit && inMemoryFilters.length === 0) {
-      query = query.limit(options.limit);
-    }
-
-    let snapshot;
-    try {
-      snapshot = await query.get();
-    } catch (err) {
-      if (err.message && err.message.includes('The query requires an index')) {
-        console.warn(`[Firestore] Composite index not yet deployed for query on '${this.collectionName}'. Executing with in-memory sort fallback.`);
-        let fallbackQuery = this.collection;
-        const additionalInMemory = [];
-        for (const [key, value] of Object.entries(filter)) {
-          if (value === undefined) continue;
-          if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-            // Apply only one inequality filter if possible, otherwise move to memory
-            if (value.$gte !== undefined) additionalInMemory.push(doc => doc[key] >= value.$gte);
-            else if (value.$lte !== undefined) additionalInMemory.push(doc => doc[key] <= value.$lte);
-            else if (value.$gt !== undefined) additionalInMemory.push(doc => doc[key] > value.$gt);
-            else if (value.$lt !== undefined) additionalInMemory.push(doc => doc[key] < value.$lt);
-            else if (value.$ne !== undefined) additionalInMemory.push(doc => doc[key] !== value.$ne);
-            else if (value.$in && Array.isArray(value.$in)) additionalInMemory.push(doc => value.$in.includes(doc[key]));
-            else if (value.$nin && Array.isArray(value.$nin)) additionalInMemory.push(doc => !value.$nin.includes(doc[key]));
-          } else {
-            const eqVal = value && typeof value === 'object' && value._id ? value._id.toString() : value;
-            try {
-              fallbackQuery = fallbackQuery.where(key, '==', eqVal);
-            } catch (_) {}
-            additionalInMemory.push(doc => {
-              const docVal = doc[key] && typeof doc[key] === 'object' && doc[key]._id
-                ? doc[key]._id.toString()
-                : (doc[key] !== undefined && doc[key] !== null ? doc[key].toString() : doc[key]);
-              const targetVal = eqVal !== null && eqVal !== undefined ? eqVal.toString() : eqVal;
-              return docVal === targetVal;
-            });
-          }
-        }
-        snapshot = await fallbackQuery.get();
-        inMemoryFilters.push(...additionalInMemory);
-      } else {
-        throw err;
-      }
-    }
-    let results = [];
-    snapshot.forEach(docSnap => {
-      results.push(this.normalize(docSnap));
+  async insertMany(docs = [], session = null) {
+    if (!docs || docs.length === 0) return [];
+    const payloads = docs.map((d) => {
+      const p = toMongoData(d);
+      if (d._id && isValidObjectId(d._id)) p._id = d._id.toString();
+      return p;
     });
-
-    // Run in-memory filters if any
-    if (inMemoryFilters.length > 0) {
-      results = results.filter(doc => inMemoryFilters.every(fn => fn(doc)));
-    }
-
-    // Run in-memory sort if needed
-    if (options.sort && typeof options.sort === 'object') {
-      const [sKey, sDir] = Object.entries(options.sort)[0] || [];
-      if (sKey) {
-        const isDesc = sDir === -1 || sDir === 'desc' || sDir === 'descending';
-        results.sort((a, b) => {
-          const va = a[sKey];
-          const vb = b[sKey];
-          if (va < vb) return isDesc ? 1 : -1;
-          if (va > vb) return isDesc ? -1 : 1;
-          return 0;
-        });
-      }
-    }
-
-    if (options.limit && results.length > options.limit) {
-      results = results.slice(0, options.limit);
-    }
-
-    return results;
+    const opts = session ? { session } : {};
+    const created = await this.model.insertMany(payloads, opts);
+    return created.map((d) => normalizeDoc(d, this));
   }
 
-  async create(data, transaction = null) {
-    const customId = data._id || data.id;
-    const docRef = customId ? this.collection.doc(customId.toString()) : this.collection.doc();
-    const payload = toFirestoreData(data);
-    const now = new Date();
-    if (!payload.createdAt) payload.createdAt = now;
-    payload.updatedAt = now;
-
-    if (transaction) {
-      transaction.set(docRef, payload);
-    } else {
-      await docRef.set(payload);
-    }
-
-    return normalizeDoc({ id: docRef.id, data: () => payload }, this);
-  }
-
-  async insertMany(docs = []) {
-    const created = [];
-    const batch = this.db.batch();
-    const now = new Date();
-
-    for (const item of docs) {
-      const customId = item._id || item.id;
-      const docRef = customId ? this.collection.doc(customId.toString()) : this.collection.doc();
-      const payload = toFirestoreData(item);
-      if (!payload.createdAt) payload.createdAt = now;
-      payload.updatedAt = now;
-      batch.set(docRef, payload);
-      created.push(normalizeDoc({ id: docRef.id, data: () => payload }, this));
-    }
-
-    await batch.commit();
-    return created;
-  }
-
-  async findByIdAndUpdate(id, updates, options = {}, transaction = null) {
+  async findByIdAndUpdate(id, updates, options = {}, session = null) {
     if (!id) return null;
-    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
-    const docRef = this.collection.doc(docId);
+    const idStr = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
+    if (!isValidObjectId(idStr)) return null;
 
-    const performUpdate = async (txn) => {
-      const snap = txn ? await txn.get(docRef) : await docRef.get();
-      if (!snap.exists) return null;
-
-      const existing = snap.data();
-      let payload = { ...existing };
-      const rawUpdates = updates && updates.$set ? { ...updates.$set } : { ...updates };
-
-      // Handle MongoDB-style $inc
-      if (updates && updates.$inc) {
-        for (const [incKey, incVal] of Object.entries(updates.$inc)) {
-          payload[incKey] = (Number(payload[incKey]) || 0) + Number(incVal);
-        }
+    let updateDoc;
+    if (updates && (updates.$set || updates.$inc || updates.$unset || updates.$push || updates.$pull)) {
+      updateDoc = { ...updates };
+      if (updateDoc.$set) {
+        updateDoc.$set = toMongoData(updateDoc.$set);
       }
+    } else {
+      updateDoc = { $set: toMongoData(updates) };
+      delete updateDoc.$set._id;
+    }
 
-      delete rawUpdates.$set;
-      delete rawUpdates.$inc;
-
-      payload = {
-        ...payload,
-        ...toFirestoreData(rawUpdates),
-        updatedAt: new Date(),
-      };
-
-      if (txn) {
-        txn.set(docRef, payload);
-      } else {
-        await docRef.set(payload);
-      }
-
-      return normalizeDoc({ id: docId, data: () => payload }, this);
+    const opts = {
+      returnDocument: options.new === false ? 'before' : (options.returnDocument || 'after'),
+      runValidators: true,
+      ...options,
+      ...(session ? { session } : {}),
     };
+    delete opts.new;
 
-    if (transaction) {
-      return await performUpdate(transaction);
-    }
-    return await performUpdate(null);
+    const updated = await this.model.findByIdAndUpdate(idStr, updateDoc, opts).lean({ virtuals: true }).exec();
+    return updated ? normalizeDoc(updated, this) : null;
   }
 
-  async findOneAndUpdate(filter, updates, options = {}) {
-    const doc = await this._executeFindOne(filter);
-    if (!doc) return null;
-    return await this.findByIdAndUpdate(doc._id, updates, options);
-  }
-
-  async findByIdAndDelete(id, transaction = null) {
-    if (!id) return null;
-    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
-    const docRef = this.collection.doc(docId);
-    const snap = transaction ? await transaction.get(docRef) : await docRef.get();
-    if (!snap.exists) return null;
-    const docData = this.normalize(snap);
-
-    if (transaction) {
-      transaction.delete(docRef);
+  async findOneAndUpdate(filter, updates, options = {}, session = null) {
+    const cleanFilter = sanitizeFilter(filter);
+    let updateDoc;
+    if (updates && (updates.$set || updates.$inc || updates.$unset || updates.$push || updates.$pull)) {
+      updateDoc = { ...updates };
+      if (updateDoc.$set) {
+        updateDoc.$set = toMongoData(updateDoc.$set);
+      }
     } else {
-      await docRef.delete();
+      updateDoc = { $set: toMongoData(updates) };
+      delete updateDoc.$set._id;
     }
-    return docData;
+
+    const opts = {
+      returnDocument: options.new === false ? 'before' : (options.returnDocument || 'after'),
+      runValidators: true,
+      ...options,
+      ...(session ? { session } : {}),
+    };
+    delete opts.new;
+
+    const updated = await this.model.findOneAndUpdate(cleanFilter, updateDoc, opts).lean({ virtuals: true }).exec();
+    return updated ? normalizeDoc(updated, this) : null;
   }
 
-  /**
-   * Transaction-aware read only: reads document within an active transaction.
-   * Guarantees no interleaved writes.
-   */
-  async getForUpdate(transaction, id) {
-    if (!id || !transaction) return null;
-    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
-    const docRef = this.collection.doc(docId);
-    const snap = await transaction.get(docRef);
-    if (!snap.exists) return null;
-    return this.normalize(snap);
+  async findByIdAndDelete(id, session = null) {
+    if (!id) return null;
+    const idStr = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
+    if (!isValidObjectId(idStr)) return null;
+
+    const opts = session ? { session } : {};
+    const deleted = await this.model.findByIdAndDelete(idStr, opts).lean({ virtuals: true }).exec();
+    return deleted ? normalizeDoc(deleted, this) : null;
   }
 
-  /**
-   * Transaction-aware write only: applies mutation inside an active transaction.
-   * Guarantees all writes occur after reads.
-   */
-  applyUpdate(transaction, id, updates) {
-    if (!id || !transaction) return;
-    const docId = typeof id === 'object' && id._id ? id._id.toString() : id.toString();
-    const docRef = this.collection.doc(docId);
-    const rawUpdates = updates && updates.$set ? { ...updates.$set } : { ...updates };
-    delete rawUpdates.$set;
-    const payload = toFirestoreData(rawUpdates);
-    payload.updatedAt = new Date();
-    transaction.update(docRef, payload);
-  }
-
-  async updateMany(filter = {}, updates = {}) {
-    const docs = await this._executeFind(filter);
-    if (docs.length === 0) return { modifiedCount: 0 };
-
-    const batch = this.db.batch();
-    for (const doc of docs) {
-      const docRef = this.collection.doc(doc._id);
-      let payload = { ...doc };
-      const rawUpdates = updates && updates.$set ? { ...updates.$set } : { ...updates };
-      delete rawUpdates.$set;
-      payload = { ...payload, ...toFirestoreData(rawUpdates), updatedAt: new Date() };
-      batch.set(docRef, payload);
+  async updateMany(filter = {}, updates = {}, session = null) {
+    const cleanFilter = sanitizeFilter(filter);
+    let updateDoc;
+    if (updates && (updates.$set || updates.$inc || updates.$unset)) {
+      updateDoc = { ...updates };
+      if (updateDoc.$set) {
+        updateDoc.$set = toMongoData(updateDoc.$set);
+      }
+    } else {
+      updateDoc = { $set: toMongoData(updates) };
     }
-    await batch.commit();
-    return { modifiedCount: docs.length };
+    const opts = session ? { session } : {};
+    return await this.model.updateMany(cleanFilter, updateDoc, opts).exec();
   }
 
-  async deleteMany(filter = {}) {
-    const docs = await this._executeFind(filter);
-    if (docs.length === 0) return { deletedCount: 0 };
-
-    const batch = this.db.batch();
-    for (const doc of docs) {
-      const docRef = this.collection.doc(doc._id);
-      batch.delete(docRef);
-    }
-    await batch.commit();
-    return { deletedCount: docs.length };
+  async deleteMany(filter = {}, session = null) {
+    const cleanFilter = sanitizeFilter(filter);
+    const opts = session ? { session } : {};
+    return await this.model.deleteMany(cleanFilter, opts).exec();
   }
 
-  async countDocuments(filter = {}) {
-    if (Object.keys(filter).length === 0) {
-      const snap = await this.collection.count().get();
-      return snap.data().count;
-    }
-    const docs = await this._executeFind(filter);
-    return docs.length;
+  async countDocuments(filter = {}, session = null) {
+    const cleanFilter = sanitizeFilter(filter);
+    let q = this.model.countDocuments(cleanFilter);
+    if (session) q = q.session(session);
+    return await q.exec();
   }
 
-  async count(filter = {}) {
-    return await this.countDocuments(filter);
+  async count(filter = {}, session = null) {
+    return await this.countDocuments(filter, session);
   }
 
-  /**
-   * Performs explicit joins to replace Mongoose populate.
-   * Can be overridden by subclasses or uses registered repositories.
-   */
   async populateDoc(doc, populates = []) {
     if (!doc) return null;
     const list = [doc];
@@ -586,77 +426,22 @@ class BaseRepository {
       return docs;
     }
 
-    const { getRepositoryRegistry } = require('./registry');
-    const registry = getRepositoryRegistry();
-
     const normalizedPopulates = Array.isArray(populates)
-      ? populates
-      : [populates];
+      ? populates.map((p) => (typeof p === 'string' ? { path: p } : p))
+      : [typeof populates === 'string' ? { path: populates } : populates];
 
-    for (const pop of normalizedPopulates) {
-      const path = typeof pop === 'string' ? pop : pop.path;
-      const selectFields = typeof pop === 'object' && pop.select
-        ? (typeof pop.select === 'string' ? pop.select.trim().split(/\s+/) : pop.select)
-        : null;
+    await this.model.populate(docs, normalizedPopulates);
 
-      // Determine target collection/repository based on path name
-      let targetRepo = null;
-      if (['requester', 'user', 'donor', 'actor'].includes(path)) {
-        targetRepo = registry.users;
-      } else if (['targetHospital', 'hospital'].includes(path)) {
-        targetRepo = registry.hospitals;
-      } else if (['donorProfile'].includes(path)) {
-        targetRepo = registry.donorProfiles;
-      } else if (['request', 'requestId'].includes(path)) {
-        targetRepo = registry.bloodRequests;
-      } else if (['donorId'].includes(path)) {
-        targetRepo = registry.users;
-      } else if (['hospitalId'].includes(path)) {
-        // ping.hospitalId references User in LifeLink
-        targetRepo = registry.users;
-      }
-
-      if (!targetRepo) continue;
-
-      // Collect unique IDs to join
-      const idMap = new Map();
-      for (const d of docs) {
-        const val = d[path];
-        if (val) {
-          const idStr = typeof val === 'object' && val._id ? val._id.toString() : val.toString();
-          idMap.set(idStr, null);
-        }
-      }
-
-      // Fetch all referenced documents
-      const ids = Array.from(idMap.keys());
-      for (const id of ids) {
-        const targetDoc = await targetRepo.findById(id);
-        if (targetDoc) {
-          let resolved = targetDoc;
-          if (selectFields && Array.isArray(selectFields) && selectFields.length > 0) {
-            resolved = { _id: targetDoc._id, id: targetDoc.id };
-            for (const f of selectFields) {
-              if (targetDoc[f] !== undefined) resolved[f] = targetDoc[f];
-            }
-          }
-          idMap.set(id, resolved);
-        }
-      }
-
-      // Assign joined docs back
-      for (const d of docs) {
-        const val = d[path];
-        if (val) {
-          const idStr = typeof val === 'object' && val._id ? val._id.toString() : val.toString();
-          const joined = idMap.get(idStr);
-          if (joined) {
-            d[path] = joined;
+    for (let i = 0; i < docs.length; i++) {
+      if (docs[i]) {
+        for (const pop of normalizedPopulates) {
+          const p = pop.path;
+          if (docs[i][p] && typeof docs[i][p] === 'object' && !(docs[i][p] instanceof Date)) {
+            docs[i][p] = normalizePlainValue(docs[i][p]);
           }
         }
       }
     }
-
     return docs;
   }
 }
@@ -664,6 +449,9 @@ class BaseRepository {
 module.exports = {
   BaseRepository,
   normalizeDoc,
-  toFirestoreData,
+  normalizePlainValue,
+  toMongoData,
+  isValidObjectId,
+  sanitizeFilter,
   QueryBuilder,
 };

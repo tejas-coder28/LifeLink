@@ -8,6 +8,7 @@ const DonorRequestPing = require('./donorRequestPing.repository');
 const Notification = require('./notification.repository');
 const AIInsight = require('./aiInsight.repository');
 const LoginLog = require('./loginLog.repository');
+const AuditLog = require('./auditLog.repository');
 const { BaseRepository } = require('./base.repository');
 
 module.exports = {
@@ -21,5 +22,6 @@ module.exports = {
   Notification,
   AIInsight,
   LoginLog,
+  AuditLog,
   BaseRepository,
 };

@@ -1,19 +1,13 @@
-/**
- * server/src/repositories/auditLog.repository.js
- *
- * Repository for recording security and operational audit log events
- * (request cancellations, edits, rate limits, sensitive administrative actions).
- */
-
+const AuditLogModel = require('../models/AuditLog');
 const { BaseRepository } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class AuditLogRepository extends BaseRepository {
   constructor() {
-    super('audit_logs');
+    super(AuditLogModel);
   }
 
-  async record(entry = {}) {
+  async record(entry = {}, session = null) {
     const now = new Date();
     const payload = {
       action: entry.action || 'unknown',
@@ -28,7 +22,7 @@ class AuditLogRepository extends BaseRepository {
       metadata: entry.metadata || {},
       createdAt: entry.createdAt || now,
     };
-    return await this.create(payload);
+    return await this.create(payload, session);
   }
 }
 
@@ -36,4 +30,3 @@ const auditLogRepo = new AuditLogRepository();
 registerRepository('auditLogs', auditLogRepo);
 
 module.exports = auditLogRepo;
-

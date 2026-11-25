@@ -1,4 +1,5 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const HospitalModel = require('../models/Hospital');
+const { BaseRepository, normalizeDoc, isValidObjectId } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 const DEFAULT_INVENTORY = [
@@ -14,13 +15,14 @@ const DEFAULT_INVENTORY = [
 
 class HospitalRepository extends BaseRepository {
   constructor() {
-    super('hospitals');
+    super(HospitalModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
+    const userId = data.user && data.user._id ? data.user._id.toString() : (data.user ? data.user.toString() : null);
     const payload = {
       ...data,
-      user: data.user && data.user._id ? data.user._id.toString() : (data.user ? data.user.toString() : null),
+      user: userId,
       inventory: data.inventory || DEFAULT_INVENTORY,
       location: data.location || { type: 'Point', coordinates: [77.2090, 28.6139] },
       isVerified: data.isVerified !== undefined ? Boolean(data.isVerified) : false,
@@ -28,139 +30,87 @@ class HospitalRepository extends BaseRepository {
       address: data.address || '',
       licenseNumber: data.licenseNumber || '',
     };
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 
-  async findByUserId(userId) {
+  async findByUserId(userId, session = null) {
+    if (!userId) return null;
     const idStr = userId && userId._id ? userId._id.toString() : userId.toString();
-    return await this._executeFindOne({ user: idStr });
+    if (!isValidObjectId(idStr)) return null;
+    return await this.findOne({ user: idStr }, session).exec();
   }
 
   /**
-   * Deducts blood units from hospital inventory inside a transaction.
-   * Strictly enforces no negative stock.
+   * Atomically deducts blood units from hospital inventory inside a Mongo session.
+   * Uses conditional update ($gte check) to guarantee no negative stock.
    */
-  async deductStock(hospitalId, bloodGroup, unitsToDeduct, transaction) {
-    const hospRef = this.collection.doc(hospitalId.toString());
-    const snap = await transaction.get(hospRef);
-    if (!snap.exists) {
+  async deductStock(hospitalId, bloodGroup, unitsToDeduct, session = null) {
+    const idStr = hospitalId && hospitalId._id ? hospitalId._id.toString() : hospitalId.toString();
+    const updated = await this.model.findOneAndUpdate(
+      {
+        _id: idStr,
+        inventory: {
+          $elemMatch: {
+            bloodGroup,
+            units: { $gte: unitsToDeduct },
+          },
+        },
+      },
+      {
+        $inc: { 'inventory.$.units': -unitsToDeduct },
+        $set: { updatedAt: new Date() },
+      },
+      { returnDocument: 'after', ...(session ? { session } : {}) }
+    ).lean({ virtuals: true }).exec();
+
+    if (!updated) {
+      const existing = await this.findById(idStr, session);
+      if (!existing) {
+        throw new Error('Hospital not found');
+      }
+      const item = (existing.inventory || []).find((i) => i.bloodGroup === bloodGroup);
+      if (!item) {
+        throw new Error(`Blood group ${bloodGroup} not present in hospital inventory`);
+      }
+      throw new Error(`Insufficient stock for ${bloodGroup} (available: ${item.units || 0}, needed: ${unitsToDeduct})`);
+    }
+
+    return normalizeDoc(updated, this);
+  }
+
+  /**
+   * Atomically adds blood units to hospital inventory inside a Mongo session.
+   */
+  async addStock(hospitalId, bloodGroup, unitsToAdd, session = null) {
+    const idStr = hospitalId && hospitalId._id ? hospitalId._id.toString() : hospitalId.toString();
+    let updated = await this.model.findOneAndUpdate(
+      {
+        _id: idStr,
+        'inventory.bloodGroup': bloodGroup,
+      },
+      {
+        $inc: { 'inventory.$.units': unitsToAdd },
+        $set: { updatedAt: new Date() },
+      },
+      { returnDocument: 'after', ...(session ? { session } : {}) }
+    ).lean({ virtuals: true }).exec();
+
+    if (!updated) {
+      updated = await this.model.findOneAndUpdate(
+        { _id: idStr },
+        {
+          $push: { inventory: { bloodGroup, units: unitsToAdd } },
+          $set: { updatedAt: new Date() },
+        },
+        { returnDocument: 'after', ...(session ? { session } : {}) }
+      ).lean({ virtuals: true }).exec();
+    }
+
+    if (!updated) {
       throw new Error('Hospital not found');
     }
 
-    const hospital = snap.data();
-    const inventory = hospital.inventory ? [...hospital.inventory] : [...DEFAULT_INVENTORY];
-    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
-
-    if (itemIndex === -1) {
-      throw new Error(`Blood group ${bloodGroup} not present in hospital inventory`);
-    }
-
-    const currentUnits = inventory[itemIndex].units || 0;
-    if (currentUnits < unitsToDeduct) {
-      throw new Error(`Insufficient stock for ${bloodGroup} (available: ${currentUnits}, needed: ${unitsToDeduct})`);
-    }
-
-    inventory[itemIndex] = {
-      ...inventory[itemIndex],
-      units: currentUnits - unitsToDeduct,
-    };
-
-    const now = new Date();
-    transaction.update(hospRef, {
-      inventory,
-      updatedAt: now,
-    });
-
-    return normalizeDoc({ id: hospRef.id, data: () => ({ ...hospital, inventory, updatedAt: now }) }, this);
-  }
-
-  /**
-   * Adds blood units to hospital inventory inside a transaction.
-   */
-  async addStock(hospitalId, bloodGroup, unitsToAdd, transaction) {
-    const hospRef = this.collection.doc(hospitalId.toString());
-    const snap = await transaction.get(hospRef);
-    if (!snap.exists) {
-      throw new Error('Hospital not found');
-    }
-
-    const hospital = snap.data();
-    const inventory = hospital.inventory ? [...hospital.inventory] : [...DEFAULT_INVENTORY];
-    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
-
-    if (itemIndex === -1) {
-      inventory.push({ bloodGroup, units: unitsToAdd });
-    } else {
-      inventory[itemIndex] = {
-        ...inventory[itemIndex],
-        units: (inventory[itemIndex].units || 0) + unitsToAdd,
-      };
-    }
-
-    const now = new Date();
-    transaction.update(hospRef, {
-      inventory,
-      updatedAt: now,
-    });
-
-    return normalizeDoc({ id: hospRef.id, data: () => ({ ...hospital, inventory, updatedAt: now }) }, this);
-  }
-
-  /**
-   * Applies inventory deduction strictly as a write operation within an active transaction.
-   * Expects already-read hospital data.
-   */
-  applyDeductStock(transaction, hospitalId, currentInventory, bloodGroup, unitsToDeduct) {
-    const hospRef = this.collection.doc(hospitalId.toString());
-    const inventory = currentInventory ? [...currentInventory] : [...DEFAULT_INVENTORY];
-    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
-
-    if (itemIndex === -1) {
-      throw new Error(`Blood group ${bloodGroup} not present in hospital inventory`);
-    }
-
-    const currentUnits = inventory[itemIndex].units || 0;
-    if (currentUnits < unitsToDeduct) {
-      throw new Error(`Insufficient stock for ${bloodGroup} (available: ${currentUnits}, needed: ${unitsToDeduct})`);
-    }
-
-    inventory[itemIndex] = {
-      ...inventory[itemIndex],
-      units: currentUnits - unitsToDeduct,
-    };
-
-    const now = new Date();
-    transaction.update(hospRef, {
-      inventory,
-      updatedAt: now,
-    });
-    return inventory;
-  }
-
-  /**
-   * Applies inventory addition strictly as a write operation within an active transaction.
-   * Expects already-read hospital data.
-   */
-  applyAddStock(transaction, hospitalId, currentInventory, bloodGroup, unitsToAdd) {
-    const hospRef = this.collection.doc(hospitalId.toString());
-    const inventory = currentInventory ? [...currentInventory] : [...DEFAULT_INVENTORY];
-    const itemIndex = inventory.findIndex(item => item.bloodGroup === bloodGroup);
-
-    if (itemIndex === -1) {
-      inventory.push({ bloodGroup, units: unitsToAdd });
-    } else {
-      inventory[itemIndex] = {
-        ...inventory[itemIndex],
-        units: (inventory[itemIndex].units || 0) + unitsToAdd,
-      };
-    }
-
-    const now = new Date();
-    transaction.update(hospRef, {
-      inventory,
-      updatedAt: now,
-    });
-    return inventory;
+    return normalizeDoc(updated, this);
   }
 }
 

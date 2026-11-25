@@ -1,12 +1,13 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const DonationModel = require('../models/Donation');
+const { BaseRepository } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class DonationRepository extends BaseRepository {
   constructor() {
-    super('donations');
+    super(DonationModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const donorId = data.donor && data.donor._id ? data.donor._id.toString() : data.donor?.toString();
     const donorProfId = data.donorProfile && data.donorProfile._id ? data.donorProfile._id.toString() : (data.donorProfile ? data.donorProfile.toString() : null);
     const requestId = data.request && data.request._id ? data.request._id.toString() : data.request?.toString();
@@ -24,7 +25,7 @@ class DonationRepository extends BaseRepository {
       notes: data.notes || '',
     };
 
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 }
 

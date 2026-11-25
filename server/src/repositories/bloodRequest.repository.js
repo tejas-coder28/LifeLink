@@ -1,12 +1,13 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const BloodRequestModel = require('../models/BloodRequest');
+const { BaseRepository } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class BloodRequestRepository extends BaseRepository {
   constructor() {
-    super('bloodRequests');
+    super(BloodRequestModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const requesterId = data.requester && data.requester._id ? data.requester._id.toString() : data.requester?.toString();
     const hospitalId = data.hospital && data.hospital._id ? data.hospital._id.toString() : (data.hospital ? data.hospital.toString() : null);
     const targetHospId = data.targetHospital && data.targetHospital._id ? data.targetHospital._id.toString() : (data.targetHospital ? data.targetHospital.toString() : null);
@@ -33,30 +34,7 @@ class BloodRequestRepository extends BaseRepository {
       matchedDonorsCount: Number(data.matchedDonorsCount) || 0,
     };
 
-    return await super.create(payload, transaction);
-  }
-
-  _sanitizeUpdates(data) {
-    if (!data || typeof data !== 'object') return data;
-    const sanitized = { ...data };
-    if (sanitized.requester && typeof sanitized.requester === 'object' && sanitized.requester._id) {
-      sanitized.requester = sanitized.requester._id.toString();
-    }
-    if (sanitized.hospital && typeof sanitized.hospital === 'object' && sanitized.hospital._id) {
-      sanitized.hospital = sanitized.hospital._id.toString();
-    }
-    if (sanitized.targetHospital && typeof sanitized.targetHospital === 'object' && sanitized.targetHospital._id) {
-      sanitized.targetHospital = sanitized.targetHospital._id.toString();
-    }
-    return sanitized;
-  }
-
-  async findByIdAndUpdate(id, data, options = {}) {
-    return await super.findByIdAndUpdate(id, this._sanitizeUpdates(data), options);
-  }
-
-  async findOneAndUpdate(filter, data, options = {}) {
-    return await super.findOneAndUpdate(filter, this._sanitizeUpdates(data), options);
+    return await super.create(payload, session);
   }
 }
 

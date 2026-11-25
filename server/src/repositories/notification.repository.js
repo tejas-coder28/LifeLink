@@ -1,15 +1,15 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const NotificationModel = require('../models/Notification');
+const { BaseRepository, isValidObjectId } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class NotificationRepository extends BaseRepository {
   constructor() {
-    super('notifications');
+    super(NotificationModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const recipientId = data.recipient && data.recipient._id ? data.recipient._id.toString() : data.recipient?.toString();
     const now = new Date();
-    // Default 30-day TTL expiry for notifications (Firestore TTL policy support)
     const expiresAt = data.expiresAt ? new Date(data.expiresAt) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const payload = {
@@ -23,11 +23,11 @@ class NotificationRepository extends BaseRepository {
       expiresAt,
     };
 
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 
-  async insertMany(docs = []) {
-    const formatted = docs.map(d => {
+  async insertMany(docs = [], session = null) {
+    const formatted = docs.map((d) => {
       const recipientId = d.recipient && d.recipient._id ? d.recipient._id.toString() : d.recipient?.toString();
       const now = new Date();
       return {
@@ -41,11 +41,12 @@ class NotificationRepository extends BaseRepository {
         expiresAt: d.expiresAt ? new Date(d.expiresAt) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
       };
     });
-    return await super.insertMany(formatted);
+    return await super.insertMany(formatted, session);
   }
 
   async findByRecipient(userId, limit = 20) {
     const idStr = userId && userId._id ? userId._id.toString() : userId.toString();
+    if (!isValidObjectId(idStr)) return [];
     return await this.find({ recipient: idStr })
       .sort({ createdAt: -1 })
       .limit(limit);
@@ -61,19 +62,10 @@ class NotificationRepository extends BaseRepository {
     return await this.findByIdAndUpdate(notificationId, { isRead: true });
   }
 
-  /**
-   * Cleanup expired notifications (expiry check / TTL fallback)
-   */
   async cleanupExpired() {
     const now = new Date();
-    const expiredDocs = await this.find({ expiresAt: { $lte: now } });
-    if (expiredDocs.length === 0) return 0;
-    const batch = this.db.batch();
-    for (const d of expiredDocs) {
-      batch.delete(this.collection.doc(d._id));
-    }
-    await batch.commit();
-    return expiredDocs.length;
+    const res = await this.deleteMany({ expiresAt: { $lte: now } });
+    return res.deletedCount || 0;
   }
 }
 
