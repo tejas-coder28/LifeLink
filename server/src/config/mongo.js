@@ -88,6 +88,23 @@ function getDbName() {
   return mongoose.connection?.name || activeDbName || process.env.MONGODB_DB_NAME || 'lifelink';
 }
 
+/**
+ * Executes an async callback inside a MongoDB multi-document transaction session.
+ * Automatically commits on success and aborts/rolls back on any error.
+ */
+async function withTransaction(fn) {
+  const session = await mongoose.startSession();
+  let result;
+  try {
+    await session.withTransaction(async () => {
+      result = await fn(session);
+    });
+    return result;
+  } finally {
+    await session.endSession();
+  }
+}
+
 module.exports = {
   connectMongo,
   disconnectMongo,
@@ -95,4 +112,5 @@ module.exports = {
   isMongoConnected,
   getDbName,
   resolveDbName,
+  withTransaction,
 };
