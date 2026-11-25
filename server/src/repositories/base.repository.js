@@ -118,18 +118,28 @@ function isValidObjectId(val) {
   return false;
 }
 
-function sanitizeFilter(filter = {}) {
+function sanitizeFilter(filter = {}, model = null) {
   if (!filter || typeof filter !== 'object') return {};
   const out = {};
   for (const [k, v] of Object.entries(filter)) {
     if (v === undefined) continue;
-    if (k === '_id' && typeof v === 'string' && !isValidObjectId(v)) {
-      // Force empty match on invalid ObjectId string rather than throwing CastError
+    const schemaPath = model && model.schema ? model.schema.path(k) : null;
+    const isObjectIdField =
+      k === '_id' ||
+      (schemaPath && (schemaPath.instance === 'ObjectId' || schemaPath.instance === 'ObjectID'));
+
+    if (isObjectIdField && typeof v === 'string' && !isValidObjectId(v)) {
       out._id = new mongoose.Types.ObjectId('000000000000000000000000');
+      out.__impossibleMatch = true;
       continue;
     }
     if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof mongoose.Types.ObjectId) && (v._id || v.id)) {
-      out[k] = (v._id || v.id).toString();
+      const refStr = (v._id || v.id).toString();
+      if (isObjectIdField && !isValidObjectId(refStr)) {
+        out.__impossibleMatch = true;
+      } else {
+        out[k] = refStr;
+      }
     } else {
       out[k] = v;
     }
@@ -198,7 +208,10 @@ class QueryBuilder {
   }
 
   async exec() {
-    const cleanFilter = sanitizeFilter(this.filter);
+    const cleanFilter = sanitizeFilter(this.filter, this.repo.model);
+    if (cleanFilter.__impossibleMatch) {
+      return this.single ? null : [];
+    }
     let query = this.single
       ? this.repo.model.findOne(cleanFilter)
       : this.repo.model.find(cleanFilter);

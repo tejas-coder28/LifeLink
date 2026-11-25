@@ -216,7 +216,7 @@ const findMatchesForRequestId = async (requestId, maxResults = 10) => {
     throw error;
   }
 
-  // Filter in Firestore by compatibility and availability to keep read count low
+  // Filter in MongoDB by compatibility and availability to keep read count low
   const compatibleGroups = compatibleDonorGroups(request.bloodGroup);
   const candidateDonors = await DonorProfile.find({
     isAvailable: true,

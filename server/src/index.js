@@ -1,6 +1,5 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-// Fallback to default cwd .env if not found above
 require('dotenv').config();
 const connectDB = require('./config/db');
 const User = require('./repositories/user.repository');
@@ -10,18 +9,11 @@ const { runIndexSelfCheck } = require('./utils/indexChecker');
 const { logStartupProvider } = require('./services/geminiService');
 
 // Process stability: global unhandled promise rejection handler
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('========================================================================');
   console.error('❌ FATAL: Unhandled Promise Rejection detected:');
   if (reason instanceof Error) {
     console.error(reason.stack || reason.message);
-    if (reason.message && (reason.message.includes('FAILED_PRECONDITION') || reason.message.includes('requires an index'))) {
-      const linkMatch = reason.message.match(/https:\/\/[^\s]+/);
-      console.error('Missing Firestore Composite Index detected!');
-      if (linkMatch) {
-        console.error(`Firebase Console Index URL: ${linkMatch[0]}`);
-      }
-    }
   } else {
     console.error(reason);
   }
@@ -34,51 +26,31 @@ process.on('uncaughtException', (err) => {
   console.error('========================================================================');
   console.error('❌ FATAL: Uncaught Exception detected:');
   console.error(err.stack || err.message);
-  if (err.message && (err.message.includes('FAILED_PRECONDITION') || err.message.includes('requires an index'))) {
-    const linkMatch = err.message.match(/https:\/\/[^\s]+/);
-    console.error('Missing Firestore Composite Index detected!');
-    if (linkMatch) {
-      console.error(`Firebase Console Index URL: ${linkMatch[0]}`);
-    }
-  }
   console.error('========================================================================');
   process.exit(1);
 });
 
-// Connect to Firestore Database and auto-seed if empty in non-production local development
-connectDB().then(async (db) => {
-  try {
-    if (process.env.NODE_ENV !== 'production') {
-      const userCount = await User.countDocuments();
-      if (userCount === 0) {
-        console.log('Database is empty. Auto-seeding initial demo data for local dev...');
-        await seedData(false);
-      }
-    }
-
-    // Safe migration: ensure any existing requests lacking targetHospital are handled
-    const BloodRequest = require('./repositories/bloodRequest.repository');
-    const legacyRequests = await BloodRequest.find({ targetHospital: null });
-    if (legacyRequests.length > 0) {
-      for (const req of legacyRequests) {
-        if (req.hospital) {
-          req.targetHospital = req.hospital;
-        } else {
-          req.status = 'legacy';
+// Connect to MongoDB and auto-seed if empty in non-production local development
+connectDB()
+  .then(async () => {
+    try {
+      if (process.env.NODE_ENV !== 'production') {
+        const userCount = await User.countDocuments();
+        if (userCount === 0) {
+          console.log('Database is empty. Auto-seeding initial demo data for local dev...');
+          await seedData({ shouldExit: false });
         }
-        await req.save();
       }
-      console.log(`[Safe Migration] Updated ${legacyRequests.length} legacy requests with targetHospital / legacy status`);
-    }
 
-    // Dev-only startup self-check that runs each indexed query once with limit(1)
-    await runIndexSelfCheck(db);
-  } catch (err) {
-    console.error('Startup check error:', err.message);
-  }
-}).catch((err) => {
-  console.error('Failed to initialize database:', err.message);
-});
+      // Verify / sync MongoDB indexes in local development
+      await runIndexSelfCheck();
+    } catch (err) {
+      console.error('Startup check error:', err.message);
+    }
+  })
+  .catch((err) => {
+    console.error('Failed to initialize MongoDB:', err.message);
+  });
 
 const PORT = process.env.PORT || 5000;
 

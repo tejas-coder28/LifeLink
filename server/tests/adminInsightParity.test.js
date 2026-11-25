@@ -67,28 +67,34 @@ describe('Admin Insight & Dashboard Parity', () => {
     const donor1Reg = await registerUser(app, {
       name: 'Donor John',
       email: 'john@donor.com',
-      accountType: 'donor',
+      accountType: 'user',
     });
     const donor1Id = donor1Reg.user?._id || donor1Reg.user?.id;
-    await DonorProfile.create({
-      user: donor1Id,
-      bloodGroup: 'A+',
-      isAvailable: true,
-      address: 'Central Delhi',
-    });
+    await DonorProfile.findOneAndUpdate(
+      { user: donor1Id },
+      {
+        bloodGroup: 'A+',
+        isAvailable: true,
+        address: 'Central Delhi',
+      },
+      { upsert: true }
+    );
 
     const donor2Reg = await registerUser(app, {
       name: 'Donor Jane',
       email: 'jane@donor.com',
-      accountType: 'donor',
+      accountType: 'user',
     });
     const donor2Id = donor2Reg.user?._id || donor2Reg.user?.id;
-    await DonorProfile.create({
-      user: donor2Id,
-      bloodGroup: 'B+',
-      isAvailable: false, // offline
-      address: 'North Delhi',
-    });
+    await DonorProfile.findOneAndUpdate(
+      { user: donor2Id },
+      {
+        bloodGroup: 'B+',
+        isAvailable: false, // offline
+        address: 'North Delhi',
+      },
+      { upsert: true }
+    );
 
     // 3. Create requests
     const req1 = await BloodRequest.create({
@@ -175,15 +181,18 @@ describe('Admin Insight & Dashboard Parity', () => {
     const donorReg = await registerUser(app, {
       name: 'Donor Alex',
       email: 'alex@donor.com',
-      accountType: 'donor',
+      accountType: 'user',
     });
     const donorId = donorReg.user?._id || donorReg.user?.id;
-    await DonorProfile.create({
-      user: donorId,
-      bloodGroup: 'A+',
-      isAvailable: true,
-      address: 'Metro Region',
-    });
+    await DonorProfile.findOneAndUpdate(
+      { user: donorId },
+      {
+        bloodGroup: 'A+',
+        isAvailable: true,
+        address: 'Metro Region',
+      },
+      { upsert: true }
+    );
 
     // Request for A+ (2 units). Hospital has 20 units and 1 donor -> NO shortage!
     await BloodRequest.create({

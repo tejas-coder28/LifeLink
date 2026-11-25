@@ -98,7 +98,7 @@ const searchDonors = async ({ bloodGroup, lat, lng, radiusKm = 50, availableOnly
     compatibleGroups = compatibleDonorGroups(bloodGroup);
   }
 
-  // Filter by availability and blood group in Firestore
+  // Filter by availability and blood group in MongoDB
   let donors = await DonorProfile.findCandidates(compatibleGroups, availableOnly);
   donors = await DonorProfile.populateDocs(donors, [
     { path: 'user', select: 'name email phone accountType hospitalId' },

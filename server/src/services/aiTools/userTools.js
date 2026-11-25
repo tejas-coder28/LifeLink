@@ -203,7 +203,11 @@ async function getMyPendingPledges(context) {
   const pledges = await Donation.find({
     donor: context.userId,
     status: 'pledged',
-  }).populate('request', 'patientName bloodGroup targetHospital unitsNeeded').populate('hospital', 'name');
+  }).populate({
+    path: 'request',
+    select: 'patientName bloodGroup targetHospital unitsNeeded',
+    populate: { path: 'targetHospital', select: 'name' },
+  });
 
   return {
     count: pledges.length,
@@ -211,7 +215,7 @@ async function getMyPendingPledges(context) {
       id: p._id.toString(),
       patientName: p.request?.patientName || 'Emergency Patient',
       bloodGroup: p.request?.bloodGroup || 'Unknown',
-      hospitalName: p.hospital?.name || 'Partner Hospital',
+      hospitalName: p.hospitalName || p.request?.targetHospital?.name || 'Partner Hospital',
       unitsPledged: p.unitsDonated || 1,
       pledgedAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
       status: 'Awaiting Hospital Confirmation',
@@ -225,13 +229,18 @@ async function getMyPendingPledges(context) {
 async function getNextSteps(context) {
   const profile = await DonorProfile.findOne({ user: context.userId });
   const Donation = require('../../repositories/donation.repository');
-  const pendingPledge = await Donation.findOne({ donor: context.userId, status: 'pledged' }).populate('hospital', 'name address');
+  const pendingPledge = await Donation.findOne({ donor: context.userId, status: 'pledged' }).populate({
+    path: 'request',
+    select: 'patientName targetHospital',
+    populate: { path: 'targetHospital', select: 'name address' },
+  });
 
   if (pendingPledge) {
+    const hospitalLabel = pendingPledge.hospitalName || pendingPledge.request?.targetHospital?.name || 'the medical facility';
     return {
       stage: 'pending_pledge',
       title: 'Active Donation Pledge',
-      nextAction: `Visit ${pendingPledge.hospital?.name || 'the medical facility'} to complete your blood donation.`,
+      nextAction: `Visit ${hospitalLabel} to complete your blood donation.`,
       actionButton: 'donor-history',
       actionLabel: 'View Pledge Details',
     };

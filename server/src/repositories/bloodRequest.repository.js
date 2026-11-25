@@ -12,6 +12,18 @@ class BloodRequestRepository extends BaseRepository {
     const hospitalId = data.hospital && data.hospital._id ? data.hospital._id.toString() : (data.hospital ? data.hospital.toString() : null);
     const targetHospId = data.targetHospital && data.targetHospital._id ? data.targetHospital._id.toString() : (data.targetHospital ? data.targetHospital.toString() : null);
 
+    const resolvedUnitsNeeded = Number(data.unitsNeeded) || 1;
+    const resolvedUnitsFromStock = Number(data.unitsFromStock) || 0;
+    const resolvedStatus = data.status || 'pending_hospital_review';
+    const resolvedUnitsFromDonors =
+      data.unitsFromDonors !== undefined && data.unitsFromDonors !== null
+        ? Number(data.unitsFromDonors)
+        : data.unitsNeededFromDonors !== undefined && data.unitsNeededFromDonors !== null
+        ? Number(data.unitsNeededFromDonors)
+        : resolvedStatus === 'pending_hospital_review'
+        ? 0
+        : Math.max(0, resolvedUnitsNeeded - resolvedUnitsFromStock);
+
     const payload = {
       ...data,
       requester: requesterId,
@@ -19,12 +31,12 @@ class BloodRequestRepository extends BaseRepository {
       targetHospital: targetHospId,
       patientName: data.patientName || '',
       bloodGroup: data.bloodGroup || 'A+',
-      unitsNeeded: Number(data.unitsNeeded) || 1,
-      unitsFromStock: Number(data.unitsFromStock) || 0,
-      unitsFromDonors: Number(data.unitsFromDonors) || 0,
+      unitsNeeded: resolvedUnitsNeeded,
+      unitsFromStock: resolvedUnitsFromStock,
+      unitsFromDonors: resolvedUnitsFromDonors,
       unitsFulfilled: Number(data.unitsFulfilled) || 0,
       urgency: data.urgency || 'high',
-      status: data.status || 'pending_hospital_review',
+      status: resolvedStatus,
       location: data.location || { type: 'Point', coordinates: [77.2090, 28.6139] },
       address: data.address || '',
       requiredByDate: data.requiredByDate ? new Date(data.requiredByDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
