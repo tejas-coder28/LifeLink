@@ -48,7 +48,7 @@ const googleAuth = async (req, res, next) => {
     const errorClass = error.name || error.constructor?.name || 'Error';
     console.error(`[GoogleAuth Controller] Error class: ${errorClass}`);
     if (isDbError(error)) {
-      return sendError(res, 'Database error during Google sign-in. Please try again.', 500);
+      return next ? next(error) : sendError(res, 'Database service is temporarily unavailable. Please try again.', 503);
     }
     return sendError(res, error.message || 'Google sign-in failed', error.statusCode || 401);
   }

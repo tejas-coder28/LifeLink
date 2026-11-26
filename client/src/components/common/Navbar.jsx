@@ -103,7 +103,7 @@ const Navbar = () => {
                     {active && (
                       <motion.div
                         layoutId="active-nav-indicator"
-                        className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
+                        className="absolute inset-0 rounded-full bg-raised border border-hairline-strong shadow-sm"
                         transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                       />
                     )}
@@ -127,7 +127,7 @@ const Navbar = () => {
                       {(isActive('/donor') || isActive('/individual')) && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
+                          className="absolute inset-0 rounded-full bg-accent-donor-subtle border border-accent-donor-border shadow-sm"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -146,7 +146,7 @@ const Navbar = () => {
                       {isActive('/hospital') && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
+                          className="absolute inset-0 rounded-full bg-accent-hospital-subtle border border-accent-hospital-border shadow-sm"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -165,7 +165,7 @@ const Navbar = () => {
                       {isActive('/admin') && (
                         <motion.div
                           layoutId="active-nav-indicator"
-                          className="absolute inset-0 rounded-full bg-danger/15 border border-danger/40 shadow-[0_0_12px_rgba(200,16,46,0.20)]"
+                          className="absolute inset-0 rounded-full bg-accent-admin-subtle border border-accent-admin-border shadow-sm"
                           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                         />
                       )}
@@ -192,8 +192,8 @@ const Navbar = () => {
               </div>
 
               {user ? (
-                <div className="flex items-center space-x-2.5 xl:space-x-3 px-2.5 xl:px-3 py-1.5 rounded-full border border-hairline bg-surface/60 backdrop-blur-md min-w-0 max-w-full">
-                  <div className="w-8 h-8 rounded-full bg-info/10 text-primary font-black text-xs flex items-center justify-center border border-info/30 shrink-0">
+                <div className="flex items-center space-x-2.5 xl:space-x-3 px-2.5 xl:px-3 py-1.5 rounded-full border border-hairline bg-surface/90 dark:bg-raised/75 backdrop-blur-md min-w-0 max-w-full">
+                  <div className="w-8 h-8 rounded-full bg-info/15 text-info font-black text-xs flex items-center justify-center border border-info/30 shrink-0">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <div className="text-left hidden xl:block min-w-0">
@@ -217,13 +217,13 @@ const Navbar = () => {
                 <div className="flex items-center space-x-2">
                   <Link
                     to="/login"
-                    className="text-xs font-bold text-secondary hover:text-info px-4 py-2 rounded-full transition-colors"
+                    className="btn-secondary text-xs px-4 py-2"
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/register"
-                    className="btn-primary text-xs px-4 py-2"
+                    className="btn-action text-xs px-4 py-2"
                   >
                     Register
                   </Link>

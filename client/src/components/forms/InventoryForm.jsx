@@ -39,12 +39,12 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
           return (
             <div
               key={item.bloodGroup}
-              className={`p-4 rounded-2xl flex flex-col items-center justify-between space-y-3 transition-all ${
+              className={`glass-card p-4 rounded-2xl flex flex-col items-center justify-between space-y-3 transition-all border ${
                 isCritical
-                  ? 'bg-urgency-critical-subtle border-2 border-urgency-critical-border shadow-sm'
+                  ? 'border-urgency-critical/50'
                   : isWarning
-                  ? 'bg-urgency-medium-subtle border-2 border-urgency-medium-border shadow-sm'
-                  : 'glass-card border-hairline'
+                  ? 'border-urgency-medium/50'
+                  : 'border-hairline-strong'
               }`}
             >
               <span className={`blood-pill blood-${bgKey}`}>
@@ -54,13 +54,14 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
                 <button
                   type="button"
                   onClick={() => handleUnitChange(item.bloodGroup, -1)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-surface border border-hairline text-primary hover:border-info/40 transition-all shadow-sm cursor-pointer"
+                  className="btn-secondary w-9 h-9 rounded-xl p-0 flex items-center justify-center font-bold text-xs"
                   title="Decrease units"
+                  aria-label={`Decrease ${item.bloodGroup} units`}
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
                 <span
-                  className={`text-2xl font-black min-w-[32px] text-center tabular-nums ${
+                  className={`text-2xl font-black min-w-[36px] text-center tabular-nums ${
                     isCritical ? 'text-urgency-critical' : isWarning ? 'text-urgency-medium' : 'text-success'
                   }`}
                 >
@@ -69,15 +70,20 @@ const InventoryForm = ({ initialData = [], onSubmit, loading = false }) => {
                 <button
                   type="button"
                   onClick={() => handleUnitChange(item.bloodGroup, 1)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs btn-primary p-0 shadow-md transition-all cursor-pointer"
+                  className="btn-action w-9 h-9 rounded-xl p-0 flex items-center justify-center font-bold text-xs"
                   title="Increase units"
+                  aria-label={`Increase ${item.bloodGroup} units`}
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
               <span
-                className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                  isCritical ? 'text-urgency-critical font-black' : isWarning ? 'text-urgency-medium font-black' : 'text-success'
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                  isCritical
+                    ? 'bg-urgency-critical-subtle text-urgency-critical border-urgency-critical-border'
+                    : isWarning
+                    ? 'bg-urgency-medium-subtle text-urgency-medium border-urgency-medium-border'
+                    : 'bg-success/10 text-success border-success/30'
                 }`}
               >
                 {isCritical ? '0 units Critical' : isWarning ? `${item.units} units Low` : `${item.units} units In Stock`}

@@ -18,7 +18,8 @@ const pledge = async (req, res, next) => {
 
 const complete = async (req, res, next) => {
   try {
-    const donation = await donationService.completeDonation(req.params.id, req.user);
+    const donatedAt = req.body && req.body.donatedAt !== undefined ? req.body.donatedAt : undefined;
+    const donation = await donationService.completeDonation(req.params.id, req.user, { donatedAt });
     return sendSuccess(res, 'Donation marked as completed', donation);
   } catch (error) {
     if (error.statusCode) {

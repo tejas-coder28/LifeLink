@@ -1,5 +1,10 @@
-const dotenv = require('dotenv');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config();
+
 const connectDB = require('./config/db');
+const { disconnectMongo } = require('./config/mongo');
+const models = require('./models');
 const User = require('./repositories/user.repository');
 const DonorProfile = require('./repositories/donorProfile.repository');
 const Hospital = require('./repositories/hospital.repository');
@@ -8,36 +13,44 @@ const Donation = require('./repositories/donation.repository');
 const Notification = require('./repositories/notification.repository');
 const AIInsight = require('./repositories/aiInsight.repository');
 
-dotenv.config();
-
 const seedData = async (options = true) => {
   let shouldExit = true;
+  let shouldReset = process.argv.includes('--reset');
+
   if (typeof options === 'boolean') {
     shouldExit = options;
   } else if (typeof options === 'object' && options !== null) {
     shouldExit = options.shouldExit !== undefined ? options.shouldExit : true;
+    if (options.reset !== undefined) shouldReset = Boolean(options.reset);
   }
 
   try {
     await connectDB();
 
+    if (shouldReset) {
+      console.log('Reset flag detected. Clearing all MongoDB collections...');
+      await Promise.all(Object.values(models).map((M) => M.deleteMany({})));
+      await Promise.all(Object.values(models).map((M) => M.syncIndexes()));
+      console.log('Collections cleared and indexes synchronized.');
+    }
+
     const existingUsersCount = await User.countDocuments();
 
     if (existingUsersCount > 0) {
       console.log(`Database already has data (${existingUsersCount} user(s) found).`);
-      console.log('Skipping seed to prevent overwriting existing data.');
+      console.log('Skipping seed to prevent overwriting existing data. Use --reset to recreate.');
       if (shouldExit) {
+        await disconnectMongo();
         process.exit(0);
       }
       return;
     }
 
     console.log('Database is empty. Populating initial seed data...');
-
     console.log('Creating demo users...');
 
     // 1. Create Admin
-    const admin = await User.create({
+    await User.create({
       name: 'System Admin',
       email: 'admin@lifelink.com',
       password: 'admin123',
@@ -45,8 +58,8 @@ const seedData = async (options = true) => {
       phone: '+91 9876543210',
     });
 
-    // 2. Create Hospital User & Profile
-    const hospitalUser = await User.create({
+    // 2. Create Verified Demo Hospital User & 8-Group Inventory
+    let hospitalUser = await User.create({
       name: 'City General Hospital',
       email: 'hospital@lifelink.com',
       password: 'hospital123',
@@ -77,10 +90,9 @@ const seedData = async (options = true) => {
       isVerified: true,
     });
 
-    hospitalUser.hospitalId = hospital._id;
-    await hospitalUser.save();
+    hospitalUser = await User.findByIdAndUpdate(hospitalUser._id, { hospitalId: hospital._id });
 
-    // 3. Create Individual User (Former Recipient)
+    // 3. Create Individual User (Requester + Profile)
     const recipientUser = await User.create({
       name: 'Sarah Connor',
       email: 'recipient@lifelink.com',
@@ -89,30 +101,38 @@ const seedData = async (options = true) => {
       phone: '+91 9988776655',
     });
 
-    // Create DonorProfile for Sarah Connor (so she has a profile as an individual)
     await DonorProfile.create({
       user: recipientUser._id,
       bloodGroup: 'O-',
+      bloodGroupConfirmed: true,
       location: {
         type: 'Point',
         coordinates: [77.2090, 28.6139],
       },
       address: 'Delhi NCR Region',
+      age: 32,
+      gender: 'female',
+      is18Plus: true,
+      isWeight50KgPlus: true,
+      consentContact: true,
       isAvailable: true,
       contactNumber: recipientUser.phone,
     });
 
-    // 4. Create Multiple Individual Donors with Geo Coordinates around NCR
+    // 4. Create Demo Donor Mix:
+    //    - Eligible donor (last donated >= 90 days ago)
+    //    - Never-donated donor (lastDonationDate: null)
+    //    - Donor in cooldown (last donated 30 days ago)
     const donorUsersData = [
       {
         name: 'Alex Rivera (Universal Donor)',
         email: 'user@lifelink.com',
         password: 'user123',
         bloodGroup: 'O-',
-        coords: [77.2090, 28.6139], // Connaught Place (1.5 km)
+        coords: [77.2090, 28.6139], // Connaught Place
         age: 29,
         gender: 'male',
-        lastDonation: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago (eligible)
+        lastDonation: new Date(Date.now() - 95 * 24 * 60 * 60 * 1000), // Eligible (>= 90d)
         healthFlags: ['none'],
       },
       {
@@ -120,10 +140,10 @@ const seedData = async (options = true) => {
         email: 'donor2@lifelink.com',
         password: 'donor123',
         bloodGroup: 'A+',
-        coords: [77.2300, 28.6250], // Mandi House (3 km)
+        coords: [77.2300, 28.6250], // Mandi House
         age: 26,
         gender: 'female',
-        lastDonation: null, // First time donor
+        lastDonation: null, // Never-donated first-time donor
         healthFlags: ['none'],
       },
       {
@@ -131,10 +151,10 @@ const seedData = async (options = true) => {
         email: 'donor3@lifelink.com',
         password: 'donor123',
         bloodGroup: 'B+',
-        coords: [77.2500, 28.5500], // Kalkaji (8 km)
+        coords: [77.2500, 28.5500], // Kalkaji
         age: 34,
         gender: 'male',
-        lastDonation: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
+        lastDonation: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // Eligible (>= 90d)
         healthFlags: ['none'],
       },
       {
@@ -142,7 +162,7 @@ const seedData = async (options = true) => {
         email: 'donor4@lifelink.com',
         password: 'donor123',
         bloodGroup: 'O+',
-        coords: [77.3000, 28.5800], // Noida sector 15 (14 km)
+        coords: [77.3000, 28.5800], // Noida sector 15
         age: 31,
         gender: 'female',
         lastDonation: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // In 90-day cooldown
@@ -163,6 +183,7 @@ const seedData = async (options = true) => {
       const dp = await DonorProfile.create({
         user: u._id,
         bloodGroup: dData.bloodGroup,
+        bloodGroupConfirmed: true,
         location: {
           type: 'Point',
           coordinates: dData.coords,
@@ -174,21 +195,29 @@ const seedData = async (options = true) => {
         gender: dData.gender,
         healthFlags: dData.healthFlags,
         contactNumber: u.phone,
-        totalDonations: dData.lastDonation ? 2 : 0,
+        is18Plus: true,
+        isWeight50KgPlus: true,
+        consentContact: true,
+        profileComplete: true,
+        completedDonations: dData.lastDonation ? 1 : 0,
+        totalDonations: dData.lastDonation ? 1 : 0,
       });
 
       donorProfiles.push({ user: u, profile: dp });
     }
 
-    console.log('Creating blood requests & donations...');
+    console.log('Creating sample blood requests & donations...');
 
     // Create Blood Requests
     const req1 = await BloodRequest.create({
       requester: recipientUser._id,
       hospital: hospital._id,
+      targetHospital: hospital._id,
+      hospitalName: hospital.name,
       patientName: 'Robert Vance',
       bloodGroup: 'O-',
       unitsNeeded: 2,
+      unitsFromDonors: 2,
       urgency: 'critical',
       location: {
         type: 'Point',
@@ -198,15 +227,18 @@ const seedData = async (options = true) => {
       status: 'open',
       requiredByDate: new Date(Date.now() + 12 * 60 * 60 * 1000),
       notes: 'Urgent cardiac trauma surgery required.',
-      matchedDonorsCount: 3,
+      matchedDonorsCount: 2,
     });
 
     const req2 = await BloodRequest.create({
       requester: recipientUser._id,
       hospital: hospital._id,
+      targetHospital: hospital._id,
+      hospitalName: hospital.name,
       patientName: 'Anita Gupta',
       bloodGroup: 'A+',
       unitsNeeded: 1,
+      unitsFulfilled: 1,
       urgency: 'high',
       location: {
         type: 'Point',
@@ -214,23 +246,64 @@ const seedData = async (options = true) => {
       },
       address: 'City General Hospital Room 302',
       status: 'fulfilled',
-      requiredByDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      requiredByDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       notes: 'Post-partum care blood replenishment.',
-      matchedDonorsCount: 4,
+      matchedDonorsCount: 3,
     });
 
-    // Create Donation Record
+    const req3 = await BloodRequest.create({
+      requester: recipientUser._id,
+      hospital: hospital._id,
+      targetHospital: hospital._id,
+      hospitalName: hospital.name,
+      patientName: 'Vikram Mehta',
+      bloodGroup: 'O-',
+      unitsNeeded: 1,
+      unitsFulfilled: 1,
+      urgency: 'critical',
+      location: {
+        type: 'Point',
+        coordinates: [77.2090, 28.6139],
+      },
+      address: 'City General Emergency ICU',
+      status: 'fulfilled',
+      requiredByDate: donorUsersData[0].lastDonation,
+      notes: 'Emergency trauma transfusion fulfilled by standby universal donor.',
+      matchedDonorsCount: 2,
+    });
+
     await Donation.create({
-      donor: donorProfiles[1].user._id, // Priya Sharma (A+)
-      donorProfile: donorProfiles[1].profile._id,
-      request: req2._id,
+      donor: donorProfiles[0].user._id, // Alex Rivera (O-, 95 days ago — matches lastDonationDate)
+      donorProfile: donorProfiles[0].profile._id,
+      request: req3._id,
+      hospitalName: hospital.name,
       unitsDonated: 1,
-      donationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      pledgedAt: donorUsersData[0].lastDonation,
+      donatedAt: donorUsersData[0].lastDonation,
+      confirmedAt: donorUsersData[0].lastDonation,
+      donationDate: donorUsersData[0].lastDonation,
+      completedAt: donorUsersData[0].lastDonation,
+      fulfilledAt: donorUsersData[0].lastDonation,
+      status: 'completed',
+      notes: 'Completed O- universal blood donation at City General Emergency Hospital.',
+    });
+
+    await Donation.create({
+      donor: donorProfiles[3].user._id, // Elena Rostova (O+, 30 days ago — in cooldown)
+      donorProfile: donorProfiles[3].profile._id,
+      request: req2._id,
+      hospitalName: hospital.name,
+      unitsDonated: 1,
+      pledgedAt: donorUsersData[3].lastDonation,
+      donatedAt: donorUsersData[3].lastDonation,
+      confirmedAt: donorUsersData[3].lastDonation,
+      donationDate: donorUsersData[3].lastDonation,
+      completedAt: donorUsersData[3].lastDonation,
+      fulfilledAt: donorUsersData[3].lastDonation,
       status: 'completed',
       notes: 'Successful blood donation at City General Hospital.',
     });
 
-    // Create Notifications
     await Notification.create({
       recipient: donorProfiles[0].user._id,
       title: '🚨 Emergency Blood Request Match!',
@@ -239,15 +312,14 @@ const seedData = async (options = true) => {
       link: `/requests/${req1._id}`,
     });
 
-    // Create Initial AI Insight
     await AIInsight.create({
       title: 'LifeLink Regional Blood Reserve Analysis',
       summary: 'Emergency response metrics show high readiness for O-Negative and A-Positive requests in New Delhi Central. Demand spike observed in trauma care.',
       metrics: {
-        totalRequests: 2,
-        fulfilledRequests: 1,
-        fulfillmentRate: '50%',
-        activeStandbyDonors: 4,
+        totalRequests: 3,
+        fulfilledRequests: 2,
+        fulfillmentRate: '67%',
+        activeStandbyDonors: 5,
         highRiskBloodGroups: ['O-', 'AB-'],
         surplusGroups: ['A+', 'O+'],
       },
@@ -262,19 +334,24 @@ const seedData = async (options = true) => {
     console.log('=======================================================');
     console.log('  ✅ Seed Script Execution Completed Successfully!');
     console.log('  Demo Login Credentials:');
-    console.log('   - User:       user@lifelink.com / user123');
-    console.log('   - Hospital:   hospital@lifelink.com / hospital123');
-    console.log('   - Admin:      admin@lifelink.com / admin123');
+    console.log('   - User (Eligible): user@lifelink.com / user123');
+    console.log('   - User (Never Donated): donor2@lifelink.com / donor123');
+    console.log('   - User (In Cooldown): donor4@lifelink.com / donor123');
+    console.log('   - Hospital:        hospital@lifelink.com / hospital123');
+    console.log('   - Admin:           admin@lifelink.com / admin123');
     console.log('=======================================================');
 
     if (shouldExit) {
+      await disconnectMongo();
       process.exit(0);
     }
   } catch (err) {
     console.error('Seed Error:', err);
     if (shouldExit) {
+      try { await disconnectMongo(); } catch (_) {}
       process.exit(1);
     }
+    throw err;
   }
 };
 

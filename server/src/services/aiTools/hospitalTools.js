@@ -4,6 +4,7 @@ const Donation = require('../../repositories/donation.repository');
 const { BLOOD_GROUPS } = require('../../utils/bloodCompatibility');
 const { findMatchesForRequestId } = require('../matching.service');
 const { ML_PER_UNIT, formatUnits } = require('../../config/bloodUnits');
+const { formatDate, formatDateTime } = require('../../utils/dateFormatter');
 const { getHospitalRequestsBundle } = require('../hospitalRequestRules');
 
 /**
@@ -154,7 +155,7 @@ async function getPendingPledges(context) {
       unitsDonated: p.unitsDonated || 1,
       volumeMlDonated: (p.unitsDonated || 1) * ML_PER_UNIT,
       formattedUnitsDonated: formatUnits(p.unitsDonated || 1),
-      pledgedAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
+      pledgedAt: formatDate(p.pledgedAt || p.createdAt, ''),
     })),
   };
 }
@@ -331,7 +332,9 @@ async function getPledgesAwaitingConfirmation(context) {
       const firstName = fullName.split(' ')[0];
       const bg = p.donorProfile?.bloodGroup || p.request?.bloodGroup || 'Blood Donor';
       const units = p.unitsDonated || 1;
-      const time = p.createdAt ? new Date(p.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+      const pledgedAtRaw = p.pledgedAt || p.createdAt;
+      const time = pledgedAtRaw ? formatDateTime(pledgedAtRaw) : 'Recent';
+      const pledgedAt = pledgedAtRaw ? formatDate(pledgedAtRaw) : '';
 
       return {
         id: p._id.toString(),
@@ -339,6 +342,7 @@ async function getPledgesAwaitingConfirmation(context) {
         bloodGroup: bg,
         units,
         time,
+        pledgedAt,
         patientName: p.request?.patientName || 'Emergency Patient',
       };
     }),

@@ -23,6 +23,12 @@ export default {
         hairline: 'var(--hairline)',
 
         // Semantic states
+        action: {
+          DEFAULT: 'var(--action-solid)',
+          hover: 'var(--action-hover)',
+          pressed: 'var(--action-pressed)',
+          fg: 'var(--action-fg)',
+        },
         danger: {
           DEFAULT: 'var(--danger)',
           solid: 'var(--danger-solid)',
@@ -32,6 +38,8 @@ export default {
         },
         success: {
           DEFAULT: 'var(--success)',
+          solid: 'var(--success-solid)',
+          hover: 'var(--success-hover)',
         },
         warning: {
           DEFAULT: 'var(--warning)',
@@ -77,11 +85,11 @@ export default {
         },
 
         midnight: {
-          DEFAULT: '#0A0F1C',
-          950: '#0A0F1C',
-          900: '#111A2E',
-          850: '#18233D',
-          800: '#1F2C4A',
+          DEFAULT: '#141210',
+          950: '#141210',
+          900: '#1D1A17',
+          850: '#27231F',
+          800: '#312C27',
         },
 
         obsidian: {
@@ -200,18 +208,18 @@ export default {
         'elevation-base':     'var(--shadow-card)',
         'elevation-raised':   'var(--shadow-card-hover)',
         'elevation-floating': 'var(--shadow-elevated)',
-        'elevation-overlay':  '0 24px 64px -8px rgba(10, 15, 28, 0.85), var(--glass-specular)',
+        'elevation-overlay':  '0 24px 64px -8px rgba(10, 8, 6, 0.85), var(--glass-specular)',
 
         card:          'var(--shadow-card)',
         'card-hover':  'var(--shadow-card-hover)',
         elevated:      'var(--shadow-elevated)',
 
-        'glow-crimson':  '0 0 24px -4px rgba(229, 72, 77, 0.45)',
-        'glow-danger':   '0 0 24px -4px rgba(229, 72, 77, 0.45)',
-        'glow-info':     '0 0 24px -4px rgba(96, 165, 250, 0.35)',
-        'glow-ice':      '0 0 24px -4px rgba(165, 216, 255, 0.30)',
-        'glow-success':  '0 0 24px -4px rgba(52, 211, 153, 0.35)',
-        'glow-warning':  '0 0 24px -4px rgba(251, 191, 36, 0.35)',
+        'glow-crimson':  '0 0 24px -4px rgba(217, 59, 78, 0.42)',
+        'glow-danger':   '0 0 24px -4px rgba(217, 59, 78, 0.42)',
+        'glow-info':     '0 0 24px -4px rgba(242, 156, 121, 0.35)',
+        'glow-ice':      '0 0 24px -4px rgba(246, 223, 201, 0.28)',
+        'glow-success':  '0 0 24px -4px rgba(74, 222, 128, 0.32)',
+        'glow-warning':  '0 0 24px -4px rgba(251, 191, 36, 0.32)',
 
         'glass-inset':   'var(--glass-inset)',
         'glass-specular': 'var(--glass-specular)',

@@ -8,6 +8,7 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
+import ConfirmDonationModal from '../../components/forms/ConfirmDonationModal';
 import { formatUnits } from '../../constants/bloodUnits';
 import { formatDate } from '../../utils/dateFormatter';
 import {
@@ -39,6 +40,12 @@ const TrackRequest = () => {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completingId, setCompletingId] = useState(null);
+  const [confirmDonationModal, setConfirmDonationModal] = useState({
+    isOpen: false,
+    pledge: null,
+    submitting: false,
+    error: null,
+  });
 
   // Modals for requester actions
   const [editModal, setEditModal] = useState({
@@ -126,16 +133,29 @@ const TrackRequest = () => {
     }
   };
 
-  const handleCompleteDonation = async (donationId) => {
+  const handleOpenConfirmDonationModal = (donationDoc) => {
+    setConfirmDonationModal({
+      isOpen: true,
+      pledge: donationDoc,
+      submitting: false,
+      error: null,
+    });
+  };
+
+  const handleConfirmDonationSubmit = async ({ donationId, donatedAt }) => {
     setCompletingId(donationId);
+    setConfirmDonationModal((prev) => ({ ...prev, submitting: true, error: null }));
     try {
-      const res = await requestApi.completeDonation(donationId);
+      const res = await requestApi.completeDonation(donationId, { donatedAt });
       if (res.data && res.data.success) {
         showSuccess('Donation confirmed! Donor profile updated and notified.');
+        setConfirmDonationModal({ isOpen: false, pledge: null, submitting: false, error: null });
         await fetchTrackData();
       }
     } catch (err) {
-      showError(err.response?.data?.message || 'Failed to confirm donation');
+      const msg = err.response?.data?.message || 'Failed to confirm donation';
+      setConfirmDonationModal((prev) => ({ ...prev, submitting: false, error: msg }));
+      showError(msg);
     } finally {
       setCompletingId(null);
     }
@@ -593,14 +613,20 @@ const TrackRequest = () => {
                           </span>
                         )}
                         <span>•</span>
-                        <span className="font-mono text-[11px]">Date: {formatDate(don.createdAt)}</span>
+                        <span className="font-mono text-[11px]">
+                          {['completed', 'fulfilled'].includes(don.status)
+                            ? `Pledged on ${formatDate(don.pledgedAt || don.createdAt)} • Donated on ${formatDate(don.donatedAt || don.confirmedAt || don.completedAt)}`
+                            : ['released', 'cancelled', 'rejected'].includes(don.status)
+                            ? `Pledged on ${formatDate(don.pledgedAt || don.createdAt)} • Released on ${formatDate(don.releasedAt || don.cancelledAt || don.updatedAt)}`
+                            : `Pledged on ${formatDate(don.pledgedAt || don.createdAt)}`}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {don.status === 'pledged' && (
                     <button
-                      onClick={() => handleCompleteDonation(don._id)}
+                      onClick={() => handleOpenConfirmDonationModal(don)}
                       disabled={completingId === don._id}
                       className="btn-primary text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer"
                     >
@@ -942,6 +968,17 @@ const TrackRequest = () => {
           </div>
         )}
       </Modal>
+
+      <ConfirmDonationModal
+        isOpen={confirmDonationModal.isOpen}
+        onClose={() => setConfirmDonationModal({ isOpen: false, pledge: null, submitting: false, error: null })}
+        pledge={confirmDonationModal.pledge}
+        request={request}
+        isAdmin={user?.accountType === 'admin'}
+        onConfirm={handleConfirmDonationSubmit}
+        submitting={confirmDonationModal.submitting}
+        serverError={confirmDonationModal.error}
+      />
     </div>
   );
 };

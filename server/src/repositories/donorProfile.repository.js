@@ -1,12 +1,13 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const DonorProfileModel = require('../models/DonorProfile');
+const { BaseRepository, isValidObjectId } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class DonorProfileRepository extends BaseRepository {
   constructor() {
-    super('donorProfiles');
+    super(DonorProfileModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const userId = data.user && data.user._id ? data.user._id.toString() : (data.user ? data.user.toString() : null);
     const payload = {
       ...data,
@@ -21,6 +22,7 @@ class DonorProfileRepository extends BaseRepository {
       healthFlags: data.healthFlags || ['none'],
       contactNumber: data.contactNumber || '',
       totalDonations: data.totalDonations || 0,
+      completedDonations: data.completedDonations || data.totalDonations || 0,
       bloodGroupConfirmed: data.bloodGroupConfirmed !== undefined ? Boolean(data.bloodGroupConfirmed) : false,
       profileComplete: data.profileComplete !== undefined ? Boolean(data.profileComplete) : undefined,
       is18Plus: data.is18Plus !== undefined ? Boolean(data.is18Plus) : false,
@@ -28,20 +30,16 @@ class DonorProfileRepository extends BaseRepository {
       consentContact: data.consentContact !== undefined ? Boolean(data.consentContact) : false,
       dob: data.dob || null,
     };
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 
-  async findByUserId(userId) {
+  async findByUserId(userId, session = null) {
     if (!userId) return null;
     const idStr = userId && userId._id ? userId._id.toString() : userId.toString();
-    return await this._executeFindOne({ user: idStr });
+    if (!isValidObjectId(idStr)) return null;
+    return await this.findOne({ user: idStr }, session).exec();
   }
 
-  /**
-   * Efficient Firestore query for candidates matching blood group and availability.
-   * Keeps reads low by filtering directly on the database layer.
-   * Excludes incomplete profiles from matching candidates.
-   */
   async findCandidates(compatibleBloodGroups = null, availableOnly = true) {
     const filter = {};
     if (availableOnly) {
@@ -50,8 +48,8 @@ class DonorProfileRepository extends BaseRepository {
     if (compatibleBloodGroups && Array.isArray(compatibleBloodGroups) && compatibleBloodGroups.length > 0) {
       filter.bloodGroup = { $in: compatibleBloodGroups };
     }
-    const candidates = await this._executeFind(filter);
-    return candidates.filter((donor) => donor.profileComplete !== false);
+    filter.profileComplete = { $ne: false };
+    return await this.find(filter).exec();
   }
 }
 

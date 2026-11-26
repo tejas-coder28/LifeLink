@@ -4,7 +4,9 @@ const User = require('../../repositories/user.repository');
 const donationService = require('../donation.service');
 const notificationService = require('../notification.service');
 const donorBadgeService = require('../donorBadge.service');
-const { canDonate, DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
+const { canDonate } = require('../../utils/bloodCompatibility');
+const { calculateEligibility, computeNextEligibleDate } = require('../../utils/eligibility');
+const { formatDate } = require('../../utils/dateFormatter');
 const { calculateHaversineDistance } = require('../../utils/geo');
 const { canSeekDonors } = require('../../utils/requestRules');
 const { ML_PER_UNIT, formatUnits } = require('../../config/bloodUnits');
@@ -24,9 +26,12 @@ async function getMyProfile(context) {
       bloodGroupConfirmed: false,
       isAvailable: false,
       address: '',
+      lastDonationDate: null,
+      nextEligibleDate: 'Eligible today',
     };
   }
 
+  const eligibility = calculateEligibility(profile.lastDonationDate);
   return {
     name: profile.user?.name || 'LifeLink Donor',
     email: profile.user?.email || '',
@@ -37,6 +42,9 @@ async function getMyProfile(context) {
     address: profile.address || '',
     age: profile.age || null,
     gender: profile.gender || '',
+    lastDonationDate: eligibility.lastDonationDate ? formatDate(eligibility.lastDonationDate) : null,
+    nextEligibleDate: eligibility.isEligible ? 'Eligible today' : formatDate(eligibility.nextEligibleDate),
+    daysLeft: eligibility.daysLeft,
   };
 }
 
@@ -45,7 +53,8 @@ async function getMyProfile(context) {
  */
 async function getEligibility(context) {
   const profile = await DonorProfile.findOne({ user: context.userId });
-  if (!profile || !profile.lastDonationDate) {
+  const eligibility = calculateEligibility(profile?.lastDonationDate);
+  if (!profile || !eligibility.lastDonationDate) {
     return {
       isEligible: true,
       daysLeft: 0,
@@ -55,20 +64,14 @@ async function getEligibility(context) {
     };
   }
 
-  const lastDate = new Date(profile.lastDonationDate);
-  const diffMs = Date.now() - lastDate.getTime();
-  const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, DONATION_COOLDOWN_DAYS - daysSince);
-  const nextEligibleDate = new Date(lastDate.getTime() + DONATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
   return {
-    isEligible: daysLeft === 0,
-    daysLeft,
-    nextEligibleDate: daysLeft === 0 ? 'Eligible today' : nextEligibleDate,
-    lastDonationDate: lastDate.toISOString().split('T')[0],
-    rationale: daysLeft === 0
+    isEligible: eligibility.isEligible,
+    daysLeft: eligibility.daysLeft,
+    nextEligibleDate: eligibility.isEligible ? 'Eligible today' : formatDate(eligibility.nextEligibleDate),
+    lastDonationDate: formatDate(eligibility.lastDonationDate),
+    rationale: eligibility.isEligible
       ? 'Eligible to donate now. Cooldown period completed.'
-      : `In cooldown: ${daysLeft} day(s) remaining before next donation.`,
+      : `In cooldown: ${eligibility.daysLeft} day(s) remaining before next donation.`,
   };
 }
 
@@ -153,17 +156,35 @@ async function getMyDonationHistory(context) {
     count: totalDonations,
     totalDonations,
     completedDonations: records.filter((r) => r.status === 'completed').length,
-    records: records.slice(0, 6).map((item) => ({
-      id: item._id?.toString(),
-      patientName: item.request?.patientName || 'Emergency Patient',
-      bloodGroup: item.request?.bloodGroup || 'Blood Unit',
-      unitsDonated: item.unitsDonated || 1,
-      status: item.status,
-      hospitalName: item.request?.targetHospital?.name || 'Partner Hospital',
-      date: item.completedAt || item.donationDate || item.createdAt
-        ? new Date(item.completedAt || item.donationDate || item.createdAt).toISOString().split('T')[0]
-        : '',
-    })),
+    records: records.slice(0, 6).map((item) => {
+      const pledgedAtRaw = item.pledgedAt || item.createdAt;
+      const isFulfilled = item.status === 'completed' || item.status === 'fulfilled';
+      const donatedAtRaw = isFulfilled
+        ? (item.donatedAt || item.confirmedAt || item.completedAt || item.fulfilledAt)
+        : null;
+      const confirmedAtRaw = isFulfilled
+        ? (item.confirmedAt || item.fulfilledAt || item.completedAt)
+        : null;
+      const releasedAtRaw = ['released', 'cancelled', 'rejected'].includes(item.status)
+        ? (item.releasedAt || item.cancelledAt || item.updatedAt)
+        : null;
+      const nextEligibleRaw = donatedAtRaw ? computeNextEligibleDate(donatedAtRaw) : null;
+
+      return {
+        id: item._id?.toString(),
+        patientName: item.request?.patientName || 'Emergency Patient',
+        bloodGroup: item.request?.bloodGroup || 'Blood Unit',
+        unitsDonated: item.unitsDonated || 1,
+        status: item.status,
+        hospitalName: item.hospitalName || item.request?.targetHospital?.name || 'Partner Hospital',
+        pledgedAt: formatDate(pledgedAtRaw, ''),
+        donatedAt: donatedAtRaw ? formatDate(donatedAtRaw, '') : null,
+        confirmedAt: confirmedAtRaw ? formatDate(confirmedAtRaw, '') : null,
+        releasedAt: releasedAtRaw ? formatDate(releasedAtRaw, '') : null,
+        nextEligibleDate: nextEligibleRaw ? formatDate(nextEligibleRaw, '') : null,
+        date: formatDate(donatedAtRaw || pledgedAtRaw, ''),
+      };
+    }),
   };
 }
 
@@ -203,7 +224,11 @@ async function getMyPendingPledges(context) {
   const pledges = await Donation.find({
     donor: context.userId,
     status: 'pledged',
-  }).populate('request', 'patientName bloodGroup targetHospital unitsNeeded').populate('hospital', 'name');
+  }).populate({
+    path: 'request',
+    select: 'patientName bloodGroup targetHospital unitsNeeded',
+    populate: { path: 'targetHospital', select: 'name' },
+  });
 
   return {
     count: pledges.length,
@@ -211,9 +236,9 @@ async function getMyPendingPledges(context) {
       id: p._id.toString(),
       patientName: p.request?.patientName || 'Emergency Patient',
       bloodGroup: p.request?.bloodGroup || 'Unknown',
-      hospitalName: p.hospital?.name || 'Partner Hospital',
+      hospitalName: p.hospitalName || p.request?.targetHospital?.name || 'Partner Hospital',
       unitsPledged: p.unitsDonated || 1,
-      pledgedAt: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
+      pledgedAt: formatDate(p.pledgedAt || p.createdAt, ''),
       status: 'Awaiting Hospital Confirmation',
     })),
   };
@@ -225,13 +250,18 @@ async function getMyPendingPledges(context) {
 async function getNextSteps(context) {
   const profile = await DonorProfile.findOne({ user: context.userId });
   const Donation = require('../../repositories/donation.repository');
-  const pendingPledge = await Donation.findOne({ donor: context.userId, status: 'pledged' }).populate('hospital', 'name address');
+  const pendingPledge = await Donation.findOne({ donor: context.userId, status: 'pledged' }).populate({
+    path: 'request',
+    select: 'patientName targetHospital',
+    populate: { path: 'targetHospital', select: 'name address' },
+  });
 
   if (pendingPledge) {
+    const hospitalLabel = pendingPledge.hospitalName || pendingPledge.request?.targetHospital?.name || 'the medical facility';
     return {
       stage: 'pending_pledge',
       title: 'Active Donation Pledge',
-      nextAction: `Visit ${pendingPledge.hospital?.name || 'the medical facility'} to complete your blood donation.`,
+      nextAction: `Visit ${hospitalLabel} to complete your blood donation.`,
       actionButton: 'donor-history',
       actionLabel: 'View Pledge Details',
     };
@@ -247,21 +277,15 @@ async function getNextSteps(context) {
     };
   }
 
-  const { DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
-  if (profile.lastDonationDate) {
-    const lastDate = new Date(profile.lastDonationDate);
-    const diffMs = Date.now() - lastDate.getTime();
-    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const daysLeft = Math.max(0, (DONATION_COOLDOWN_DAYS || 90) - daysSince);
-    if (daysLeft > 0) {
-      return {
-        stage: 'cooldown',
-        title: 'Rest & Recovery',
-        nextAction: `You are in rest cooldown for ${daysLeft} more day(s). Thank you for saving lives!`,
-        actionButton: 'donor-profile',
-        actionLabel: 'View Health Info',
-      };
-    }
+  const eligibility = calculateEligibility(profile.lastDonationDate);
+  if (!eligibility.isEligible) {
+    return {
+      stage: 'cooldown',
+      title: 'Rest & Recovery',
+      nextAction: `You are in rest cooldown for ${eligibility.daysLeft} more day(s) (eligible again on ${formatDate(eligibility.nextEligibleDate)}). Thank you for saving lives!`,
+      actionButton: 'donor-profile',
+      actionLabel: 'View Health Info',
+    };
   }
 
   return {

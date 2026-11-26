@@ -18,13 +18,13 @@
 
 require('./setup');
 
+const mongoose = require('mongoose');
 const request = require('supertest');
 const { connect, clearDatabase, disconnect } = require('./helpers/db');
 const { registerUser, registerHospital } = require('./helpers/auth');
 const { isDonorCandidate } = require('../src/services/matching.service');
 const donationService = require('../src/services/donation.service');
 const requestService = require('../src/services/request.service');
-const { getDb } = require('../src/config/db');
 
 let app;
 let User;
@@ -311,47 +311,18 @@ describe('Firestore Transaction Ordering and Donation Fulfillment', () => {
     expect(forbiddenRes.body.message).toContain('Unauthorized');
   });
 
-  test('regression: no transaction.get occurs after a write across fulfill, pledge, decline, and allocate flows', async () => {
-    const db = getDb();
-    const originalRunTransaction = db.runTransaction.bind(db);
+  test('regression: MongoDB session transactions wrap fulfill, pledge, decline, and allocate flows', async () => {
+    const originalStartSession = mongoose.startSession.bind(mongoose);
+    let txCount = 0;
 
-    // Spy on transaction operations
-    const txLog = [];
-    db.runTransaction = async function (updateFn) {
-      let writeCount = 0;
-      let hasReadAfterWrite = false;
-
-      const wrappedFn = async (txn) => {
-        const proxyTxn = {
-          get: async (docRef) => {
-            if (writeCount > 0) {
-              hasReadAfterWrite = true;
-            }
-            txLog.push({ op: 'get', path: docRef.path, writeCount });
-            return await txn.get(docRef);
-          },
-          set: (docRef, data, options) => {
-            writeCount++;
-            txLog.push({ op: 'set', path: docRef.path, writeCount });
-            return txn.set(docRef, data, options);
-          },
-          update: (docRef, data) => {
-            writeCount++;
-            txLog.push({ op: 'update', path: docRef.path, writeCount });
-            return txn.update(docRef, data);
-          },
-          delete: (docRef) => {
-            writeCount++;
-            txLog.push({ op: 'delete', path: docRef.path, writeCount });
-            return txn.delete(docRef);
-          },
-        };
-        return await updateFn(proxyTxn);
+    mongoose.startSession = async function (...args) {
+      const session = await originalStartSession(...args);
+      const origWithTx = session.withTransaction.bind(session);
+      session.withTransaction = async function (fn, ...rest) {
+        txCount++;
+        return await origWithTx(fn, ...rest);
       };
-
-      const result = await originalRunTransaction(wrappedFn);
-      expect(hasReadAfterWrite).toBe(false);
-      return result;
+      return session;
     };
 
     try {
@@ -425,8 +396,9 @@ describe('Firestore Transaction Ordering and Donation Fulfillment', () => {
       // 7. Patient units issue transaction
       const patIssued = await requestService.issuePatientUnits(reqComp._id, hospUser._id, 'hospital', 1);
       expect(patIssued).toBeDefined();
+      expect(txCount).toBeGreaterThanOrEqual(7);
     } finally {
-      db.runTransaction = originalRunTransaction;
+      mongoose.startSession = originalStartSession;
     }
   });
 });

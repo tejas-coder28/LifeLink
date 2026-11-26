@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import PageTransition from '../../components/common/PageTransition';
-import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
-import { Heart, Calendar, MapPin, Loader2, Building2 } from 'lucide-react';
+import DonationHistoryCard from '../../components/cards/DonationHistoryCard';
+import { Heart, Loader2 } from 'lucide-react';
 import { requestApi } from '../../api/requestApi';
-import { formatUnits } from '../../constants/bloodUnits';
-import { formatDate } from '../../utils/dateFormatter';
-import { getDonationStatusExplanatory } from '../../utils/statusHelper';
 
 const DonationHistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -52,51 +49,7 @@ const DonationHistoryPage = () => {
       ) : (
         <div className="space-y-4">
           {history.map((item) => (
-            <div
-              key={item._id}
-              className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-hairline hover:border-info/40 transition-all duration-200 shadow-card"
-            >
-              <div className="space-y-3 flex-1 min-w-0">
-                <div className="flex items-center flex-wrap gap-2.5">
-                  <Badge bloodGroup={item.request?.bloodGroup || 'O+'} />
-                  <h3 className="text-base font-bold text-primary font-heading truncate">
-                    {item.request?.patientName ? `Donation for ${item.request.patientName}` : 'Emergency Blood Request'}
-                  </h3>
-                  <Badge status={item.status} />
-                </div>
-                <div className="text-xs space-y-1.5 text-secondary">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 shrink-0 text-muted" />
-                    <span className="truncate font-semibold text-primary">
-                      {item.hospitalName || item.request?.targetHospital?.name || item.hospital?.name || item.request?.hospitalName || (() => {
-                        console.error('[DonationHistory Error] Hospital unavailable for donation record', item._id);
-                        return 'Hospital unavailable';
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 shrink-0 text-muted" />
-                    <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                    <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
-                  </div>
-                  <div className="text-[11px] font-semibold text-info pt-0.5">
-                    {getDonationStatusExplanatory(item.status)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                <span className="text-sm font-black text-success block tracking-tight">
-                  {formatUnits(item.unitsDonated || 1)}
-                </span>
-                <span className="text-[11px] text-secondary font-medium block mt-0.5">
-                  {formatDate(item.createdAt)}
-                </span>
-              </div>
-            </div>
+            <DonationHistoryCard key={item._id} item={item} />
           ))}
         </div>
       )}

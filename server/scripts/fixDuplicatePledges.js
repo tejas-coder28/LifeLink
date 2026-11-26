@@ -9,6 +9,7 @@
 
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const connectDB = require('../src/config/db');
+const { disconnectMongo } = require('../src/config/mongo');
 const Donation = require('../src/repositories/donation.repository');
 
 async function fixDuplicatePledges() {
@@ -50,6 +51,7 @@ async function fixDuplicatePledges() {
   }
 
   console.log(`[fixDuplicatePledges] Cleanup complete. Released ${fixCount} duplicate pledge(s).`);
+  await disconnectMongo();
   process.exit(0);
 }
 

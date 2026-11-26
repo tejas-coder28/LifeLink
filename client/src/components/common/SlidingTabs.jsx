@@ -22,15 +22,15 @@ const SlidingTabs = ({
   };
 
   const getIndicatorBorder = () => {
-    if (accent === 'donor') return 'border-accent-donor/30';
-    if (accent === 'hospital') return 'border-accent-hospital/30';
-    if (accent === 'admin') return 'border-accent-admin/30';
-    return 'border-hairline';
+    if (accent === 'donor') return 'border-accent-donor/50';
+    if (accent === 'hospital') return 'border-accent-hospital/50';
+    if (accent === 'admin') return 'border-accent-admin/50';
+    return 'border-info/50';
   };
 
   return (
     <div
-      className={`tab-list flex items-center p-1 rounded-2xl border border-hairline bg-surface/40 backdrop-blur-md overflow-x-auto ${className}`}
+      className={`tab-list flex items-center gap-1 p-1.5 rounded-2xl border border-hairline-strong bg-raised/90 backdrop-blur-md overflow-x-auto shadow-inner ${className}`}
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -46,13 +46,13 @@ const SlidingTabs = ({
             className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap cursor-pointer z-10 ${
               isActive
                 ? 'text-primary'
-                : 'text-secondary hover:text-primary'
+                : 'text-secondary hover:text-primary hover:bg-surface/60'
             }`}
           >
             {isActive && (
               <motion.div
                 layoutId={layoutId}
-                className={`absolute inset-0 rounded-xl bg-surface shadow-card border ${getIndicatorBorder()}`}
+                className={`absolute inset-0 rounded-xl bg-surface dark:bg-overlay shadow-card border ${getIndicatorBorder()}`}
                 style={{ zIndex: -1 }}
                 transition={{
                   type: 'spring',

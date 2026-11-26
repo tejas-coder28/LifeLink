@@ -1,6 +1,8 @@
 const Hospital = require('../repositories/hospital.repository');
 const User = require('../repositories/user.repository');
 const InventoryTransaction = require('../repositories/inventoryTransaction.repository');
+const AuditLog = require('../repositories/auditLog.repository');
+const { withTransaction } = require('../config/mongo');
 
 const getHospitalByUserId = async (userId) => {
   let hospital = await Hospital.findOne({ user: userId }).populate('user', 'name email phone accountType hospitalId');
@@ -22,41 +24,46 @@ const getHospitalByUserId = async (userId) => {
 };
 
 const updateInventoryByUserId = async (userId, inventoryData) => {
-  let hospital = await Hospital.findOne({ user: userId });
-  if (!hospital) {
-    throw new Error('Hospital profile not found');
-  }
-
-  // Calculate stock differences to log in InventoryTransaction
-  const oldInventoryMap = new Map();
-  (hospital.inventory || []).forEach(item => {
-    oldInventoryMap.set(item.bloodGroup, item.units || 0);
-  });
-
-  const transactionsToCreate = [];
-  (inventoryData || []).forEach(item => {
-    const prevUnits = oldInventoryMap.get(item.bloodGroup) || 0;
-    const diff = (item.units || 0) - prevUnits;
-    if (diff !== 0) {
-      transactionsToCreate.push({
-        hospital: hospital._id,
-        bloodGroup: item.bloodGroup,
-        change: diff,
-        reason: 'manual_update',
-        actor: userId,
-        notes: `Manual inventory adjustment (${diff > 0 ? '+' : ''}${diff} units)`,
-      });
+  return await withTransaction(async (session) => {
+    const hospital = await Hospital.findOne({ user: userId }, session);
+    if (!hospital) {
+      throw new Error('Hospital profile not found');
     }
+
+    const oldInventoryMap = new Map();
+    (hospital.inventory || []).forEach((item) => {
+      oldInventoryMap.set(item.bloodGroup, item.units || 0);
+    });
+
+    const transactionsToCreate = [];
+    (inventoryData || []).forEach((item) => {
+      const prevUnits = oldInventoryMap.get(item.bloodGroup) || 0;
+      const diff = (item.units || 0) - prevUnits;
+      if (diff !== 0) {
+        transactionsToCreate.push({
+          hospital: hospital._id,
+          bloodGroup: item.bloodGroup,
+          change: diff,
+          reason: 'manual_update',
+          actor: userId,
+          notes: `Manual inventory adjustment (${diff > 0 ? '+' : ''}${diff} units)`,
+        });
+      }
+    });
+
+    const updated = await Hospital.findByIdAndUpdate(
+      hospital._id,
+      { inventory: inventoryData },
+      {},
+      session
+    );
+
+    if (transactionsToCreate.length > 0) {
+      await InventoryTransaction.insertMany(transactionsToCreate, session);
+    }
+
+    return updated;
   });
-
-  hospital.inventory = inventoryData;
-  await hospital.save();
-
-  if (transactionsToCreate.length > 0) {
-    await InventoryTransaction.insertMany(transactionsToCreate);
-  }
-
-  return hospital;
 };
 
 const getAllHospitals = async () => {
@@ -78,18 +85,39 @@ const getInventoryTransactions = async (hospitalId, limit = 20) => {
     .limit(limit);
 };
 
-// Admin: approve or reject a hospital (sets isVerified true/false)
+// Admin: approve or reject a hospital atomically inside Mongo session
 const setHospitalVerification = async (hospitalId, isVerified) => {
-  const hospital = await Hospital.findByIdAndUpdate(
-    hospitalId,
-    { isVerified },
-    { new: true }
-  );
-  if (!hospital) throw new Error('Hospital not found');
-  return await hospital.populate('user', 'name email phone accountType hospitalId');
+  const updated = await withTransaction(async (session) => {
+    const hospital = await Hospital.findByIdAndUpdate(
+      hospitalId,
+      { isVerified: Boolean(isVerified) },
+      {},
+      session
+    );
+    if (!hospital) {
+      const err = new Error('Hospital not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    await AuditLog.record(
+      {
+        action: isVerified ? 'hospital_approved' : 'hospital_verification_revoked',
+        targetId: hospital._id,
+        targetType: 'Hospital',
+        hospitalId: hospital._id,
+        metadata: { isVerified: Boolean(isVerified) },
+      },
+      session
+    );
+
+    return hospital;
+  });
+
+  return await updated.populate('user', 'name email phone accountType hospitalId');
 };
 
-// Admin: delete a hospital record (and optionally its user)
+// Admin: delete a hospital record
 const deleteHospital = async (hospitalId) => {
   const hospital = await Hospital.findByIdAndDelete(hospitalId);
   if (!hospital) throw new Error('Hospital not found');

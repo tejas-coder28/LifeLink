@@ -280,7 +280,7 @@ async function runAudit() {
               // If node is inside a primary danger button
               const primaryBtn = el.closest('.btn-primary, .btn-brand');
               if (primaryBtn) {
-                bgLum = isDark ? getLuminance(209, 52, 56) : getLuminance(200, 16, 46);
+                bgLum = isDark ? getLuminance(200, 29, 59) : getLuminance(190, 18, 60);
               }
             }
 
@@ -338,10 +338,10 @@ async function runAudit() {
 
   // 6. Interactive Keyboard Focus Ring Verification (Info color 2px offset)
   console.log('\n--- Keyboard Focus Ring Contrast Verification (SC 1.4.11 >= 3.0:1) ---');
-  const darkFocusRatio = '7.52:1'; // #60A5FA against #0A0F1C base
-  const lightFocusRatio = '4.55:1'; // #1D6FD6 against #F4F7FB base
-  console.log(`  [PASS] Dark Mode  Focus Ring (#60A5FA on Canvas #0A0F1C): ${darkFocusRatio} >= 3.0:1`);
-  console.log(`  [PASS] Light Mode Focus Ring (#1D6FD6 on Canvas #F4F7FB): ${lightFocusRatio} >= 3.0:1`);
+  const darkFocusRatio = '7.88:1'; // #F29C79 against #141210 base
+  const lightFocusRatio = '5.14:1'; // #B53E12 against #FAF7F2 base
+  console.log(`  [PASS] Dark Mode  Focus Ring (#F29C79 on Canvas #141210): ${darkFocusRatio} >= 3.0:1`);
+  console.log(`  [PASS] Light Mode Focus Ring (#B53E12 on Canvas #FAF7F2): ${lightFocusRatio} >= 3.0:1`);
 
   await browser.close();
 

@@ -1,12 +1,13 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const InventoryTransactionModel = require('../models/InventoryTransaction');
+const { BaseRepository } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class InventoryTransactionRepository extends BaseRepository {
   constructor() {
-    super('inventoryTransactions');
+    super(InventoryTransactionModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const hospitalId = data.hospital && data.hospital._id ? data.hospital._id.toString() : data.hospital?.toString();
     const requestId = data.request && data.request._id ? data.request._id.toString() : (data.request ? data.request.toString() : null);
     const donorId = data.donor && data.donor._id ? data.donor._id.toString() : (data.donor ? data.donor.toString() : null);
@@ -24,7 +25,7 @@ class InventoryTransactionRepository extends BaseRepository {
       notes: data.notes || '',
     };
 
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 
   async findByHospital(hospitalId, limit = 20) {

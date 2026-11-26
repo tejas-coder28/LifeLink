@@ -1,32 +1,58 @@
 /**
  * tests/helpers/db.js
  *
- * In-memory database setup for Jest tests.
- * Manages clean state between test suites without touching external databases.
+ * Isolated MongoDB Replica-Set test database setup using mongodb-memory-server.
+ * Supports multi-document transactions and enforces all Mongoose schema indexes.
  */
 
-const { memoryFirestoreInstance } = require('./inMemoryFirestore');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const { connectDB, disconnectMongo, isMongoConnected } = require('../../src/config/db');
+const models = require('../../src/models');
+
+let replSet = null;
+let indexesSynced = false;
 
 /**
- * Initialize test database connection. Safe to call multiple times.
+ * Initialize test MongoDB replica set connection. Safe to call multiple times.
  */
 const connect = async () => {
-  // In-memory Firestore is active automatically in NODE_ENV=test
-  return memoryFirestoreInstance;
+  if (!replSet) {
+    replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+  }
+  const uri = replSet.getUri();
+  process.env.MONGODB_URI = uri;
+
+  if (!isMongoConnected()) {
+    await connectDB(uri, { dbName: 'lifelink_test' });
+    indexesSynced = false;
+  }
+
+  if (!indexesSynced) {
+    await Promise.all(Object.values(models).map((M) => M.syncIndexes()));
+    indexesSynced = true;
+  }
+
+  return uri;
 };
 
 /**
- * Reset every collection so each test runs with a completely clean slate.
+ * Clear every collection between tests while preserving indexes.
  */
 const clearDatabase = async () => {
-  memoryFirestoreInstance.reset();
+  if (!isMongoConnected()) return;
+  await Promise.all(Object.values(models).map((M) => M.deleteMany({})));
 };
 
 /**
- * Disconnect and clean up.
+ * Disconnect Mongoose and stop MongoMemoryReplSet cleanly.
  */
 const disconnect = async () => {
-  memoryFirestoreInstance.reset();
+  await disconnectMongo();
+  indexesSynced = false;
+  if (replSet) {
+    await replSet.stop();
+    replSet = null;
+  }
 };
 
 module.exports = { connect, clearDatabase, disconnect };

@@ -2,7 +2,8 @@ const DonorProfile = require('../repositories/donorProfile.repository');
 const BloodRequest = require('../repositories/bloodRequest.repository');
 const donationService = require('./donation.service');
 const notificationService = require('./notification.service');
-const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { canDonate } = require('../utils/bloodCompatibility');
+const { calculateEligibility } = require('../utils/eligibility');
 const { calculateHaversineDistance } = require('../utils/geo');
 const { canSeekDonors } = require('../utils/requestRules');
 
@@ -112,15 +113,11 @@ async function getForYouRequests(userId, donorProfile = null) {
   const profile = donorProfile || await DonorProfile.findByUserId(userId);
   if (!profile) return [];
 
-  // Check 90-day cooldown eligibility
-  if (profile.lastDonationDate) {
-    const lastDate = new Date(profile.lastDonationDate);
-    const diffMs = Date.now() - lastDate.getTime();
-    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (daysSince < DONATION_COOLDOWN_DAYS) {
-      // In cooldown: not eligible for personalized emergency matching
-      return [];
-    }
+  // Check 90-day cooldown eligibility using shared helper
+  const eligibility = calculateEligibility(profile.lastDonationDate);
+  if (!eligibility.isEligible) {
+    // In cooldown: not eligible for personalized emergency matching
+    return [];
   }
 
   // If donor has no real location set (no address or coordinates), For You is empty

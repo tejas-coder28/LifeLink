@@ -1,12 +1,13 @@
-const { BaseRepository, normalizeDoc, toFirestoreData } = require('./base.repository');
+const AIInsightModel = require('../models/AIInsight');
+const { BaseRepository } = require('./base.repository');
 const { registerRepository } = require('./registry');
 
 class AIInsightRepository extends BaseRepository {
   constructor() {
-    super('aiInsights');
+    super(AIInsightModel);
   }
 
-  async create(data, transaction = null) {
+  async create(data, session = null) {
     const payload = {
       ...data,
       title: data.title || 'Emergency Donor Network Analysis',
@@ -16,7 +17,7 @@ class AIInsightRepository extends BaseRepository {
       rawResponse: data.rawResponse || '',
       generatedAt: data.generatedAt ? new Date(data.generatedAt) : new Date(),
     };
-    return await super.create(payload, transaction);
+    return await super.create(payload, session);
   }
 
   async getLatest(limit = 10) {

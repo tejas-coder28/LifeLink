@@ -4,12 +4,12 @@
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Firebase Firestore](https://img.shields.io/badge/Google_Firestore-Cloud_DB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-352_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO_Only-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-377_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
-LifeLink is an emergency response web application powered by **Google Cloud Firestore & Firebase Auth** with Express.js and React. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
+LifeLink is an emergency response web application powered by **MongoDB (Mongoose)** and **Express.js / React**, using **Firebase Auth strictly for Google Sign-In**. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
 
 > [!WARNING]
 > **Security Note:** Real credentials and `.env` files are never committed to GitHub. Copy `.env.example` templates to `.env` in both `server/` and `client/` directories and configure your credentials locally.
@@ -18,58 +18,264 @@ LifeLink is an emergency response web application powered by **Google Cloud Fire
 
 ## 🚀 Key Capabilities
 
-- 📍 **Smart Donor Matching Engine**: In-code spatial distance calculation and compatibility matrix ranking standby donors based on ABO/Rh RBC compatibility, 90-day donation cooldown eligibility, proximity distance, and availability.
+- 📍 **Smart Donor Matching Engine**: In-code spatial distance calculation and compatibility matrix ranking standby donors based on ABO/Rh RBC compatibility, 90-day donation cooldown eligibility (anchored to actual collection dates), proximity distance, and availability.
 - ⚡ **Emergency Request Broadcast & Tracking**: Instant creation of emergency blood requests (`/individual/create`) with live matched donor rankings and automated notification dispatch. Recipients can monitor progress in real time via an interactive stepper tracking portal (`/individual/track/:id`).
-- 🏥 **Hospital Command Hub & Reserve Stock**: Medical facilities manage reserve stock across all 8 standard blood groups, process incoming requests, allocate inventory units, and track donor fulfillments with atomic transaction guarantees.
-- 👤 **Donor Portal & Google Sign-In**: Standby donors manage availability, track donation history and cooldown eligibility, and authenticate via traditional credentials or verified Google Single Sign-On (Firebase Auth ID Token verification).
+- 🏥 **Hospital Command Hub & Reserve Stock**: Medical facilities manage reserve stock across all 8 standard blood groups, process incoming requests, allocate inventory units, inspect transaction ledgers, and verify collections via an interactive **Confirm Donation** dialog with date validation.
+- 👤 **Donor Portal & Google Sign-In**: Standby donors manage availability, view three-date donation history (`pledgedAt`, `donatedAt`, `confirmedAt`) and live cooldown countdowns, and authenticate via traditional credentials or verified Google Single Sign-On (Firebase Auth ID Token verification).
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
-- 💎 **Liquid Glass & Spatial UI**: Apple-inspired translucent glass aesthetic with 5 spatial elevation tiers, 4 harmonic drifting atmospheric orbs, dynamic refraction filters, and full light/dark mode support.
-- 📊 **AI Insights & Platform Analytics**: Administrative dashboard with emergency response time indicators, platform health metrics, shortage prediction alerts, and an interactive AI Chatbot assistant.
-- 🧪 **Comprehensive Automated Testing & QA**: 352 automated Jest + Supertest backend tests (25 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 💎 **Warm Nocturne Glass & Spatial UI**: Tactile editorial translucent UI pairing matte charcoal dark mode (`#141210`) and warm cream alabaster light mode (`#FAF7F2`) with 5 spatial elevation tiers, subtle radial ambient glows, dynamic refraction filters, and Coral Ember focus rings.
+- 📊 **AI Insights & Platform Analytics**: Administrative dashboard with Recharts analytics visualizations, emergency response indicators, shortage prediction alerts, and a role-aware, read-only AI Assistant chatbot.
+- 🧪 **Comprehensive Automated Testing & QA**: 377 automated Jest + Supertest backend tests (31 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+
+---
+
+## 📸 Application Showcase & Deep Visual Walkthrough
+
+Interactive captures taken directly from the live running client (`1440×900` `@2x`) across both **Dark (Warm Nocturne)** and **Light (Warm Cream Alabaster)** themes — spanning public discovery, onboarding, donor workflows, recipient request tracking, hospital blood bank operations, admin analytics, and the role-aware AI Assistant.
+
+### 1. Public Discovery, Theme Parity & Authentication
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/01-landing-hero-dark.png" alt="Landing Page — Warm Nocturne Dark Mode" width="100%" />
+      <br />
+      <strong>Landing &amp; Emergency Network (Dark — Warm Nocturne)</strong><br />
+      Matte studio charcoal (<code>#141210</code>) hero, 4 live network telemetry stats, 4-step workflow pipeline, urgent broadcast feed, and specular glass navigation.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/02-landing-light.png" alt="Landing Page — Warm Cream Alabaster Light Mode" width="100%" />
+      <br />
+      <strong>Landing &amp; Emergency Network (Light — Warm Cream Alabaster)</strong><br />
+      Warm cream foundation (<code>#FAF7F2</code>) with crisp porcelain surfaces (<code>#FFFFFF</code>), espresso typography (<code>#1C1917</code>), and preserved 10% emergency crimson hierarchy.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/03-find-donors-dark.png" alt="Find Donors Public Directory" width="100%" />
+      <br />
+      <strong>Standby Donor Directory (<code>/find-donors</code>)</strong><br />
+      Search and filter verified standby donors by blood group (O-, B+, AB+, etc.) and availability status with privacy-preserving profiles.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/04-emergency-request-dark.png" alt="Public Emergency Broadcast Request Form" width="100%" />
+      <br />
+      <strong>Emergency Request Dispatch (<code>/emergency-request</code>)</strong><br />
+      Urgent request dispatch form supporting patient details, required blood group, RBC unit count, urgency tier, and medical facility location.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/05-login-dark.png" alt="Login with Google SSO and Demo Quick Access" width="100%" />
+      <br />
+      <strong>Authentication &amp; Google SSO (<code>/login</code>)</strong><br />
+      Email/password authentication, Firebase Google Sign-In integration, and one-click seeded role credentials for Donor, Hospital, and Admin testing.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/06-register-dark.png" alt="Account Registration for Donors and Hospitals" width="100%" />
+      <br />
+      <strong>Role-Aware Onboarding (<code>/register</code>)</strong><br />
+      Unified registration flow supporting Individual Donors (with ABO blood group selector pills) and Hospital / Blood Bank verification requests.
+    </td>
+  </tr>
+</table>
+
+### 2. Donor Portal, Cooldown Eligibility & Donation Date Lifecycle
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/07-donor-overview-dark.png" alt="Donor Portal Overview — Dark Mode" width="100%" />
+      <br />
+      <strong>Donor Overview &amp; Cooldown Status (Dark)</strong><br />
+      Displays live <code>ONLINE</code> availability, <code>Last Donation: 15 Nov 2026</code> anchored to actual <code>donatedAt</code>, and computed countdown <code>Eligible again on 13 Feb 2027 (80 days left)</code>.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/08-donor-overview-light.png" alt="Donor Portal Overview — Light Mode" width="100%" />
+      <br />
+      <strong>Donor Overview &amp; Cooldown Status (Light)</strong><br />
+      Full visual parity in Warm Cream Alabaster mode across overview telemetry tiles, request cards, and quick navigation shortcuts.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/09-donor-requests-pledge-modal.png" alt="Interactive Donor Pledge Confirmation Modal" width="100%" />
+      <br />
+      <strong>Safe Pledge Modal (<code>PledgeModal.jsx</code>)</strong><br />
+      Shows volumetric shortfall (<code>2 units (≈ 900 ml)</code>), real-time 90-day cooldown enforcement (disabling pledge during cooldown), 1-unit cap, and mandatory health affirmation.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/10-donor-history-dark.png" alt="Donor History Showing Pledged, Donated, and Next Eligible Dates" width="100%" />
+      <br />
+      <strong>Donation History &amp; Three-Date Cards (<code>DonationHistoryCard.jsx</code>)</strong><br />
+      Distinguishes <code>Pledged on 5 Nov 2026 - Donated on 15 Nov 2026</code> with <code>Next eligible: 13 Feb 2027</code> and right-hand <code>1 unit (≈ 450 ml)</code> + <code>Donated: 15 Nov 2026</code> labels.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/11-donor-profile-dark.png" alt="Donor Profile and Blood Compatibility Strip" width="100%" />
+      <br />
+      <strong>Donor Profile &amp; Clinical Readiness (<code>?tab=profile</code>)</strong><br />
+      Live standby toggle, interactive ABO/Rh group selector with compatible recipient strip, city/coordinates metadata, and health screening notes.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/12-track-request-dark.png" alt="Recipient Emergency Request Tracking and Smart Donor Matching" width="100%" />
+      <br />
+      <strong>Emergency Request Tracker &amp; Match Engine (<code>/individual/track/:id</code>)</strong><br />
+      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, and ranked matching donors (<code>100%</code>, <code>85%</code>, <code>78%</code>).
+    </td>
+  </tr>
+</table>
+
+### 3. Hospital Command Center, Confirm Donation Dialog & Blood Ledger
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/13-hospital-overview-dark.png" alt="Hospital Command Center Overview" width="100%" />
+      <br />
+      <strong>Hospital Command Center (<code>/hospital/dashboard?tab=overview</code>)</strong><br />
+      Facility RBC total (81 Units), urgent emergency broadcasts, recent pledge activity displaying <code>Pledged on &hellip; &bull; Donated on &hellip;</code> and <code>Released on &hellip;</code> states.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/14-hospital-fulfilled-pledges-dark.png" alt="Hospital Fulfilled and Released Pledges History" width="100%" />
+      <br />
+      <strong>Fulfilled &amp; Released Pledges Audit (<code>?tab=active</code>)</strong><br />
+      Unified view of completed collections (e.g. <code>Pledged on 7 Nov 2026 &bull; Donated on 18 Nov 2026</code>) and released donor pledges.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/15-hospital-confirm-donation-dialog.png" alt="Hospital Confirm Donation Date Picker Dialog" width="100%" />
+      <br />
+      <strong>Confirm Donation Dialog (<code>ConfirmDonationModal.jsx</code>)</strong><br />
+      Replaced one-click confirmation with explicit <code>Donation date *</code> input, server/client validation (no future dates, not before pledge date, 7-day backdate limit for hospitals), and live <code>Cooldown ends 24 Feb 2027</code> preview.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/16-hospital-smart-matching-modal.png" alt="Hospital Smart Donor Matching Engine Results Modal" width="100%" />
+      <br />
+      <strong>Hospital Smart Matching Modal</strong><br />
+      Displays compatible in-house blood bank reserves (<code>B+ 21</code>, <code>B- 5</code>, <code>O+ 22</code>, <code>O- 5</code>) alongside ranked standby donors scored by compatibility, cooldown status, and distance.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/17-hospital-transaction-ledger-dark.png" alt="Hospital Blood Bank Transaction Ledger" width="88%" />
+      <br />
+      <strong>Blood Bank Transaction Ledger (<code>?tab=inventory</code>)</strong> &mdash; Atomic ledger tracking every <code>+1 Unit</code> verified donation receipt and <code>-1 Unit</code> direct/compatible patient transfusion issuance with timestamps.
+    </td>
+  </tr>
+</table>
+
+### 4. Admin Governance, Recharts Analytics & AI Insights
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/19-admin-overview-dark.png" alt="Admin Control Center Overview" width="100%" />
+      <br />
+      <strong>Admin Overview &amp; Telemetry (<code>/admin/dashboard</code>)</strong><br />
+      Platform KPI cards (total donors, verified hospitals, active emergencies, total requests) and pinned latest Regional AI Narrative Insight.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/20-admin-users-hospitals-dark.png" alt="Admin Registered Donors and Hospitals Directory" width="100%" />
+      <br />
+      <strong>Donors &amp; Hospital Verification Directory (<code>?tab=users</code>)</strong><br />
+      Account governance table tracking donor blood types, last donation records, role badges, and facility approval workflow.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/21-admin-requests-dark.png" alt="Admin Master Blood Requests Directory" width="100%" />
+      <br />
+      <strong>Master Blood Requests Directory (<code>?tab=requests</code>)</strong><br />
+      Full network audit table of active and fulfilled blood requests with blood group pills, units fulfilled, urgency chips, and hospital locations.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/18-admin-ai-insights-dark.png" alt="Admin AI Medical Logistics Insights Tab" width="100%" />
+      <br />
+      <strong>AI Medical Logistics Insights (<code>?tab=ai-insights</code>)</strong><br />
+      On-demand Gemini synthesis with custom trend prompt input, shortage risk analysis, and historical narrative report cards.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/22-admin-analytics-dark.png" alt="Platform Analytics Recharts — Dark Mode" width="100%" />
+      <br />
+      <strong>Platform Analytics Charts (Dark &mdash; Warm Nocturne)</strong><br />
+      Recharts Monthly Requests vs. Donations area plot, Emergency Urgency Split donut, and Blood Group Supply vs. Demand bars using Coral/Sage/Amber/Violet series.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/23-admin-analytics-light.png" alt="Platform Analytics Recharts — Light Mode" width="100%" />
+      <br />
+      <strong>Platform Analytics Charts (Light &mdash; Warm Cream Alabaster)</strong><br />
+      High-contrast light chart palette (<code>#C2410C</code>, <code>#0F766E</code>, <code>#A14A08</code>, <code>#6D28D9</code>) paired cleanly via <code>useChartTheme</code>.
+    </td>
+  </tr>
+</table>
+
+### 5. Role-Aware LifeLink AI Assistant (Dark & Light)
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/24-ai-assistant-admin-dark.png" alt="Admin AI Assistant Chat Widget — Dark Mode" width="100%" />
+      <br />
+      <strong>Admin AI Assistant (Dark)</strong><br />
+      Answers platform summary queries via read-only <code>getPlatformStats</code> tool calls with live MongoDB counts and a deep-link <code>Platform Analytics &rarr;</code> CTA button.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/25-ai-assistant-donor-light.png" alt="Donor AI Assistant Cooldown Response — Light Mode" width="100%" />
+      <br />
+      <strong>Donor Eligibility AI Assistant (Light)</strong><br />
+      Evaluates 90-day cooldown directly from <code>donatedAt</code> (<code>15 Nov 2026</code> &rarr; next eligible <code>13 Feb 2027</code>, <code>80 days remaining</code>) and links to <code>Profile &amp; Health &rarr;</code>.
+    </td>
+  </tr>
+</table>
 
 ---
 
 ## 🎨 Liquid Glass & Spatial UI Design System
 
-LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system built for life-critical healthcare applications, balancing visceral cinematic depth with clinical calm and uncompromising accessibility across both dark and light modes:
+LifeLink features a bespoke **"Warm Nocturne + Vital Rose-Crimson + Coral Ember"** design system tailored for high-stakes medical coordination — replacing cold, glary blacks and blues with tactile warm charcoal in dark mode, warm cream alabaster in light mode, and strict accessible contrast:
 
-- **Midnight Navy + Crimson + Ice Direction**:
-  - **Clinical, Trustworthy, Calm**: Midnight Navy (`#0A0F1C`) dark foundation and Cool White (`#F4F7FB`) light canvas base, paired with Silver-blue neutrals and clear semantic signals.
-  - **10% Emergency Crimson Budget**: Crimson is reserved strictly for life-critical signals (primary CTAs, emergency/critical badges, urgent request status indicators, active nav indicator). It represents $\le 10\%$ of any viewport, preserving its immediate urgency.
-  - **Semantic Mapping**: ONLINE / Verified Facility / Confirmed / Fulfilled $\rightarrow$ `success`; cooldown / low stock / pending $\rightarrow$ `warning`; critical stock / urgent request $\rightarrow$ `danger`; informational / focus $\rightarrow$ `info`. Always paired with icons and text labels (never color alone).
+- **Warm Nocturne + Vital Crimson + Coral Ember Direction**:
+  - **Tactile Editorial Precision**: Matte Warm Charcoal (`#141210`) with smoked espresso-slate cards (`#1D1A17`) in dark mode, and Warm Cream Alabaster (`#FAF7F2`) with pure porcelain cards (`#FFFFFF`) in light mode.
+  - **10% Emergency Crimson Budget**: Vital Rose-Crimson (`#C81D3B` / `#FF6B7B` dark; `#BE123C` light) is reserved strictly for life-critical signals (primary emergency CTAs, critical badges, urgent request status indicators, active alerts). It represents $\le 10\%$ of any viewport, preserving instant urgency.
+  - **Semantic Mapping**: ONLINE / Verified Facility / Confirmed / Fulfilled $\rightarrow$ `success`; cooldown / low stock / pending $\rightarrow$ `warning`; critical stock / urgent request $\rightarrow$ `danger`; Coral Ember / Terracotta informational highlights & keyboard focus $\rightarrow$ `info / focus`. Always paired with icons and text labels (never color alone).
 
 ### Semantic Design Tokens & Extended Accents (Single Source of Truth)
 
 | Token | Dark Mode | Light Mode | Usage & Purpose |
 |---|---|---|---|
-| `canvas` | `#0A0F1C` | `#F4F7FB` | Base viewport foundation |
-| `surface` | `#111A2E` | `#FFFFFF` | Core data cards, inputs, containers |
-| `raised` | `#18233D` | `#E9EFF7` | Filter panels, interactive forms, active cards |
-| `overlay` | `#1F2C4A` | `#FFFFFF` + shadow | Dialog modals, full-screen sheets |
-| `text-primary` | `#E8EEF9` | `#0F1A2E` | High-contrast headings and key data values |
-| `text-muted` | `#9DAAC6` | `#4A5A78` | Captions, secondary subtitles, metadata |
-| `hairline` | `rgba(147,161,189,0.16)` | `rgba(15,26,46,0.12)` | Subtle glass borders and divider lines |
-| `specular rim` | `rgba(255,255,255,0.08)` | `rgba(255,255,255,0.90)` | Top-edge optical specular highlight |
-| `danger` (text/icon/badge) | `#E5484D` | `#C8102E` | Critical shortages, emergency request badges |
-| `danger-solid` (button fill) | `#D13438` | `#C8102E` | Primary emergency CTAs with white text ($\ge 4.5:1$) |
-| `danger hover` | `#FF6166` | `#A80D26` | Interactive hover state for danger buttons |
-| `danger pressed` | `#B82C30` | `#8A0A1F` | Pressed active state for danger buttons |
-| `success` | `#34D399` | `#0A7A62` | ONLINE status, verified facilities, fulfilled donations |
+| `canvas` | `#141210` | `#FAF7F2` | Base viewport foundation |
+| `surface` | `#1D1A17` | `#FFFFFF` | Core data cards, inputs, containers |
+| `raised` | `#27231F` | `#F0EBE2` | Filter panels, interactive forms, active cards |
+| `overlay` | `#312C27` | `#FFFFFF` + shadow | Dialog modals, full-screen sheets |
+| `text-primary` | `#F6F2EB` | `#1C1917` | High-contrast headings and key data values |
+| `text-muted` | `#ACA295` | `#635A52` | Captions, secondary subtitles, metadata |
+| `hairline` | `rgba(255,245,235,0.10)` | `rgba(28,25,23,0.10)` | Subtle warm borders and divider lines |
+| `specular rim` | `rgba(255,248,240,0.12)` | `rgba(255,255,255,0.96)` | Top-edge optical specular highlight |
+| `danger` (text/icon/badge) | `#FF6B7B` | `#BE123C` | Critical shortages, emergency request badges |
+| `danger-solid` (button fill) | `#C81D3B` | `#BE123C` | Primary emergency CTAs with white text |
+| `danger hover` | `#E11D48` | `#9F1239` | Interactive hover state for danger buttons |
+| `danger pressed` | `#9F1239` | `#881337` | Pressed active state for danger buttons |
+| `success` | `#4ADE80` | `#157A3D` | ONLINE status, verified facilities, fulfilled donations |
 | `warning` | `#FBBF24` | `#9A5B00` | Cooldown warnings, low stock, pending reviews |
-| `info / focus` | `#60A5FA` | `#1D6FD6` | Keyboard focus ring (2px with 2px offset), info pills |
-| `ice` (accent) | `#A5D8FF` | `#1D6FD6` | AI assistance, secondary highlights, subtle glow accents |
-| `accent-donor` | `#2DD4BF` | `#0F766E` | Donor portal title dot, hero gradient tint, tab indicator |
-| `accent-hospital` | `#60A5FA` | `#1D6FD6` | Hospital command center title dot, hero tint, tab indicator |
-| `accent-admin` | `#A78BFA` | `#6D28D9` | Admin governance center title dot, hero tint, tab indicator |
-| `urgency-critical` | `#E5484D` | `#C8102E` | Emergency shortage chip (`AlertCircle` icon + `Critical` label) |
-| `urgency-high` | `#FB923C` | `#B45309` | High urgency chip (`ArrowUp` icon + `High` label) |
+| `info / focus` | `#F29C79` | `#B53E12` | Keyboard focus ring (2px Coral Ember / Terracotta), info pills |
+| `ice` (warm parchment highlight) | `#F6DFC9` | `#1C1917` | Soft secondary highlights and subtle glow accents |
+| `accent-donor` | `#34D399` | `#0B5E58` | Donor portal title dot, hero tint, tab indicator |
+| `accent-hospital` | `#7DD3FC` | `#075985` | Hospital command center title dot, hero tint, tab indicator |
+| `accent-admin` | `#C4B5FD` | `#6D28D9` | Admin governance center title dot, hero tint, tab indicator |
+| `urgency-critical` | `#FF6B7B` | `#BE123C` | Emergency shortage chip (`AlertCircle` icon + `Critical` label) |
+| `urgency-high` | `#FB923C` | `#A14A08` | High urgency chip (`ArrowUp` icon + `High` label) |
 | `urgency-medium` | `#FBBF24` | `#9A5B00` | Medium urgency chip (`Minus` icon + `Medium` label) |
 | `urgency-low` | `#7DD3FC` | `#0369A1` | Low urgency chip (`ArrowDown` icon + `Low` label) |
-| `abo-o` | `#2DD4BF` | `#0F766E` | O family blood pills (O+ subtle fill, O- outlined) |
-| `abo-a` | `#60A5FA` | `#1D6FD6` | A family blood pills (A+ subtle fill, A- outlined) |
-| `abo-b` | `#A78BFA` | `#6D28D9` | B family blood pills (B+ subtle fill, B- outlined) |
+| `abo-o` | `#34D399` | `#0B5E58` | O family blood pills (O+ subtle fill, O- outlined) |
+| `abo-a` | `#7DD3FC` | `#075985` | A family blood pills (A+ subtle fill, A- outlined) |
+| `abo-b` | `#C4B5FD` | `#6D28D9` | B family blood pills (B+ subtle fill, B- outlined) |
 | `abo-ab` | `#FBBF24` | `#9A5B00` | AB family blood pills (AB+ subtle fill, AB- outlined) |
-| `chart-series (1-6)` | `#60A5FA`, `#34D399`, `#FBBF24`, `#A78BFA`, `#F472B6`, `#94A3B8` | `#1D6FD6`, `#059669`, `#B45309`, `#6D28D9`, `#BE185D`, `#475569` | Purposeful chart series ($\ge 3:1$ contrast against surface) |
+| `chart-series (1-6)` | `#F29C79`, `#34D399`, `#FBBF24`, `#C4B5FD`, `#FF6B7B`, `#ACA295` | `#C2410C`, `#0F766E`, `#A14A08`, `#6D28D9`, `#BE123C`, `#57534E` | Recharts series colors across dark &amp; light palettes |
 
 - **5-Tier Spatial Elevation System**:
   - `elevation-canvas` (Level 0): Viewport foundation and atmospheric canvas.
@@ -77,9 +283,9 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
   - `elevation-raised` (Level 2): Active items, interactive forms, and filter panels.
   - `elevation-floating` (Level 3): Floating navigation bar, AI chat widget, and toast alerts.
   - `elevation-overlay` (Level 4): High-priority dialog modals and full-screen drawers.
-- **Atmospheric Canvas**: 4 harmonic, hardware-accelerated (`translate3d`) ambient orbs (dim crimson, royal blue `#2B4C8C`, ice blue `#A5D8FF`, and silver-blue `#93A1BD`), dimmed to $\le 12\%$ opacity in dark mode and $\le 8\%$ in light mode with `prefers-reduced-motion` fallback.
-- **Optics & Refraction**: Neutral navy-tinted glass in dark mode, clean white glass with genuine elevation shadows (`0 1px 2px rgba(15,26,46,.06)`, `0 8px 24px rgba(15,26,46,.08)`) in light mode, SVG displacement map filters (`#liquid-refraction`), and top specular rims.
-- **Accessibility & Contrast**: 100% WCAG 2.1 AA/AAA compliance verified across all routes and state views in both modes (body text $\ge 11.8:1$ dark, $\ge 15.0:1$ light; white text on danger-solid $\ge 4.9:1$ dark, $\ge 5.8:1$ light; focus rings $\ge 4.5:1$). Tabular numeric fonts (`tabular-nums`) prevent layout shifts.
+- **Atmospheric Canvas**: 4 subtle radial ambient glows (Warm Coral Ember `rgba(232,106,80,0.085)`, Soft Rose Signal `rgba(217,59,78,0.06)`, Soft Sage Glow `rgba(74,222,128,0.04)`, and Warm Sand Tint `rgba(251,191,36,0.035)`) kept subtle in dark mode with `prefers-reduced-motion` fallback.
+- **Optics & Refraction**: Warm charcoal glass (`rgba(29,26,23,0.90)`) with soft espresso depth shadows (`--shadow-card`, `--shadow-elevated`) in dark mode, clean porcelain glass (`rgba(255,255,255,0.88)`) with warm elevation shadows (`0 1px 2px rgba(28,25,23,.04), 0 8px 24px -4px rgba(28,25,23,.06)`) in light mode, SVG displacement map filters (`#liquid-refraction`), and top specular rims.
+- **Accessibility & Contrast**: Automated WCAG 2.1 AA/AAA compliance verified across all routes and state views in both dark and light modes via `check-contrast.js` and `audit-pages.js`, with tabular numeric fonts (`tabular-nums`) preventing layout shifts.
 
 ---
 
@@ -88,10 +294,10 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 | Layer | Technologies |
 |---|---|
 | **Frontend** | React 18, Vite 5, Tailwind CSS 3, Framer Motion, Lucide Icons, Recharts, Axios |
-| **Backend** | Node.js, Express.js 4, `firebase-admin` 14, JWT, bcryptjs, Zod validation |
-| **Database & Cloud** | Google Cloud Firestore (Uniform Repository Architecture), Firebase Auth |
+| **Backend** | Node.js, Express.js 4, Mongoose 9, `firebase-admin` 14 (Google SSO only), JWT, bcryptjs, Zod validation |
+| **Database & Cloud** | MongoDB + Mongoose (Uniform Repository Architecture, replica-set transactions) |
 | **Authentication** | Custom JWT + bcryptjs & Google Login (Firebase Auth ID Token verification) |
-| **Testing & QA** | Jest, Supertest, Playwright, `@axe-core/playwright` (333 automated tests) |
+| **Testing & QA** | Jest, Supertest, `mongodb-memory-server`, Playwright, `@axe-core/playwright` (377 automated tests) |
 
 ---
 
@@ -108,10 +314,18 @@ LifeLink features a refined **"Midnight Navy + Crimson + Ice"** design system bu
 
 ---
 
+## 🏗️ System Architecture
+
+![LifeLink System Architecture Diagram](docs/figures/light/Fig_3.1_System_Architecture_Diagram.png)
+
+> High-resolution diagram exports: [Light (Report Print)](docs/figures/light/Fig_3.1_System_Architecture_Diagram.png) • [Dark (Mono Ink)](docs/figures/Fig_3.1_System_Architecture_Diagram.png)
+
+---
+
 ## 🗄️ Data Architecture & Lifecycles
 
-LifeLink pairs **Google Cloud Firestore** (`lifelink-f6f3b`) with Firebase Authentication, signed 30-day JWT sessions, and read-only AI tools:
-- **Persistence**: Firestore collections (`users`, `emails`, `donorProfiles`, `hospitals`, `bloodRequests`, `donations`, `notifications`, `aiInsights`, `inventoryTransactions`, `loginAuditLogs`).
+LifeLink pairs **MongoDB** (`lifelink` database with Mongoose schemas & replica-set transactions) with Firebase Authentication (**Google Sign-In only**), signed 30-day JWT sessions, and read-only AI tools:
+- **Persistence**: 11 MongoDB collections (`users`, `donorprofiles`, `hospitals`, `bloodrequests`, `donations`, `inventorytransactions`, `donorrequestpings`, `notifications`, `aiinsights`, `loginlogs`, `audit_logs`).
 - **Security & Privacy**: Passwords hashed with `bcryptjs` (10 rounds); donor contact details (phone, email) strictly masked from public and AI model responses.
 - **AI Mesh**: Google Gemini operates exclusively via read-only function tools; conversation history lives ephemerally in React client memory.
 - **Detailed Specification & Lifecycle Diagrams**: See [docs/data-model.md](docs/data-model.md) for full collection schemas, the request state machine, and the donor pledge sequence diagram.
@@ -122,7 +336,8 @@ LifeLink pairs **Google Cloud Firestore** (`lifelink-f6f3b`) with Firebase Authe
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18.0.0 or higher) and `npm`
-- A [Firebase Project](https://console.firebase.google.com/) with **Cloud Firestore** and **Firebase Authentication** (Email/Password & Google Provider) enabled
+- A **MongoDB** deployment configured as a replica set (MongoDB Atlas or a local `mongod` replica set for multi-document ACID transactions)
+- A [Firebase Project](https://console.firebase.google.com/) with **Firebase Authentication (Google Provider)** enabled *(used exclusively for Google Sign-In ID token verification)*
 
 ---
 
@@ -163,15 +378,17 @@ Copy `server/.env.example` to `server/.env`:
 cp server/.env.example server/.env
 ```
 
-Generate a Firebase Service Account key:
+Generate a Firebase Service Account key (for Google Sign-In verification only):
 1. In the [Firebase Console](https://console.firebase.google.com/), navigate to **Project Settings** > **Service accounts**.
 2. Click **Generate new private key** and download the resulting JSON file.
-3. Save the JSON file securely (e.g. `server/service-account.json` — already included in `.gitignore`).
+3. Save the JSON file securely (e.g. `server/serviceAccountKey.json` — already included in `.gitignore`).
 4. Configure `server/.env`:
 ```env
 PORT=5000
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/lifelink?retryWrites=true&w=majority
+MONGODB_DB_NAME=lifelink
 JWT_SECRET=your_super_secret_jwt_key
-FIREBASE_SERVICE_ACCOUNT_PATH=./service-account.json
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
 NODE_ENV=development
 ```
 
@@ -194,7 +411,21 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 ---
 
-### 4. Database Seeding & Health Check
+### 4. Indexes, Seeding & Health Check
+
+Synchronize MongoDB indexes (unique constraints, 2dsphere geo indexes, and TTL indexes):
+```bash
+npm run indexes:sync --prefix server
+```
+
+Seed initial demo accounts and inventory stock:
+```bash
+# From root
+npm run seed
+
+# Or to reset and re-seed clean data
+npm run seed:reset
+```
 
 Verify backend health:
 ```bash
@@ -205,20 +436,12 @@ Visit `GET http://localhost:5000/api/health` to confirm operational status:
 ```json
 {
   "success": true,
-  "status": "operational",
-  "dbType": "firestore",
+  "status": "connected",
+  "dbType": "mongodb",
+  "dbName": "lifelink",
   "projectId": "your-firebase-project",
   "timestamp": "..."
 }
-```
-
-Seed initial demo accounts and inventory stock:
-```bash
-# From root
-npm run seed
-
-# Or to reset and re-seed clean data
-npm run seed:reset
 ```
 
 ---
@@ -256,14 +479,14 @@ Open your browser at **[http://localhost:5180](http://localhost:5180)**.
 
 LifeLink includes a rigorous automated testing and accessibility assurance suite:
 
-### Backend Automated Tests (Jest + Supertest)
+### Backend Automated Tests (Jest + Supertest + MongoMemoryReplSet)
 ```bash
-# Run 333 automated backend tests
+# Run 377 automated backend tests across 31 suites
 cd server
 npm test
 ```
-- **23 Test Suites / 333 Tests**: 100% pass rate.
-- Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, transaction integrity, rate limiting, and role guards.
+- **31 Test Suites / 377 Tests**: 100% pass rate against `mongodb-memory-server` replica set.
+- Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, multi-document ACID transaction integrity, unique pledge constraints, DB failure 503 guards, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit
 ```bash
@@ -307,20 +530,22 @@ Seeded automatically by `npm run seed`:
 | `/api/requests/:id` | `GET` | Authenticated | Retrieve request details with live matched donors |
 | `/api/donors` | `GET` | Public / Auth | Query standby donors by blood group and radius |
 | `/api/donations/pledge` | `POST` | `user` | Pledge donation for an active emergency request (requires `{ requestId, units }`) |
-| `/api/donations/:id/fulfill`| `POST` | `hospital`, `admin`| Confirm donation fulfillment and update inventory |
+| `/api/donations/:id/complete`| `POST`, `PATCH` | `hospital`, `admin`| Confirm donation fulfillment (`{ donatedAt? }`, legacy alias `/fulfill`), update inventory & compute cooldown from `donatedAt` |
+| `/api/donations/:id/decline` | `POST`, `PATCH` | `hospital`, `admin`| Release / decline a pledged donation (`releasedAt` recorded) |
+| `/api/donations/history` | `GET` | `user` | Retrieve donor donation history (`pledgedAt`, `donatedAt`, `confirmedAt`, `releasedAt`) |
 | `/api/hospitals/inventory` | `GET`, `PUT` | `hospital` | View and update RBC reserve units |
 | `/api/hospitals/pending` | `GET` | `admin` | View hospital accounts awaiting verification |
 | `/api/hospitals/:id/approve`| `PUT` | `admin` | Approve registered hospital |
 | `/api/analytics` | `GET` | `admin` | Aggregate platform donation metrics and trends |
 | `/api/ai/insights` | `GET` | `admin` | Predictive regional blood supply insights |
 | `/api/ai/chat` | `POST` | Public / Auth | Role-aware, data-aware AI Assistant powered by Google Gemini (strictly read-only) |
-| `/api/health` | `GET` | Public | Backend health check and Firestore connection status |
+| `/api/health` | `GET` | Public | Backend health check and MongoDB connection status |
 
 ---
 
-## 🩸 Blood Units & Safe Pledge Flow
+## 🩸 Blood Units, Safe Pledge Flow & Donation Date Lifecycle
 
-LifeLink implements clinical donor safety standards and volume transparency based on hospital and National Blood Transfusion Council (NBTC) guidelines:
+LifeLink implements clinical donor safety standards, volume transparency, and auditable collection timestamps based on hospital and National Blood Transfusion Council (NBTC) guidelines:
 
 - **Shared Blood Unit Configuration (`bloodUnits.js`)**:
   - `ML_PER_UNIT = 450`: Single whole-blood donation unit equivalent to $\approx 450\text{ ml}$.
@@ -329,18 +554,25 @@ LifeLink implements clinical donor safety standards and volume transparency base
     - `"1 unit (≈ 450 ml)"`
     - `"2 units (≈ 900 ml)"`
     - `"77 units (≈ 34.7 L)"` (with litres formatting for facility stock reserves $\ge 1000\text{ ml}$)
-- **Pledge Confirmation Dialog (`PledgeModal`)**:
-  - Clicking *"Respond / Pledge"* never triggers a direct API call; it opens an accessible confirmation modal.
-  - **Request Overview**: Displays patient name, medical facility, urgency badge, and units still needed with volume (`"Still needed from donors: 2 units (≈ 900 ml)"`).
-  - **Donor Eligibility Check**: Real-time evaluation of 90-day cooldown and standby availability. Ineligible donors are warned with their remaining cooldown days and next eligible date; confirmation is disabled.
-  - **Unit Selector**: Default and fixed at 1 unit with clear medical guidance.
-  - **Mandatory Health Affirmation**: Checkbox *"I confirm that I am feeling healthy today, am aged 18-65, weigh at least 50 kg, and have not donated whole blood in the last 90 days."* must be checked before confirmation is enabled.
-  - **Safe Submission**: Displays loading spinner, prevents double submission, handles errors inline, and updates card display to `"Pledged: 1 unit (≈ 450 ml)"` with a *"View Pledge"* shortcut.
-- **Strict Server Validation**:
-  - Zod schema `pledgeDonationSchema` enforces required integer `units >= 1`.
-  - Rejects missing units (`400`), units exceeding `MAX_UNITS_PER_DONOR_PER_PLEDGE` (`400`), units exceeding remaining donor shortfall (`400`), ineligible donors in cooldown or offline (`403`), and duplicate active pledges (`409`).
+- **Three-Date Audit Trail & Shared Cooldown (`eligibility.js`, `dateFormatter.js`, `config/donation.js`)**:
+  - Every `Donation` document preserves three distinct lifecycle timestamps: `pledgedAt` (when the donor pledged), `donatedAt` (actual blood collection date supplied upon confirmation), and `confirmedAt` (server confirmation timestamp; `releasedAt` recorded on released/declined pledges).
+  - `donor.lastDonationDate` always tracks the `donatedAt` of the donor's latest fulfilled donation rather than the confirmation click timestamp.
+  - Shared `calculateEligibility()` and `computeNextEligibleDate()` utilities (`server/src/utils/eligibility.js` & `client/src/utils/eligibility.js`) compute the 90-day cooldown directly from `donatedAt`, formatted uniformly via `formatDate()` (`en-IN`, e.g., `"15 Nov 2026"`).
+- **Pledge Confirmation Dialog (`PledgeModal.jsx`)**:
+  - Clicking *"Respond / Pledge"* opens an accessible confirmation modal showing remaining volumetric shortfall, live 90-day cooldown & availability guard, fixed 1-unit selector, and mandatory health affirmation checkbox before enabling submission.
+- **Hospital Confirm Donation Dialog (`ConfirmDonationModal.jsx`) & Server Guards (`validateDonatedAt`)**:
+  - Confirming a donor's fulfillment opens an interactive dialog with a `Donation date` date-time input defaulting to now and a real-time cooldown preview (`"Cooldown ends <date>"`).
+  - Both client and server validate `donatedAt` inside an atomic MongoDB transaction (reads first, writes second):
+    - Future collection date $\rightarrow$ `400 Bad Request`
+    - Collection date earlier than `pledgedAt` $\rightarrow$ `400 Bad Request`
+    - Backdated older than `MAX_DONATION_BACKDATE_DAYS` (`7` days default) $\rightarrow$ `409 Conflict` for hospitals, allowed for `admin`
+- **Consistent Status Dates Across Overview, History & AI**:
+  - Donor History cards (`DonationHistoryCard.jsx`): show `Pledged on <date> - awaiting hospital confirmation` (pledged), `Pledged on <date> - Donated on <date>` + `Next eligible: <date>` (completed), and `Pledged on <date> - Released on <date>` (released), with right-hand unit boxes showing `Donated: <date>` for completed donations or `Pledged: <date>` otherwise.
+  - Donor Overview card shows `Last Donation: <donatedAt>` alongside `"Eligible again on <date> (<n> days left)"`, matching hospital pledge rows and AI Assistant `getEligibility` replies.
+- **One-Time Data Migration (`server/scripts/migrateDonationDates.js`)**:
+  - Idempotent migration script (`--dry-run` supported) normalizing historical fulfilled donations so `donatedAt = confirmedAt` and recomputing each donor's `lastDonationDate` from their latest `donatedAt`.
 - **AI Assistant Read-Only Guarantee**:
-  - The AI assistant is strictly informational and read-only; it can **never** trigger or submit a pledge.
+  - The AI assistant is strictly informational and read-only; it can **never** trigger or submit a pledge or confirm a donation.
   - Pledge CTAs in chat navigate to `/donor/dashboard?tab=requests&request=<id>&action=pledge` as *"Review & Pledge"*, scrolling to the card and opening the modal for donor review without auto-submitting.
 
 ---
@@ -426,10 +658,10 @@ LifeLink/
 │   │   ├── components/              # Modular UI component library
 │   │   │   ├── ai/                  # AI Chat Widget & Insight Cards
 │   │   │   ├── auth/                # Google Login Button & Auth Panels
-│   │   │   ├── cards/               # Donor, Request, and Stat Cards
-│   │   │   ├── charts/              # Recharts Visualizations (Blood Group Bar, Trends, Status Pie)
+│   │   │   ├── cards/               # DonationHistoryCard, DonorCard, RequestCard, StatCard
+│   │   │   ├── charts/              # Recharts Visualizations (BloodGroupBarChart, TrendLineChart, StatusPie)
 │   │   │   ├── common/              # GlassCard, GlassModal, Navbar, Footer, ThemeToggle
-│   │   │   └── forms/               # DonorProfileForm, InventoryForm, RequestForm
+│   │   │   └── forms/               # ConfirmDonationModal, DonorProfileForm, InventoryForm, PledgeModal, RequestForm
 │   │   ├── context/                 # AuthContext, ThemeContext, ToastContext
 │   │   ├── hooks/                   # useTheme, useChartTheme, useTypewriterFill
 │   │   ├── pages/                   # Application views
@@ -440,35 +672,41 @@ LifeLink/
 │   │   │   ├── individual/          # CreateRequest, TrackRequest, IndividualDashboard
 │   │   │   └── public/              # Home, About, FindDonors, EmergencyRequest
 │   │   ├── routes/                  # ProtectedRoute and AccountTypeRoute wrappers
-│   │   ├── theme/                   # Central design system tokens (tokens.js)
-│   │   ├── utils/                   # statusHelper, date formatting, geo helpers
+│   │   ├── theme/                   # Central Warm Nocturne design tokens (tokens.js)
+│   │   ├── utils/                   # eligibility, dateFormatter, bloodCompatibility, requestRules, statusHelper
 │   │   ├── firebase.js              # Firebase Web SDK initialization
-│   │   └── index.css                # Liquid Glass design system styles & CSS variables
+│   │   └── index.css                # Warm Nocturne Glass design system styles & CSS variables
 │   ├── tailwind.config.js           # Tailwind configuration with spatial elevations
 │   ├── vite.config.js               # Vite server configuration & API proxy
 │   └── .env.example
 ├── server/                          # Express API backend (Port 5000)
+│   ├── scripts/
+│   │   ├── migrateDonationDates.js  # One-time idempotent donation date normalization & cooldown backfill
+│   │   └── syncIndexes.js           # Synchronize Mongoose schema & TTL/geo indexes
 │   ├── src/
-│   │   ├── config/                  # Firebase Admin & Firestore initialization
+│   │   ├── config/                  # mongo.js, donation.js (cooldown & backdate constants), Firebase Auth
 │   │   ├── controllers/             # Express route handler controllers
 │   │   ├── middleware/              # JWT Auth, RoleGuard, Zod Validation, RateLimiter
-│   │   ├── repositories/            # Google Cloud Firestore Uniform Repository layer
+│   │   ├── models/                  # 11 Mongoose schemas, indexes, and virtual JSON transforms
+│   │   ├── repositories/            # MongoDB Mongoose Uniform Repository layer (.lean() + sessions)
 │   │   ├── routes/                  # Express API routers
-│   │   ├── services/                # Domain logic, matching engine, atomic transactions
-│   │   ├── utils/                   # ABO/Rh compatibility, geo math, response helpers
+│   │   ├── services/                # Domain logic, matching engine, MongoDB ACID transactions
+│   │   ├── utils/                   # eligibility, dateFormatter, bloodCompatibility, geo, responseHandler
 │   │   ├── validations/             # Zod input validation schemas
-│   │   ├── app.js                   # Express application setup
+│   │   ├── app.js                   # Express application setup & Mongo availability 503 guard
 │   │   ├── index.js                 # Server entry point
-│   │   └── seed.js                  # Database seed and reset script
-│   ├── tests/                       # Automated Jest + Supertest suites (333 tests)
+│   │   └── seed.js                  # MongoDB seed and reset script
+│   ├── tests/                       # Automated Jest + Supertest + MongoMemoryReplSet suites (377 tests / 31 suites)
 │   └── .env.example
-├── docs/                            # Documentation
+├── docs/                            # Documentation & Visual Assets
+│   ├── screenshots/                 # 25 live captured dark & light portal screenshots embedded in README
+│   ├── figures/                     # System architecture diagrams (dark/light prints)
+│   ├── data-model.md                # MongoDB collections, indexes, and domain lifecycles
 │   ├── design-system.md             # Liquid Glass & Spatial UI specification
 │   └── ui-audit.md                  # Comprehensive UI inventory and audit
 ├── scripts/                         # QA & Verification Tools
 │   ├── check-contrast.js            # Automated WCAG 2.1 AA/AAA token contrast checker
 │   └── audit-pages.js               # Playwright + axe-core full-route auditor
-├── firestore.indexes.json           # Composite Firestore database indexes
 ├── package.json                     # Monorepo management scripts
 └── README.md
 ```
@@ -477,15 +715,16 @@ LifeLink/
 
 ## 📜 NPM Scripts Summary
 
-### Root Scripts (`LifeLink/`)
+### Root & Maintenance Scripts
 
-| Script | Command | Purpose |
+| Script / Command | Exact Command | Purpose |
 |---|---|---|
 | `npm run install:all` | `npm install --prefix server && npm install --prefix client` | Install all dependencies across both projects |
 | `npm run dev:server` | `npm run dev --prefix server` | Start Express backend in watch mode (Port 5000) |
 | `npm run dev:client` | `npm run dev --prefix client` | Start Vite frontend dev server (Port 5180) |
 | `npm run seed` | `npm run seed --prefix server` | Seed demo accounts, inventory, and sample requests |
 | `npm run seed:reset` | `npm run seed:reset --prefix server` | Clear and re-seed database |
+| Donation Date Migration | `node server/scripts/migrateDonationDates.js [--dry-run]` | Normalize historical `donatedAt` / `confirmedAt` & `lastDonationDate` |
 | `npm run build` | `npm run build --prefix client` | Build optimized client production bundle |
 | `npm run check:contrast`| `node scripts/check-contrast.js` | Run automated WCAG AA/AAA contrast audit |
 | `npm run audit:pages` | `node scripts/audit-pages.js` | Run Playwright visual and accessibility route audit |

@@ -3,107 +3,118 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIFELINK DESIGN SYSTEM TOKENS — "MIDNIGHT NAVY + CRIMSON + ICE"
-   Clinical, trustworthy, calm. Crimson is reserved for emergency signal (<=10%).
-   Semantic tokens: canvas, surface, raised, overlay, text-primary, text-muted,
-   hairline, specular rim, danger, success, warning, info, ice.
-═══════════════════════════════════════════════════════════════════════════ */
+   LIFELINK DESIGN SYSTEM TOKENS — "WARM NOCTURNE + VITAL CRIMSON + CORAL EMBER"
+   Warm studio matte charcoal & cream alabaster. Crimson is strictly reserved for
+   emergency blood demand & urgent dispatch (<=10%).
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
   /* Global Navbar & Spatial Layout Metrics */
-  --navbar-height: 5.25rem;
+  --navbar-height: 4.85rem;
   --content-top-spacing: calc(var(--navbar-height) + 1rem);
 
-  /* Base Canvas & Surfaces (Light) */
-  --canvas:           #F4F7FB;
+  /* Base Canvas & Surfaces (Light - Warm Cream Alabaster) */
+  --canvas:           #FAF7F2;
   --surface:          #FFFFFF;
-  --raised:           #E9EFF7;
+  --raised:           #F0EBE2;
   --overlay:          #FFFFFF;
 
-  --bg:               #F4F7FB;
-  --surface-ground:   #F4F7FB;
+  --bg:               #FAF7F2;
+  --surface-ground:   #FAF7F2;
   --surface-card:     #FFFFFF;
-  --surface-raised:   #E9EFF7;
-  --surface-glass:    rgba(255, 255, 255, 0.75);
+  --surface-raised:   #F0EBE2;
+  --surface-glass:    rgba(255, 255, 255, 0.88);
 
-  /* Typography (WCAG AAA >= 15:1 for primary, AA >= 6.0:1 for muted) */
-  --text-primary:     #0F1A2E;
-  --text-heading:     #0F1A2E;
-  --text-muted:       #4A5A78;
-  --text-secondary:   #4A5A78;
-  --text:             #0F1A2E;
-  --text-on-primary:  #FFFFFF;
-  --on-primary:       #FFFFFF;
+  /* Typography (Light - Warm Espresso Charcoal) */
+  --text-primary:     #1C1917;
+  --text-heading:     #1C1917;
+  --text-muted:       #635A52;
+  --text-secondary:   #4A433D;
+  --text:             #1C1917;
+  --text-on-primary:  #FAF7F2;
+  --on-primary:       #FAF7F2;
 
   /* Borders & Specular Optics */
-  --hairline:         rgba(15, 26, 46, 0.12);
-  --hairline-strong:  rgba(15, 26, 46, 0.22);
-  --specular-rim:     rgba(255, 255, 255, 0.90);
-  --border:           rgba(15, 26, 46, 0.12);
-  --border-strong:    rgba(15, 26, 46, 0.22);
-  --border-subtle:    rgba(15, 26, 46, 0.08);
+  --hairline:         rgba(28, 25, 23, 0.10);
+  --hairline-strong:  rgba(28, 25, 23, 0.19);
+  --specular-rim:     rgba(255, 255, 255, 0.96);
+  --border:           rgba(28, 25, 23, 0.10);
+  --border-strong:    rgba(28, 25, 23, 0.19);
+  --border-subtle:    rgba(28, 25, 23, 0.06);
 
   /* Emergency Crimson & States (Light) */
-  --danger:           #C8102E;
-  --danger-solid:     #C8102E;
-  --danger-hover:     #A80D26;
-  --danger-pressed:   #8A0A1F;
+  --danger:           #BE123C;
+  --danger-solid:     #BE123C;
+  --danger-hover:     #9F1239;
+  --danger-pressed:   #881337;
+  --danger-fg:        #FFFFFF;
   --on-red:           #FFFFFF;
-  --red:              #C8102E;
-  --red-deep:         #8A0A1F;
-  --red-text:         #C8102E;
+  --red:              #BE123C;
+  --red-deep:         #881337;
+  --red-text:         #BE123C;
+
+  /* Studio Espresso Ink Action & Verified Sage Emerald (Light) */
+  --action-solid:     #1C1917;
+  --action-hover:     #2E2925;
+  --action-pressed:   #0C0A09;
+  --action-fg:        #FAF7F2;
+  --success-solid:    #157A3D;
+  --success-hover:    #166534;
+  --success-fg:       #FFFFFF;
+  --btn-secondary-bg: #FAF7F2;
+  --btn-secondary-hover-bg: #F0EBE2;
 
   /* Semantic System Tokens (Light) */
-  --success:          #0A7A62;
+  --success:          #157A3D;
   --warning:          #9A5B00;
-  --info:             #1D6FD6;
-  --focus:            #1D6FD6;
-  --ice:              #1D6FD6;
+  --info:             #B53E12;
+  --focus:            #B53E12;
+  --ice:              #1C1917;
 
   /* Backward Compatibility Layers */
-  --brand-500:        #C8102E;
-  --brand-600:        #A80D26;
-  --brand-700:        #8A0A1F;
-  --brand-400:        #C8102E;
-  --accent:           #C8102E;
+  --brand-500:        #BE123C;
+  --brand-600:        #9F1239;
+  --brand-700:        #881337;
+  --brand-400:        #E11D48;
+  --accent:           #BE123C;
 
-  --surface-950:      #F4F7FB;
-  --surface-900:      #E9EFF7;
+  --surface-950:      #FAF7F2;
+  --surface-900:      #F0EBE2;
   --surface-800:      #FFFFFF;
-  --surface-700:      #E9EFF7;
-  --surface-600:      #D7E1EE;
+  --surface-700:      #F0EBE2;
+  --surface-600:      #E2DAD0;
 
-  --violet-500:       #1D6FD6;
-  --magenta-500:      #C8102E;
-  --cyan-500:         #1D6FD6;
+  --violet-500:       #6D28D9;
+  --magenta-500:      #BE123C;
+  --cyan-500:         #0369A1;
   --amber-500:        #9A5B00;
-  --teal-500:         #0A7A62;
+  --teal-500:         #0F766E;
 
-  --semantic-success: #0A7A62;
+  --semantic-success: #157A3D;
   --semantic-warning: #9A5B00;
-  --semantic-danger:  #C8102E;
-  --semantic-info:    #1D6FD6;
+  --semantic-danger:  #BE123C;
+  --semantic-info:    #B53E12;
 
   /* Role Accents (Light) */
-  --accent-donor:             #0F766E;
-  --accent-donor-subtle:      rgba(15, 118, 110, 0.08);
-  --accent-donor-border:      rgba(15, 118, 110, 0.22);
-  --accent-hospital:          #1D6FD6;
-  --accent-hospital-subtle:   rgba(29, 111, 214, 0.08);
-  --accent-hospital-border:   rgba(29, 111, 214, 0.22);
+  --accent-donor:             #0B5E58;
+  --accent-donor-subtle:      rgba(11, 94, 88, 0.08);
+  --accent-donor-border:      rgba(11, 94, 88, 0.24);
+  --accent-hospital:          #075985;
+  --accent-hospital-subtle:   rgba(7, 89, 133, 0.08);
+  --accent-hospital-border:   rgba(7, 89, 133, 0.24);
   --accent-admin:             #6D28D9;
   --accent-admin-subtle:      rgba(109, 40, 217, 0.08);
   --accent-admin-border:      rgba(109, 40, 217, 0.22);
 
   /* Urgency Scale (Light) */
-  --urgency-critical:         #C8102E;
-  --urgency-critical-subtle:  rgba(200, 16, 46, 0.08);
-  --urgency-critical-border:  rgba(200, 16, 46, 0.22);
-  --urgency-high:             #B45309;
-  --urgency-high-subtle:      rgba(180, 83, 9, 0.07);
-  --urgency-high-border:      rgba(180, 83, 9, 0.22);
+  --urgency-critical:         #BE123C;
+  --urgency-critical-subtle:  rgba(190, 18, 60, 0.08);
+  --urgency-critical-border:  rgba(190, 18, 60, 0.22);
+  --urgency-high:             #A14A08;
+  --urgency-high-subtle:      rgba(161, 74, 8, 0.08);
+  --urgency-high-border:      rgba(161, 74, 8, 0.22);
   --urgency-medium:           #9A5B00;
   --urgency-medium-subtle:    rgba(154, 91, 0, 0.08);
   --urgency-medium-border:    rgba(154, 91, 0, 0.22);
@@ -112,12 +123,12 @@
   --urgency-low-border:       rgba(3, 105, 161, 0.22);
 
   /* Blood-Group Family Hues (Light) */
-  --abo-o:                    #0F766E;
-  --abo-o-subtle:             rgba(15, 118, 110, 0.08);
-  --abo-o-border:             rgba(15, 118, 110, 0.22);
-  --abo-a:                    #1D6FD6;
-  --abo-a-subtle:             rgba(29, 111, 214, 0.08);
-  --abo-a-border:             rgba(29, 111, 214, 0.22);
+  --abo-o:                    #0B5E58;
+  --abo-o-subtle:             rgba(11, 94, 88, 0.08);
+  --abo-o-border:             rgba(11, 94, 88, 0.24);
+  --abo-a:                    #075985;
+  --abo-a-subtle:             rgba(7, 89, 133, 0.08);
+  --abo-a-border:             rgba(7, 89, 133, 0.24);
   --abo-b:                    #6D28D9;
   --abo-b-subtle:             rgba(109, 40, 217, 0.08);
   --abo-b-border:             rgba(109, 40, 217, 0.22);
@@ -126,39 +137,39 @@
   --abo-ab-border:            rgba(154, 91, 0, 0.22);
 
   /* Chart Series (Light - >= 3:1 against surface #FFFFFF) */
-  --chart-1:                  #1D6FD6;
-  --chart-2:                  #059669;
-  --chart-3:                  #B45309;
+  --chart-1:                  #C2410C;
+  --chart-2:                  #0F766E;
+  --chart-3:                  #A14A08;
   --chart-4:                  #6D28D9;
-  --chart-5:                  #BE185D;
-  --chart-6:                  #475569;
+  --chart-5:                  #BE123C;
+  --chart-6:                  #57534E;
 
   /* Glass - Light Mode */
-  --glass-bg:               rgba(255, 255, 255, 0.75);
+  --glass-bg:               rgba(255, 255, 255, 0.84);
   --glass-bg-elevated:      #FFFFFF;
-  --glass-border:           rgba(15, 26, 46, 0.12);
-  --glass-border-md:        rgba(15, 26, 46, 0.22);
-  --glass-border-highlight: rgba(255, 255, 255, 0.90);
-  --glass-inset:            inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-border:           rgba(28, 25, 23, 0.10);
+  --glass-border-md:        rgba(28, 25, 23, 0.19);
+  --glass-border-highlight: rgba(255, 255, 255, 0.96);
+  --glass-inset:            inset 0 1px 0 rgba(255, 255, 255, 0.96);
   --glass-specular:         inset 0 1px 1px 0 rgba(255, 255, 255, 0.98);
-  --glass-shadow:           0 1px 2px rgba(15, 26, 46, 0.06), 0 8px 24px rgba(15, 26, 46, 0.08);
+  --glass-shadow:           0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px -4px rgba(28, 25, 23, 0.06);
 
   /* Spatial 5-Level Elevations (Light) */
   --elevation-0-bg: transparent;
-  --elevation-1-bg: rgba(255, 255, 255, 0.75);
-  --elevation-2-bg: #E9EFF7;
+  --elevation-1-bg: rgba(255, 255, 255, 0.90);
+  --elevation-2-bg: #FFFFFF;
   --elevation-3-bg: #FFFFFF;
   --elevation-4-bg: #FFFFFF;
 
   /* Real Soft Shadows for Elevation (Light) */
-  --shadow-card:       0 1px 3px rgba(15, 26, 46, 0.06), 0 8px 24px rgba(15, 26, 46, 0.08);
-  --shadow-card-hover: 0 4px 12px rgba(15, 26, 46, 0.08), 0 12px 30px rgba(15, 26, 46, 0.10);
-  --shadow-elevated:   0 8px 24px rgba(15, 26, 46, 0.08), 0 20px 48px rgba(15, 26, 46, 0.12);
+  --shadow-card:       0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px -4px rgba(28, 25, 23, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(28, 25, 23, 0.06), 0 14px 32px -4px rgba(28, 25, 23, 0.09);
+  --shadow-elevated:   0 12px 28px -4px rgba(28, 25, 23, 0.08), 0 24px 48px -8px rgba(28, 25, 23, 0.12);
 
-  --divider-color:     rgba(15, 26, 46, 0.12);
+  --divider-color:     rgba(28, 25, 23, 0.10);
   --input-bg:          #FFFFFF;
-  --input-border:      rgba(15, 26, 46, 0.16);
-  --specular-sheen:    rgba(255, 255, 255, 0.60);
+  --input-border:      rgba(28, 25, 23, 0.16);
+  --specular-sheen:    rgba(255, 255, 255, 0.65);
 
   /* Transitions */
   --t-fast:   150ms;
@@ -170,91 +181,103 @@
 html.dark {
   color-scheme: dark;
 
-  /* Base Canvas & Surfaces (Dark - Midnight Navy) */
-  --canvas:           #0A0F1C;
-  --surface:          #111A2E;
-  --raised:           #18233D;
-  --overlay:          #1F2C4A;
+  /* Base Canvas & Surfaces (Dark - Warm Nocturne Matte Charcoal) */
+  --canvas:           #141210;
+  --surface:          #1D1A17;
+  --raised:           #27231F;
+  --overlay:          #312C27;
 
-  --bg:               #0A0F1C;
-  --surface-ground:   #0A0F1C;
-  --surface-card:     #111A2E;
-  --surface-raised:   #18233D;
-  --surface-glass:    rgba(147, 180, 255, 0.05);
+  --bg:               #141210;
+  --surface-ground:   #141210;
+  --surface-card:     #1D1A17;
+  --surface-raised:   #27231F;
+  --surface-glass:    rgba(29, 26, 23, 0.90);
 
-  /* Typography (WCAG AAA >= 14:1 for primary, AA >= 7.0:1 for muted) */
-  --text-primary:     #E8EEF9;
-  --text-heading:     #FFFFFF;
-  --text-muted:       #9DAAC6;
-  --text-secondary:   #9DAAC6;
-  --text:             #E8EEF9;
-  --text-on-primary:  #0A0F1C;
-  --on-primary:       #0A0F1C;
+  /* Typography (Dark - Warm Ivory) */
+  --text-primary:     #F6F2EB;
+  --text-heading:     #F6F2EB;
+  --text-muted:       #ACA295;
+  --text-secondary:   #D4CCC0;
+  --text:             #F6F2EB;
+  --text-on-primary:  #141210;
+  --on-primary:       #141210;
 
-  /* Borders & Specular Optics (Dark) */
-  --hairline:         rgba(147, 161, 189, 0.16);
-  --hairline-strong:  rgba(147, 161, 189, 0.28);
-  --specular-rim:     rgba(255, 255, 255, 0.08);
-  --border:           rgba(147, 161, 189, 0.16);
-  --border-strong:    rgba(147, 161, 189, 0.28);
-  --border-subtle:    rgba(147, 161, 189, 0.10);
+  /* Borders & Specular Optics (Dark - Subtle Warm Rim) */
+  --hairline:         rgba(255, 245, 235, 0.10);
+  --hairline-strong:  rgba(255, 245, 235, 0.18);
+  --specular-rim:     rgba(255, 248, 240, 0.12);
+  --border:           rgba(255, 245, 235, 0.10);
+  --border-strong:    rgba(255, 245, 235, 0.18);
+  --border-subtle:    rgba(255, 245, 235, 0.06);
 
-  /* Emergency Crimson & States (Dark) */
-  --danger:           #E5484D;
-  --danger-solid:     #D13438;
-  --danger-hover:     #FF6166;
-  --danger-pressed:   #B82C30;
+  /* Emergency Signal Rose-Crimson & States (Dark) */
+  --danger:           #FF6B7B;
+  --danger-solid:     #C81D3B;
+  --danger-hover:     #E11D48;
+  --danger-pressed:   #9F1239;
+  --danger-fg:        #FFFFFF;
   --on-red:           #FFFFFF;
-  --red:              #E5484D;
-  --red-deep:         #B82C30;
-  --red-text:         #FF6166;
+  --red:              #FF6B7B;
+  --red-deep:         #9F1239;
+  --red-text:         #FDA4AF;
+
+  /* Warm Ivory Action & Sage Emerald (Dark) */
+  --action-solid:     #F6F2EB;
+  --action-hover:     #FFFFFF;
+  --action-pressed:   #E6DFD3;
+  --action-fg:        #141210;
+  --success-solid:    #157A3D;
+  --success-hover:    #16A34A;
+  --success-fg:       #FFFFFF;
+  --btn-secondary-bg: #27231F;
+  --btn-secondary-hover-bg: #312C27;
 
   /* Semantic System Tokens (Dark) */
-  --success:          #34D399;
+  --success:          #4ADE80;
   --warning:          #FBBF24;
-  --info:             #60A5FA;
-  --focus:            #60A5FA;
-  --ice:              #A5D8FF;
+  --info:             #F29C79;
+  --focus:            #F29C79;
+  --ice:              #F6DFC9;
 
   /* Backward Compatibility Layers */
-  --brand-500:        #D13438;
-  --brand-600:        #B82C30;
-  --brand-700:        #8A0A1F;
-  --brand-400:        #FF6166;
-  --accent:           #E5484D;
+  --brand-500:        #C81D3B;
+  --brand-600:        #9F1239;
+  --brand-700:        #881337;
+  --brand-400:        #FF6B7B;
+  --accent:           #FF6B7B;
 
-  --surface-950:      #0A0F1C;
-  --surface-900:      #111A2E;
-  --surface-800:      #18233D;
-  --surface-700:      #1F2C4A;
-  --surface-600:      #2A3B63;
+  --surface-950:      #141210;
+  --surface-900:      #1D1A17;
+  --surface-800:      #27231F;
+  --surface-700:      #312C27;
+  --surface-600:      #3C3630;
 
-  --violet-500:       #60A5FA;
-  --magenta-500:      #E5484D;
-  --cyan-500:         #A5D8FF;
+  --violet-500:       #C4B5FD;
+  --magenta-500:      #FF6B7B;
+  --cyan-500:         #7DD3FC;
   --amber-500:        #FBBF24;
   --teal-500:         #34D399;
 
-  --semantic-success: #34D399;
+  --semantic-success: #4ADE80;
   --semantic-warning: #FBBF24;
-  --semantic-danger:  #E5484D;
-  --semantic-info:    #60A5FA;
+  --semantic-danger:  #FF6B7B;
+  --semantic-info:    #F29C79;
 
-  /* Role Accents (Dark) */
-  --accent-donor:             #2DD4BF;
-  --accent-donor-subtle:      rgba(45, 212, 191, 0.14);
-  --accent-donor-border:      rgba(45, 212, 191, 0.28);
-  --accent-hospital:          #60A5FA;
-  --accent-hospital-subtle:   rgba(96, 165, 250, 0.14);
-  --accent-hospital-border:   rgba(96, 165, 250, 0.28);
-  --accent-admin:             #A78BFA;
-  --accent-admin-subtle:      rgba(167, 139, 250, 0.14);
-  --accent-admin-border:      rgba(167, 139, 250, 0.28);
+  /* Role Accents (Dark - Warm & Distinct) */
+  --accent-donor:             #34D399;
+  --accent-donor-subtle:      rgba(52, 211, 153, 0.14);
+  --accent-donor-border:      rgba(52, 211, 153, 0.28);
+  --accent-hospital:          #7DD3FC;
+  --accent-hospital-subtle:   rgba(125, 211, 252, 0.14);
+  --accent-hospital-border:   rgba(125, 211, 252, 0.28);
+  --accent-admin:             #C4B5FD;
+  --accent-admin-subtle:      rgba(196, 181, 253, 0.14);
+  --accent-admin-border:      rgba(196, 181, 253, 0.28);
 
   /* Urgency Scale (Dark) */
-  --urgency-critical:         #E5484D;
-  --urgency-critical-subtle:  rgba(229, 72, 77, 0.14);
-  --urgency-critical-border:  rgba(229, 72, 77, 0.28);
+  --urgency-critical:         #FF6B7B;
+  --urgency-critical-subtle:  rgba(255, 107, 123, 0.14);
+  --urgency-critical-border:  rgba(255, 107, 123, 0.30);
   --urgency-high:             #FB923C;
   --urgency-high-subtle:      rgba(251, 146, 60, 0.14);
   --urgency-high-border:      rgba(251, 146, 60, 0.28);
@@ -266,53 +289,53 @@ html.dark {
   --urgency-low-border:       rgba(125, 211, 252, 0.28);
 
   /* Blood-Group Family Hues (Dark) */
-  --abo-o:                    #2DD4BF;
-  --abo-o-subtle:             rgba(45, 212, 191, 0.14);
-  --abo-o-border:             rgba(45, 212, 191, 0.28);
-  --abo-a:                    #60A5FA;
-  --abo-a-subtle:             rgba(96, 165, 250, 0.14);
-  --abo-a-border:             rgba(96, 165, 250, 0.28);
-  --abo-b:                    #A78BFA;
-  --abo-b-subtle:             rgba(167, 139, 250, 0.14);
-  --abo-b-border:             rgba(167, 139, 250, 0.28);
+  --abo-o:                    #34D399;
+  --abo-o-subtle:             rgba(52, 211, 153, 0.14);
+  --abo-o-border:             rgba(52, 211, 153, 0.28);
+  --abo-a:                    #7DD3FC;
+  --abo-a-subtle:             rgba(125, 211, 252, 0.14);
+  --abo-a-border:             rgba(125, 211, 252, 0.28);
+  --abo-b:                    #C4B5FD;
+  --abo-b-subtle:             rgba(196, 181, 253, 0.14);
+  --abo-b-border:             rgba(196, 181, 253, 0.28);
   --abo-ab:                   #FBBF24;
   --abo-ab-subtle:            rgba(251, 191, 36, 0.14);
   --abo-ab-border:            rgba(251, 191, 36, 0.28);
 
-  /* Chart Series (Dark - >= 3:1 against surface #111A2E) */
-  --chart-1:                  #60A5FA;
+  /* Chart Series (Dark - >= 3:1 against surface #1D1A17) */
+  --chart-1:                  #F29C79;
   --chart-2:                  #34D399;
   --chart-3:                  #FBBF24;
-  --chart-4:                  #A78BFA;
-  --chart-5:                  #F472B6;
-  --chart-6:                  #94A3B8;
+  --chart-4:                  #C4B5FD;
+  --chart-5:                  #FF6B7B;
+  --chart-6:                  #ACA295;
 
-  /* Glass - Dark Mode */
-  --glass-bg:               rgba(147, 180, 255, 0.05);
-  --glass-bg-elevated:      rgba(147, 180, 255, 0.08);
-  --glass-border:           rgba(147, 161, 189, 0.16);
-  --glass-border-md:        rgba(147, 161, 189, 0.28);
-  --glass-border-highlight: rgba(255, 255, 255, 0.08);
-  --glass-inset:            inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --glass-specular:         inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
-  --glass-shadow:           0 16px 40px -8px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.35);
+  /* Glass - Dark Mode (Warm Nocturne Glass) */
+  --glass-bg:               rgba(29, 26, 23, 0.88);
+  --glass-bg-elevated:      rgba(39, 35, 31, 0.92);
+  --glass-border:           rgba(255, 245, 235, 0.10);
+  --glass-border-md:        rgba(255, 245, 235, 0.18);
+  --glass-border-highlight: rgba(255, 248, 240, 0.12);
+  --glass-inset:            inset 0 1px 0 rgba(255, 248, 240, 0.09);
+  --glass-specular:         inset 0 1px 1px 0 rgba(255, 248, 240, 0.11);
+  --glass-shadow:           0 16px 40px -8px rgba(8, 6, 4, 0.72), 0 2px 6px rgba(8, 6, 4, 0.40);
 
   /* Spatial 5-Level Elevations (Dark) */
   --elevation-0-bg: transparent;
-  --elevation-1-bg: rgba(147, 180, 255, 0.05);
-  --elevation-2-bg: rgba(147, 180, 255, 0.08);
-  --elevation-3-bg: #18233D;
-  --elevation-4-bg: #1F2C4A;
+  --elevation-1-bg: rgba(29, 26, 23, 0.92);
+  --elevation-2-bg: #1D1A17;
+  --elevation-3-bg: #27231F;
+  --elevation-4-bg: #312C27;
 
-  /* Shadows (Dark - Midnight Depth) */
-  --shadow-card:       0 8px 24px -4px rgba(0, 0, 0, 0.50), 0 2px 6px rgba(0, 0, 0, 0.30);
-  --shadow-card-hover: 0 14px 34px -4px rgba(0, 0, 0, 0.65), 0 0 20px -2px rgba(96, 165, 250, 0.12);
-  --shadow-elevated:   0 20px 48px -6px rgba(0, 0, 0, 0.75), 0 0 28px -4px rgba(96, 165, 250, 0.15);
+  /* Shadows (Dark - Soft Nocturne Depth) */
+  --shadow-card:       0 8px 24px -4px rgba(8, 6, 4, 0.50), 0 2px 6px rgba(8, 6, 4, 0.30);
+  --shadow-card-hover: 0 14px 34px -4px rgba(8, 6, 4, 0.65), 0 0 18px -2px rgba(242, 156, 121, 0.08);
+  --shadow-elevated:   0 20px 48px -6px rgba(8, 6, 4, 0.78), 0 0 24px -4px rgba(242, 156, 121, 0.10);
 
-  --divider-color:     rgba(147, 161, 189, 0.16);
-  --input-bg:          rgba(10, 15, 28, 0.85);
-  --input-border:      rgba(147, 161, 189, 0.20);
-  --specular-sheen:    rgba(255, 255, 255, 0.10);
+  --divider-color:     rgba(255, 245, 235, 0.10);
+  --input-bg:          #171412;
+  --input-border:      rgba(255, 245, 235, 0.16);
+  --specular-sheen:    rgba(255, 244, 232, 0.08);
 }
 
 /* ─── Base Styles ────────────────────────────────────────────────────────── */
@@ -356,7 +379,7 @@ html.dark {
   }
 
   ::selection {
-    background: rgba(96, 165, 250, 0.30);
+    background: rgba(242, 156, 121, 0.28);
     color: var(--text-primary);
   }
 
@@ -382,14 +405,14 @@ html.dark {
 
   select option,
   option {
-    background-color: #111A2E;
-    color: #E8EEF9;
+    background-color: #1D1A17;
+    color: #F6F2EB;
   }
 
   html:not(.dark) select option,
   html:not(.dark) option {
     background-color: #FFFFFF;
-    color: #0F1A2E;
+    color: #1C1917;
   }
 
   select option:disabled,
@@ -400,7 +423,7 @@ html.dark {
   }
 }
 
-/* ─── Background Canvas & Harmonic Orbs ──────────────────────────────────── */
+/* ─── Background Canvas & Harmonic Spotlight Atmosphere ────────────────────── */
 #root {
   position: relative;
   min-height: 100vh;
@@ -412,13 +435,15 @@ html.dark {
   position: fixed;
   inset: 0;
   z-index: -3;
-  background: #F4F7FB;
+  background: var(--canvas);
+  background-image: radial-gradient(ellipse 80% 45% at 50% 0%, rgba(194, 65, 12, 0.055), transparent 70%);
   pointer-events: none;
   transition: background 0.3s ease;
 }
 
 html.dark #root::before {
-  background: #0A0F1C;
+  background: var(--canvas);
+  background-image: radial-gradient(ellipse 80% 45% at 50% 0%, rgba(232, 106, 80, 0.10), rgba(217, 59, 78, 0.04) 48%, transparent 72%);
 }
 
 /* Noise overlay */
@@ -427,30 +452,26 @@ html.dark #root::before {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.02;
+  opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   transform: translateZ(0);
 }
 
-/* Vignette */
+/* Vignette (subtle radial corner warmth without horizontal bottom seam) */
 .bg-vignette {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 15, 28, 0.65) 100%);
+  background: radial-gradient(circle at 50% 35%, transparent 65%, rgba(12, 10, 8, 0.16) 100%);
 }
 
 html:not(.dark) .bg-vignette {
-  background: radial-gradient(ellipse at center, transparent 65%, rgba(200, 215, 235, 0.35) 100%);
+  background: radial-gradient(circle at 50% 35%, transparent 70%, rgba(28, 25, 23, 0.025) 100%);
 }
 
-/* 
-  Harmonic Atmospheric Orbs (Rule 5):
-  dim crimson, royal blue (#2B4C8C), ice blue (#A5D8FF), silver-blue (#93A1BD).
-  Opacity <=12% in dark, <=8% in light.
-*/
+/* Harmonic Warm Ember + Sage Atmospheric Orbs */
 .bg-orb {
   position: absolute;
   border-radius: 50%;
@@ -461,60 +482,60 @@ html:not(.dark) .bg-vignette {
   transform: translateZ(0);
 }
 
-/* Orb 1: Dim Crimson (Emergency signal presence) */
+/* Orb 1: Subtle Warm Coral Ember */
 .bg-orb-1 {
-  width: 700px;
-  height: 700px;
-  top: -160px;
-  left: -140px;
-  background: radial-gradient(circle, rgba(200, 16, 46, 0.035) 0%, transparent 70%);
+  width: 680px;
+  height: 680px;
+  top: -180px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(194, 65, 12, 0.045) 0%, transparent 70%);
   animation: blobDrift 40s ease-in-out infinite alternate;
 }
 
 html.dark .bg-orb-1 {
-  background: radial-gradient(circle, rgba(209, 52, 56, 0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(232, 106, 80, 0.085) 0%, transparent 70%);
 }
 
-/* Orb 2: Royal Blue #2B4C8C (Clinical stability & trust) */
+/* Orb 2: Soft Rose Signal */
 .bg-orb-2 {
-  width: 720px;
-  height: 720px;
-  top: 25%;
-  right: -160px;
-  background: radial-gradient(circle, rgba(43, 76, 140, 0.05) 0%, transparent 70%);
+  width: 700px;
+  height: 700px;
+  top: 24%;
+  right: -180px;
+  background: radial-gradient(circle, rgba(190, 18, 60, 0.03) 0%, transparent 70%);
   animation: blobDrift2 48s ease-in-out infinite alternate;
 }
 
 html.dark .bg-orb-2 {
-  background: radial-gradient(circle, rgba(43, 76, 140, 0.11) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(217, 59, 78, 0.06) 0%, transparent 70%);
 }
 
-/* Orb 3: Ice Blue #A5D8FF (Recovery, vital clarity) */
+/* Orb 3: Soft Alabaster / Sage Glow */
 .bg-orb-3 {
-  width: 620px;
-  height: 620px;
+  width: 600px;
+  height: 600px;
   bottom: -140px;
-  left: 10%;
-  background: radial-gradient(circle, rgba(165, 216, 255, 0.04) 0%, transparent 70%);
+  left: 12%;
+  background: radial-gradient(circle, rgba(15, 118, 110, 0.03) 0%, transparent 70%);
   animation: blobDrift3 42s ease-in-out infinite alternate;
 }
 
 html.dark .bg-orb-3 {
-  background: radial-gradient(circle, rgba(165, 216, 255, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.04) 0%, transparent 70%);
 }
 
-/* Orb 4: Silver-Blue #93A1BD (Neutral spatial atmosphere) */
+/* Orb 4: Warm Sand Tint */
 .bg-orb-4 {
   width: 480px;
   height: 480px;
   bottom: 18%;
   right: 12%;
-  background: radial-gradient(circle, rgba(147, 161, 189, 0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(180, 83, 9, 0.03) 0%, transparent 70%);
   animation: blobDrift4 35s ease-in-out infinite alternate;
 }
 
 html.dark .bg-orb-4 {
-  background: radial-gradient(circle, rgba(147, 161, 189, 0.09) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.035) 0%, transparent 70%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -537,8 +558,8 @@ html.dark .bg-orb-4 {
   .elevation-base,
   .elevation-1 {
     background: var(--elevation-1-bg);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
     border: 1px solid var(--hairline);
     border-top: 1px solid var(--specular-rim);
     box-shadow: var(--shadow-card), var(--glass-inset);
@@ -549,11 +570,11 @@ html.dark .bg-orb-4 {
   .elevation-raised,
   .elevation-2 {
     background: var(--elevation-2-bg);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
-    border: 1px solid var(--hairline-strong);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    border: 1px solid var(--hairline);
     border-top: 1px solid var(--specular-rim);
-    box-shadow: var(--shadow-card-hover), var(--glass-specular);
+    box-shadow: var(--shadow-card), var(--glass-specular);
     border-radius: 1.5rem;
     transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform var(--t-fast) var(--ease-out);
   }
@@ -561,8 +582,8 @@ html.dark .bg-orb-4 {
   .elevation-floating,
   .elevation-3 {
     background: var(--elevation-3-bg);
-    backdrop-filter: blur(28px) saturate(185%);
-    -webkit-backdrop-filter: blur(28px) saturate(185%);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
     border: 1px solid var(--hairline-strong);
     border-top: 1px solid var(--specular-rim);
     box-shadow: var(--shadow-elevated), var(--glass-specular);
@@ -573,11 +594,11 @@ html.dark .bg-orb-4 {
   .elevation-overlay,
   .elevation-4 {
     background: var(--elevation-4-bg);
-    backdrop-filter: blur(30px) saturate(190%);
-    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(170%);
+    -webkit-backdrop-filter: blur(30px) saturate(170%);
     border: 1px solid var(--hairline-strong);
     border-top: 1px solid var(--specular-rim);
-    box-shadow: 0 25px 60px -10px rgba(10, 15, 28, 0.85), var(--glass-specular);
+    box-shadow: 0 25px 60px -10px rgba(10, 8, 6, 0.78), var(--glass-specular);
     border-radius: 2rem;
     transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
@@ -599,14 +620,14 @@ html.dark .bg-orb-4 {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 248, 240, 0.30) 50%, transparent 100%);
     pointer-events: none;
   }
 
   /* Liquid Lens Refraction */
   .liquid-lens {
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
   }
 
   /* Tabular Digits */
@@ -621,7 +642,7 @@ html.dark .bg-orb-4 {
     border-spacing: 0;
   }
   .glass-table thead tr {
-    background: var(--elevation-2-bg);
+    background: var(--raised);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -640,22 +661,40 @@ html.dark .bg-orb-4 {
     transition: background 0.15s ease;
   }
   .glass-table tbody tr:hover td {
-    background: rgba(96, 165, 250, 0.05);
+    background: rgba(181, 62, 18, 0.04);
   }
   html.dark .glass-table tbody tr:hover td {
-    background: rgba(147, 180, 255, 0.04);
+    background: rgba(242, 156, 121, 0.05);
   }
 
-  /* Neutral Navy/Ice Glass Card */
+  /* Glass Card */
   .glass-card {
-    background: var(--elevation-1-bg);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    background: var(--surface);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    border: 1px solid var(--hairline);
+    border-top: 1px solid var(--specular-rim);
+    box-shadow: var(--shadow-card), var(--glass-inset);
+    border-radius: 1.25rem;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform var(--t-fast) var(--ease-out);
+  }
+
+  /* Unified Hero Banner Card for Donor, Hospital, Admin & Track Portals */
+  .hero-glass-card {
+    background: var(--surface);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
     border: 1px solid var(--hairline);
     border-top: 1px solid var(--specular-rim);
     box-shadow: var(--shadow-card), var(--glass-specular);
-    border-radius: 1.25rem;
-    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform var(--t-fast) var(--ease-out);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  @media (min-width: 640px) {
+    .hero-glass-card {
+      padding: 2rem;
+    }
   }
 
   .glass-card-hover {
@@ -664,35 +703,35 @@ html.dark .bg-orb-4 {
                 border-color var(--t-base) ease;
   }
   .glass-card-hover:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-card-hover);
     border-color: var(--hairline-strong);
   }
   html.dark .glass-card-hover:hover {
-    box-shadow: 0 16px 44px -8px rgba(0, 0, 0, 0.70), 0 0 20px -2px rgba(96, 165, 250, 0.15);
-    border-color: rgba(147, 161, 189, 0.35);
+    box-shadow: 0 16px 40px -8px rgba(8, 6, 4, 0.72), 0 0 18px -4px rgba(242, 156, 121, 0.14);
+    border-color: rgba(255, 245, 235, 0.20);
   }
 
-  /* Glass Navbar */
+  /* Glass Navbar (Warm Cream / Warm Nocturne) */
   .glass-navbar {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
     border-bottom: 1px solid var(--hairline);
-    box-shadow: 0 1px 3px rgba(15, 26, 46, 0.05);
+    box-shadow: 0 1px 3px rgba(28, 25, 23, 0.05);
     transition: background 0.25s ease, border-color 0.25s ease;
   }
   html.dark .glass-navbar {
-    background: rgba(10, 15, 28, 0.85);
+    background: rgba(29, 26, 23, 0.86);
     border-bottom: 1px solid var(--hairline);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.50);
+    box-shadow: 0 4px 20px rgba(8, 6, 4, 0.45);
   }
 
   /* Glass Modal */
   .glass-modal {
     background: var(--surface);
-    backdrop-filter: blur(28px) saturate(185%);
-    -webkit-backdrop-filter: blur(28px) saturate(185%);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
     border: 1px solid var(--hairline-strong);
     border-top: 1px solid var(--specular-rim);
     box-shadow: var(--shadow-elevated);
@@ -718,7 +757,10 @@ html.dark .bg-orb-4 {
   .glass-input:focus {
     outline: none;
     border-color: var(--info);
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+    box-shadow: 0 0 0 3px rgba(181, 62, 18, 0.16);
+  }
+  html.dark .glass-input:focus {
+    box-shadow: 0 0 0 3px rgba(242, 156, 121, 0.22);
   }
 
   /* Glass Select */
@@ -738,15 +780,18 @@ html.dark .bg-orb-4 {
   .glass-select:focus {
     outline: none;
     border-color: var(--info);
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+    box-shadow: 0 0 0 3px rgba(181, 62, 18, 0.16);
+  }
+  html.dark .glass-select:focus {
+    box-shadow: 0 0 0 3px rgba(242, 156, 121, 0.22);
   }
   .glass-select option {
-    background-color: #111A2E;
-    color: #E8EEF9;
+    background-color: #1D1A17;
+    color: #F6F2EB;
   }
   html:not(.dark) .glass-select option {
     background-color: #FFFFFF;
-    color: #0F1A2E;
+    color: #1C1917;
   }
   .glass-select option:disabled,
   .glass-select option[disabled] {
@@ -754,17 +799,17 @@ html.dark .bg-orb-4 {
   }
 
   /* ══ Button Styles ════════════════════════════════════════════════════ */
-  /* Primary Button: Emergency Action / Danger Solid (White text >= 4.5:1) */
+  /* Primary Button: Emergency Action / Danger Solid (Strict <= 10%) */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full;
     background: var(--danger-solid);
-    color: #FFFFFF;
+    color: var(--danger-fg, #FFFFFF);
     font-weight: 700;
     font-size: 0.8125rem;
     letter-spacing: 0.01em;
-    box-shadow: 0 4px 14px rgba(209, 52, 56, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 14px rgba(190, 18, 60, 0.28);
     transition: all var(--t-fast) var(--ease-out);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -772,60 +817,113 @@ html.dark .bg-orb-4 {
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     background: var(--danger-hover);
-    box-shadow: 0 6px 20px rgba(209, 52, 56, 0.50);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 6px 20px rgba(200, 29, 59, 0.38);
   }
   .btn-primary:active:not(:disabled) {
     transform: scale(0.98);
     background: var(--danger-pressed);
-    box-shadow: 0 2px 8px rgba(209, 52, 56, 0.40);
+    box-shadow: 0 2px 8px rgba(200, 29, 59, 0.32);
   }
   .btn-primary:disabled {
     opacity: 0.45;
     cursor: not-allowed;
   }
 
-  /* Secondary Button: Hairline outline, neutral */
+  /* Primary Workflow / Action Button (Warm Ivory Dark / Espresso Charcoal Light) */
+  .btn-action {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full;
+    background: var(--action-solid);
+    color: var(--action-fg, #FFFFFF);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    letter-spacing: 0.01em;
+    border: 1px solid var(--hairline-strong);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20), 0 3px 10px rgba(20, 18, 16, 0.16);
+    transition: all var(--t-fast) var(--ease-out);
+    cursor: pointer;
+  }
+  .btn-action:hover:not(:disabled) {
+    background: var(--action-hover);
+    transform: translateY(-1.5px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 16px rgba(20, 18, 16, 0.24);
+  }
+  .btn-action:active:not(:disabled) {
+    background: var(--action-pressed);
+    transform: scale(0.98);
+  }
+  .btn-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Clinical Sage Emerald Success Button */
+  .btn-success {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl;
+    background: var(--success-solid);
+    color: var(--success-fg, #FFFFFF);
+    font-weight: 800;
+    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 3px 10px rgba(21, 122, 61, 0.28);
+    transition: all var(--t-fast) var(--ease-out);
+    cursor: pointer;
+  }
+  .btn-success:hover:not(:disabled) {
+    background: var(--success-hover);
+    transform: translateY(-1px);
+  }
+  .btn-success:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Secondary Button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full;
-    background: transparent;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full;
+    background: var(--btn-secondary-bg);
     color: var(--text-primary);
     font-weight: 700;
     font-size: 0.8125rem;
-    border: 1px solid var(--hairline);
+    border: 1.5px solid var(--hairline-strong);
+    box-shadow: inset 0 1px 0 var(--specular-rim), 0 1px 3px rgba(28, 25, 23, 0.06);
     transition: all var(--t-fast) var(--ease-out);
     cursor: pointer;
   }
   html.dark .btn-secondary {
-    background: rgba(147, 180, 255, 0.05);
-    color: var(--text-primary);
-    border: 1px solid var(--hairline);
+    background: var(--btn-secondary-bg);
+    color: #F6F2EB;
+    border: 1.5px solid var(--hairline-strong);
+    box-shadow: inset 0 1px 0 rgba(255, 248, 240, 0.08), 0 2px 6px rgba(8, 6, 4, 0.28);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(15, 26, 46, 0.05);
+    background: var(--btn-secondary-hover-bg);
     border-color: var(--info);
     transform: translateY(-1px);
   }
   html.dark .btn-secondary:hover:not(:disabled) {
-    background: rgba(147, 180, 255, 0.10);
+    background: var(--btn-secondary-hover-bg);
     border-color: var(--info);
+  }
+  .btn-secondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   .btn-glass {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full;
-    background: var(--elevation-1-bg);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full;
+    background: var(--btn-secondary-bg);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
     color: var(--text-primary);
     font-weight: 700;
     font-size: 0.8125rem;
-    border: 1px solid var(--hairline);
-    border-top: 1px solid var(--specular-rim);
-    box-shadow: var(--shadow-card);
+    border: 1.5px solid var(--hairline-strong);
+    box-shadow: var(--shadow-card), inset 0 1px 0 var(--specular-rim);
     transition: all var(--t-fast) var(--ease-out);
     cursor: pointer;
   }
   .btn-glass:hover:not(:disabled) {
-    background: var(--elevation-2-bg);
+    background: var(--btn-secondary-hover-bg);
     border-color: var(--info);
     transform: translateY(-2px);
     box-shadow: var(--shadow-card-hover);
@@ -836,58 +934,61 @@ html.dark .bg-orb-4 {
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl;
+    @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl;
     background: transparent;
     color: var(--text-secondary);
     font-weight: 600;
     font-size: 0.8125rem;
-    border: none;
-    transition: color var(--t-fast) ease, background var(--t-fast) ease;
+    border: 1px solid transparent;
+    transition: color var(--t-fast) ease, background var(--t-fast) ease, border-color var(--t-fast) ease;
     cursor: pointer;
   }
   .btn-ghost:hover:not(:disabled) {
     color: var(--text-primary);
-    background: rgba(147, 161, 189, 0.10);
+    background: rgba(28, 25, 23, 0.06);
+    border-color: var(--hairline);
   }
   html.dark .btn-ghost:hover:not(:disabled) {
     color: var(--text-primary);
-    background: rgba(147, 180, 255, 0.08);
+    background: rgba(255, 245, 235, 0.07);
+    border-color: var(--hairline);
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full;
-    background: rgba(229, 72, 77, 0.12);
-    color: var(--danger);
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full;
+    background: rgba(190, 18, 60, 0.09);
+    color: #9F1239;
     font-weight: 700;
     font-size: 0.8125rem;
-    border: 1px solid rgba(229, 72, 77, 0.35);
+    border: 1.5px solid rgba(190, 18, 60, 0.35);
     transition: all var(--t-fast) ease;
     cursor: pointer;
   }
   html.dark .btn-danger {
-    background: rgba(229, 72, 77, 0.18);
-    color: var(--red-text);
-    border: 1px solid rgba(229, 72, 77, 0.45);
+    background: rgba(255, 107, 123, 0.14);
+    color: #FDA4AF;
+    border: 1.5px solid rgba(255, 107, 123, 0.42);
   }
   .btn-danger:hover:not(:disabled) {
-    background: rgba(229, 72, 77, 0.25);
+    background: rgba(255, 107, 123, 0.22);
+    border-color: var(--danger);
   }
 
   /* ══ Brand Headlines ═════════════════════════════════════════════════ */
   .gradient-text-brand {
-    color: var(--text-primary);
+    color: var(--danger);
   }
 
   .section-label {
     @apply inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold;
-    background: rgba(29, 111, 214, 0.08);
-    border: 1px solid rgba(29, 111, 214, 0.25);
-    color: #165CA8;
+    background: rgba(181, 62, 18, 0.08);
+    border: 1px solid rgba(181, 62, 18, 0.24);
+    color: #9A3412;
   }
   html.dark .section-label {
-    background: rgba(96, 165, 250, 0.12);
-    border: 1px solid rgba(96, 165, 250, 0.30);
-    color: var(--ice);
+    background: rgba(242, 156, 121, 0.12);
+    border: 1px solid rgba(242, 156, 121, 0.28);
+    color: #F29C79;
   }
 
   /* ══ 8 Blood-Group Pills (ABO Family System: Rh+ subtle fill, Rh- outline) ══ */
@@ -952,7 +1053,7 @@ html.dark .bg-orb-4 {
     border-width: 1.5px;
   }
 
-  /* ══ Stat Card Top-Edge Glows (Neutral hairline default) ══════════════ */
+  /* ══ Stat Card Top-Edge Glows ════════════════════════════════════════ */
   .stat-accent-ruby,
   .stat-accent-violet,
   .stat-accent-cyan,
@@ -963,32 +1064,44 @@ html.dark .bg-orb-4 {
     border-top: 1px solid var(--specular-rim);
   }
 
-  /* ══ Hero Cards with Role Accent Tint (6-8% gradient) ══════════════ */
+  /* ══ Hero Cards (Clean Warm Surface + Top Specular Rim — zero smudgy stain) ══ */
   .hero-donor {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-donor-subtle) 100%) !important;
+    background-color: var(--surface) !important;
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(15, 118, 110, 0.06), transparent 70%) !important;
+  }
+  html.dark .hero-donor {
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(52, 211, 153, 0.10), transparent 70%) !important;
   }
   .hero-hospital {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-hospital-subtle) 100%) !important;
+    background-color: var(--surface) !important;
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(3, 105, 161, 0.06), transparent 70%) !important;
+  }
+  html.dark .hero-hospital {
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(125, 211, 252, 0.10), transparent 70%) !important;
   }
   .hero-admin {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 55%, var(--accent-admin-subtle) 100%) !important;
+    background-color: var(--surface) !important;
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(109, 40, 217, 0.06), transparent 70%) !important;
+  }
+  html.dark .hero-admin {
+    background-image: radial-gradient(ellipse 65% 80% at 95% 10%, rgba(196, 181, 253, 0.10), transparent 70%) !important;
   }
 
-  /* ══ Semantic Badges & Status Chips (Rule 3) ═════════════════════════ */
+  /* ══ Semantic Badges & Status Chips ═════════════════════════════════ */
   .badge-base {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wide uppercase;
     border-width: 1px;
     border-style: solid;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  /* Urgency: Critical (#E5484D / #C8102E) */
+  /* Urgency: Critical (#FF6B7B / #BE123C) */
   .badge-critical,
   .badge-danger {
     background: var(--urgency-critical-subtle);
     color: var(--urgency-critical);
     border-color: var(--urgency-critical-border);
-    box-shadow: 0 0 16px -2px rgba(229, 72, 77, 0.20);
+    box-shadow: 0 0 14px -2px rgba(217, 59, 78, 0.20);
   }
   @media (prefers-reduced-motion: no-preference) {
     .badge-critical {
@@ -996,7 +1109,7 @@ html.dark .bg-orb-4 {
     }
   }
 
-  /* Urgency: High (#FB923C / #B45309) */
+  /* Urgency: High (#FB923C / #A14A08) */
   .badge-high {
     background: var(--urgency-high-subtle);
     color: var(--urgency-high);
@@ -1021,16 +1134,16 @@ html.dark .bg-orb-4 {
     border-color: var(--urgency-low-border);
   }
 
-  /* Success: ONLINE / Verified / Confirmed / Fulfilled / Completed (#34D399 / #0A7A62) */
+  /* Success: ONLINE / Verified / Confirmed / Fulfilled / Completed */
   .badge-success,
   .badge-online,
   .badge-verified,
   .badge-fulfilled,
   .badge-completed,
   .badge-confirmed {
-    background: rgba(10, 122, 98, 0.08);
-    color: #076351;
-    border-color: rgba(10, 122, 98, 0.25);
+    background: rgba(21, 122, 61, 0.10);
+    color: #157A3D;
+    border-color: rgba(21, 122, 61, 0.28);
   }
   html.dark .badge-success,
   html.dark .badge-online,
@@ -1038,27 +1151,27 @@ html.dark .bg-orb-4 {
   html.dark .badge-fulfilled,
   html.dark .badge-completed,
   html.dark .badge-confirmed {
-    color: #34D399;
-    background: rgba(52, 211, 153, 0.14);
-    border-color: rgba(52, 211, 153, 0.35);
+    color: #4ADE80;
+    background: rgba(74, 222, 128, 0.14);
+    border-color: rgba(74, 222, 128, 0.30);
   }
 
-  /* Info / Informational / Open / Matching (#60A5FA / #1D6FD6) */
+  /* Info / Informational / Open / Matching / Pledged (Warm Terracotta Ember) */
   .badge-info,
   .badge-open,
   .badge-matching,
   .badge-pledged {
-    background: rgba(29, 111, 214, 0.08);
-    color: #124B8A;
-    border-color: rgba(29, 111, 214, 0.25);
+    background: rgba(181, 62, 18, 0.08);
+    color: #B53E12;
+    border-color: rgba(181, 62, 18, 0.24);
   }
   html.dark .badge-info,
   html.dark .badge-open,
   html.dark .badge-matching,
   html.dark .badge-pledged {
-    color: var(--ice);
-    background: rgba(96, 165, 250, 0.14);
-    border-color: rgba(96, 165, 250, 0.35);
+    color: #F29C79;
+    background: rgba(242, 156, 121, 0.14);
+    border-color: rgba(242, 156, 121, 0.28);
   }
 
   /* Neutral / Inactive / Cancelled / Expired */
@@ -1066,7 +1179,7 @@ html.dark .bg-orb-4 {
   .badge-expired,
   .badge-suspended,
   .badge-offline {
-    background: rgba(147, 161, 189, 0.10);
+    background: rgba(99, 90, 82, 0.10);
     color: var(--text-muted);
     border-color: var(--hairline);
   }
@@ -1075,11 +1188,11 @@ html.dark .bg-orb-4 {
   html.dark .badge-suspended,
   html.dark .badge-offline {
     color: var(--text-muted);
-    background: rgba(147, 161, 189, 0.08);
+    background: rgba(172, 162, 149, 0.10);
     border-color: var(--hairline);
   }
 
-  /* Role Badges (Tailored Role Accents) */
+  /* Role Badges */
   .badge-donor {
     background: var(--accent-donor-subtle);
     color: var(--accent-donor);
@@ -1102,9 +1215,9 @@ html.dark .bg-orb-4 {
   .skeleton {
     background: linear-gradient(
       90deg,
-      rgba(147, 161, 189, 0.12) 25%,
-      rgba(147, 161, 189, 0.25) 50%,
-      rgba(147, 161, 189, 0.12) 75%
+      rgba(99, 90, 82, 0.10) 25%,
+      rgba(99, 90, 82, 0.20) 50%,
+      rgba(99, 90, 82, 0.10) 75%
     );
     background-size: 200% 100%;
     animation: shimmer 2s linear infinite;
@@ -1113,9 +1226,9 @@ html.dark .bg-orb-4 {
   html.dark .skeleton {
     background: linear-gradient(
       90deg,
-      rgba(147, 180, 255, 0.04) 25%,
-      rgba(147, 180, 255, 0.10) 50%,
-      rgba(147, 180, 255, 0.04) 75%
+      rgba(255, 245, 235, 0.04) 25%,
+      rgba(255, 245, 235, 0.10) 50%,
+      rgba(255, 245, 235, 0.04) 75%
     );
     background-size: 200% 100%;
   }
@@ -1124,10 +1237,10 @@ html.dark .bg-orb-4 {
 /* ─── Keyframe Animations ─────────────────────────────────────────────────── */
 @keyframes pulseGlowDanger {
   0%, 100% {
-    box-shadow: 0 0 14px rgba(229, 72, 77, 0.35);
+    box-shadow: 0 0 12px rgba(217, 59, 78, 0.28);
   }
   50% {
-    box-shadow: 0 0 28px rgba(229, 72, 77, 0.65), 0 0 40px rgba(229, 72, 77, 0.20);
+    box-shadow: 0 0 24px rgba(217, 59, 78, 0.52), 0 0 36px rgba(217, 59, 78, 0.16);
   }
 }
 
@@ -1163,19 +1276,19 @@ html.dark .bg-orb-4 {
 /* ─── Non-Backdrop-Filter Browser Fallback ───────────────────────────────── */
 @supports not (backdrop-filter: blur(1px)) {
   html.dark .glass-card {
-    background: #111A2E !important;
+    background: #1D1A17 !important;
   }
   html:not(.dark) .glass-card {
     background: #FFFFFF !important;
   }
   html.dark .glass-navbar {
-    background: #0A0F1C !important;
+    background: #141210 !important;
   }
   html:not(.dark) .glass-navbar {
     background: #FFFFFF !important;
   }
   html.dark .glass-modal {
-    background: #18233D !important;
+    background: #27231F !important;
   }
   html:not(.dark) .glass-modal {
     background: #FFFFFF !important;
@@ -1195,7 +1308,24 @@ html.dark .bg-orb-4 {
 .text-inverted {
   color: var(--on-primary) !important;
 }
+.bg-surface-elevated {
+  background-color: var(--btn-secondary-bg);
+}
+.border-surface-border {
+  border-color: var(--hairline-strong);
+}
 .filter-pill-active {
-  background-color: var(--text-primary) !important;
-  color: var(--on-primary) !important;
+  background-color: var(--action-solid) !important;
+  color: var(--action-fg, #FFFFFF) !important;
+  border: 1.5px solid var(--action-solid) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 3px 10px rgba(20, 18, 16, 0.18);
+}
+.filter-pill-inactive {
+  background-color: var(--btn-secondary-bg);
+  color: var(--text-primary);
+  border: 1.5px solid var(--hairline-strong);
+}
+.filter-pill-inactive:hover {
+  background-color: var(--btn-secondary-hover-bg);
+  border-color: var(--info);
 }

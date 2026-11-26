@@ -13,6 +13,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const { isMongoConnected, getDbName, getProjectId } = require('./config/db');
+const { isDbError } = require('./utils/responseHandler');
 
 const app = express();
 
@@ -31,15 +33,40 @@ app.use('/api', apiLimiter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
-  const { getProjectId } = require('./config/db');
-  res.status(200).json({
+  const connected = isMongoConnected();
+  if (!connected) {
+    return res.status(503).json({
+      success: false,
+      status: 'disconnected',
+      dbType: 'mongodb',
+      dbName: getDbName(),
+      projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || '',
+      message: 'MongoDB database is currently unreachable.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return res.status(200).json({
     success: true,
     status: 'connected',
-    dbType: 'firestore',
-    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || 'lifelink-f6f3b',
-    message: 'LifeLink API Gateway is operational and connected to Firestore',
+    dbType: 'mongodb',
+    dbName: getDbName(),
+    projectId: getProjectId() || process.env.FIREBASE_PROJECT_ID || '',
+    message: 'LifeLink API Gateway is operational and connected to MongoDB',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Fail fast with clear 503 if MongoDB is unreachable instead of returning empty lists
+app.use('/api', (req, res, next) => {
+  if (!isMongoConnected()) {
+    return res.status(503).json({
+      success: false,
+      code: 'DB_UNAVAILABLE',
+      message: 'Database service is temporarily unavailable. Please verify MongoDB connectivity and try again.',
+    });
+  }
+  return next();
 });
 
 // Domain Service Routes
@@ -61,31 +88,23 @@ app.use((req, res) => {
   });
 });
 
-// Central Global Error Handler: preserves full error visibility, extracts index links, returns 500 JSON
+// Central Global Error Handler
 app.use((err, req, res, next) => {
-  const isFirestoreIndexError = err.message && (err.message.includes('FAILED_PRECONDITION') || err.message.includes('requires an index'));
-  
-  if (isFirestoreIndexError) {
-    const linkMatch = err.message.match(/https:\/\/[^\s]+/);
-    console.error('========================================================================');
-    console.error(`❌ [Firestore Missing Index Error] [${req.method} ${req.originalUrl}]`);
-    console.error(`Message: ${err.message}`);
-    if (linkMatch) {
-      console.error(`Firebase Console Index Link: ${linkMatch[0]}`);
-    }
-    console.error('========================================================================');
-  } else {
-    console.error(`Unhandled Server Error [${req.method} ${req.originalUrl}]:`, err);
+  const dbUnavailable = isDbError(err);
+  if (dbUnavailable) {
+    console.error(`❌ [Database Unavailable] [${req.method} ${req.originalUrl}]: ${err.message}`);
+    return res.status(503).json({
+      success: false,
+      code: 'DB_UNAVAILABLE',
+      message: 'Database service is temporarily unavailable. Please verify MongoDB connectivity and try again.',
+    });
   }
 
+  console.error(`Unhandled Server Error [${req.method} ${req.originalUrl}]:`, err);
   const statusCode = err.statusCode || err.status || 500;
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     success: false,
     message: err.message || 'Internal Server Error',
-    ...(isFirestoreIndexError && {
-      code: 'MISSING_FIRESTORE_INDEX',
-      indexLink: err.message.match(/https:\/\/[^\s]+/)?.[0] || null,
-    }),
   });
 });
 

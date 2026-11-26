@@ -13,7 +13,12 @@ const pledgeDonationSchema = z.object({
     .min(1, 'Units must be at least 1'),
 });
 
+const completeDonationSchema = z.object({
+  donatedAt: z.union([z.string(), z.date(), z.null()]).optional(),
+}).optional().default({});
+
 module.exports = {
   pledgeDonationSchema,
+  completeDonationSchema,
 };
 

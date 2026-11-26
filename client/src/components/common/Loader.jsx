@@ -8,14 +8,14 @@ const Loader = ({ text = 'Loading...' }) => {
         <div
           className="absolute inset-0 rounded-full animate-spin"
           style={{
-            border: '2px solid rgba(244,63,94,0.15)',
-            borderTop: '2px solid var(--brand-500)',
-            boxShadow: '0 0 20px rgba(244,63,94,0.40)',
+            border: '2px solid rgba(242, 156, 121, 0.18)',
+            borderTop: '2px solid var(--info)',
+            boxShadow: '0 0 18px rgba(242, 156, 121, 0.28)',
           }}
         />
         <div
           className="absolute inset-2 rounded-full"
-          style={{ background: 'rgba(244,63,94,0.08)' }}
+          style={{ background: 'rgba(242, 156, 121, 0.08)' }}
         />
       </div>
       {text && (

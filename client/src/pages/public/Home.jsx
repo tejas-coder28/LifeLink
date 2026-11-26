@@ -40,15 +40,16 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const isAdmin = (user?.accountType || user?.role) === 'admin';
         const [analyticsResult, requestsResult] = await Promise.allSettled([
-          analyticsApi.getSummary(),
+          isAdmin ? analyticsApi.getSummary() : Promise.resolve(null),
           requestApi.getRequests({ status: 'open' }),
         ]);
 
-        if (analyticsResult.status === 'fulfilled' && analyticsResult.value.data?.success) {
+        if (analyticsResult.status === 'fulfilled' && analyticsResult.value?.data?.success) {
           setStats(analyticsResult.value.data.data.summary);
         }
-        if (requestsResult.status === 'fulfilled' && requestsResult.value.data?.success) {
+        if (requestsResult.status === 'fulfilled' && requestsResult.value?.data?.success) {
           setOpenRequests(requestsResult.value.data.data.slice(0, 4));
         }
       } catch (err) {
@@ -59,7 +60,7 @@ const Home = () => {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   const handlePledge = (requestId) => {
     const targetUrl = `/donor/dashboard?tab=requests&request=${requestId}&action=pledge`;
@@ -126,40 +127,44 @@ const Home = () => {
 
       {/* ── 2. GLASS STATS METRIC COUNTERS ─────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-glass shadow-card">
+        <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-hairline shadow-card">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center divide-y sm:divide-y-0 sm:divide-x divide-hairline">
             <div className="pt-3 sm:pt-0">
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary tabular-nums">
                 <AnimatedCounter value={stats?.totalDonors || 12} />+
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-secondary">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 inline-flex items-center gap-1.5 text-secondary">
+                <span className="w-1.5 h-1.5 rounded-full bg-info" />
                 Registered Donors
               </span>
             </div>
 
             <div className="pt-3 sm:pt-0">
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary tabular-nums">
                 <AnimatedCounter value={stats?.availableDonors || 9} />
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-secondary">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 inline-flex items-center gap-1.5 text-secondary">
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 Standby Donors Ready
               </span>
             </div>
 
             <div className="pt-3 sm:pt-0">
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary tabular-nums">
                 <AnimatedCounter value={stats?.fulfilledRequests || 3} />
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-secondary">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 inline-flex items-center gap-1.5 text-secondary">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-hospital" />
                 Requests Fulfilled
               </span>
             </div>
 
             <div className="pt-3 sm:pt-0">
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary">
+              <span className="text-3xl sm:text-4xl lg:text-5xl font-black block font-heading text-primary tabular-nums">
                 <AnimatedCounter value={stats?.totalRequests || 4} />
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 block text-secondary">
+              <span className="text-[11px] font-bold uppercase tracking-wider mt-1.5 inline-flex items-center gap-1.5 text-secondary">
+                <span className="w-1.5 h-1.5 rounded-full bg-danger" />
                 Total Broadcasts
               </span>
             </div>
@@ -184,10 +189,10 @@ const Home = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           {[
-            { num: '01', color: 'text-info', bg: 'bg-info/10 border-info/30', title: 'Emergency Broadcast', desc: 'Patient or hospital issues an urgent blood request with ABO/Rh group, units needed, and geo-coordinates.' },
-            { num: '02', color: 'text-info', bg: 'bg-info/10 border-info/30', title: 'Smart Proximity Match', desc: `Algorithm scores nearby donors against blood compatibility rules and the ${DONATION_COOLDOWN_DAYS}-day medical recovery cooldown.` },
-            { num: '03', color: 'text-info', bg: 'bg-info/10 border-info/30', title: 'Donor Response', desc: 'Matched standby donors receive high-priority alerts and pledge their donation directly to the hospital.' },
-            { num: '04', color: 'text-info', bg: 'bg-info/10 border-info/30', title: 'Bedside Fulfilment', desc: 'Hospital confirms the donation receipt, automatically updates inventory records, and closes the request.' },
+            { num: '01', color: 'text-danger', bg: 'bg-danger/10 border-danger/25', title: 'Emergency Broadcast', desc: 'Patient or hospital issues an urgent blood request with ABO/Rh group, units needed, and geo-coordinates.' },
+            { num: '02', color: 'text-info', bg: 'bg-info/10 border-info/25', title: 'Smart Proximity Match', desc: `Algorithm scores nearby donors against blood compatibility rules and the ${DONATION_COOLDOWN_DAYS}-day medical recovery cooldown.` },
+            { num: '03', color: 'text-accent-donor', bg: 'bg-accent-donor-subtle border-accent-donor-border', title: 'Donor Response', desc: 'Matched standby donors receive high-priority alerts and pledge their donation directly to the hospital.' },
+            { num: '04', color: 'text-success', bg: 'bg-success/10 border-success/25', title: 'Bedside Fulfilment', desc: 'Hospital confirms the donation receipt, automatically updates inventory records, and closes the request.' },
           ].map(({ num, color, bg, title, desc }) => (
             <Card key={num} hover className="relative flex flex-col justify-between">
               <div>

@@ -115,8 +115,8 @@ const UserManagement = () => {
           }}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'donors'
-              ? 'bg-primary text-on-primary shadow-sm'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+              ? 'filter-pill-active shadow-sm'
+              : 'filter-pill-inactive'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -132,8 +132,8 @@ const UserManagement = () => {
           }}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
             subTab === 'hospitals'
-              ? 'bg-primary text-on-primary shadow-sm'
-              : 'text-secondary hover:text-primary hover:bg-surface border border-transparent'
+              ? 'filter-pill-active shadow-sm'
+              : 'filter-pill-inactive'
           }`}
         >
           <Building2 className="w-4 h-4" />
@@ -235,11 +235,12 @@ const UserManagement = () => {
                         text={hosp.suspended ? 'SUSPENDED' : hosp.isVerified ? 'VERIFIED' : 'PENDING'}
                       />
                     </td>
-                    <td className="px-5 py-3.5 text-right space-x-1.5">
+                    <td className="px-5 py-3.5 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         onClick={() => setSelectedHospital(hosp)}
                         title="View Details"
-                        className="p-2 rounded-xl text-muted hover:text-primary hover:bg-surface transition-colors cursor-pointer"
+                        aria-label={`View details for ${hosp.name}`}
+                        className="btn-secondary p-2 rounded-xl"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -247,10 +248,11 @@ const UserManagement = () => {
                         onClick={() => handleToggleVerification(hosp._id, hosp.isVerified)}
                         disabled={actionLoadingId === hosp._id}
                         title={hosp.isVerified ? 'Revoke Verification' : 'Approve Hospital'}
+                        aria-label={hosp.isVerified ? `Revoke verification for ${hosp.name}` : `Approve ${hosp.name}`}
                         className={`p-2 rounded-xl transition-colors disabled:opacity-40 cursor-pointer ${
                           hosp.isVerified
-                            ? 'text-secondary hover:bg-surface'
-                            : 'text-success hover:bg-success/10'
+                            ? 'btn-secondary'
+                            : 'btn-success'
                         }`}
                       >
                         {hosp.isVerified ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
@@ -259,7 +261,8 @@ const UserManagement = () => {
                         onClick={() => handleRequestDelete(hosp)}
                         disabled={actionLoadingId === hosp._id}
                         title="Delete Hospital Record"
-                        className="p-2 rounded-xl text-danger hover:bg-danger/10 transition-colors disabled:opacity-40 cursor-pointer"
+                        aria-label={`Delete ${hosp.name}`}
+                        className="btn-danger p-2 rounded-xl"
                       >
                         <Ban className="w-4 h-4" />
                       </button>

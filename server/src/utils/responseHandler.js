@@ -1,6 +1,5 @@
-/**
- * Standardized API response format
- */
+const { isMongoConnected } = require('../config/mongo');
+
 const sendSuccess = (res, message, data = null, statusCode = 200) => {
   return res.status(statusCode).json({
     success: true,
@@ -19,15 +18,23 @@ const sendError = (res, message, statusCode = 500, errors = null) => {
 
 const isDbError = (err) => {
   if (!err) return false;
+  if (err.isDbError) return true;
+  if (!isMongoConnected()) return true;
   if (err.statusCode && err.statusCode < 500) return false;
+  const name = err.name || '';
   const msg = err.message || '';
-  return msg.includes('FAILED_PRECONDITION') ||
-         msg.includes('requires an index') ||
-         msg.includes('UNAVAILABLE') ||
-         msg.includes('DEADLINE_EXCEEDED') ||
-         err.code === 9 ||
-         err.code === 14 ||
-         err.name === 'FirebaseError';
+  return (
+    name === 'MongooseServerSelectionError' ||
+    name === 'MongoNetworkError' ||
+    name === 'MongoNetworkTimeoutError' ||
+    name === 'MongoNotConnectedError' ||
+    name === 'MongoServerSelectionError' ||
+    name === 'MongoTopologyClosedError' ||
+    msg.includes('Client must be connected') ||
+    msg.includes('Topology is closed') ||
+    msg.includes('buffering timed out') ||
+    msg.includes('ECONNREFUSED')
+  );
 };
 
 module.exports = {
