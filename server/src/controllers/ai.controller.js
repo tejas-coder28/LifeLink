@@ -22,10 +22,23 @@ const chatRequestSchema = z.object({
   currentPath: z.string().max(200).optional(),
 });
 
+const insightPromptSchema = z.object({
+  prompt: z.string().trim().max(500, 'Prompt cannot exceed 500 characters').optional().default(''),
+});
+
 const generateInsight = async (req, res, next) => {
   try {
-    const { prompt } = req.body;
-    const insight = await aiService.generateSystemInsight(prompt);
+    const parseResult = insightPromptSchema.safeParse(req.body || {});
+    if (!parseResult.success) {
+      return sendError(
+        res,
+        parseResult.error.errors[0]?.message || 'Invalid insight prompt',
+        400,
+        parseResult.error.errors
+      );
+    }
+
+    const insight = await aiService.generateSystemInsight(parseResult.data.prompt);
     return sendSuccess(res, 'AI Insight generated successfully', insight, 201);
   } catch (error) {
     if (isDbError(error)) return next ? next(error) : sendError(res, error.message, 500);

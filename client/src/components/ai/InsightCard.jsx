@@ -3,14 +3,44 @@ import { Sparkles, CheckCircle2, TrendingUp, Cpu } from 'lucide-react';
 import Card from '../common/Card';
 import { formatDateTime } from '../../utils/dateFormatter';
 
+const formatMetricValue = (key, value) => {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(', ') : 'None';
+  }
+  if (value === null || value === undefined || value === '') {
+    return 'None';
+  }
+  if (key === 'totalInventoryUnits') {
+    return `${value} units`;
+  }
+  return String(value);
+};
+
+const formatMetricLabel = (key) => {
+  const customLabels = {
+    totalDonors: 'Total Donors',
+    activeStandbyDonors: 'Active Standby Donors',
+    totalRequests: 'Total Requests',
+    fulfilledRequests: 'Fulfilled Requests',
+    openRequests: 'Open Requests',
+    fulfillmentRate: 'Fulfillment Rate',
+    totalInventoryUnits: 'Hospital Reserve Units',
+    highRiskBloodGroups: 'High Risk Blood Groups',
+    surplusGroups: 'Surplus Groups',
+  };
+  return customLabels[key] || key.replace(/([A-Z])/g, ' $1');
+};
+
 const InsightCard = ({ insight }) => {
   if (!insight) return null;
 
-  const { title, summary, metrics, recommendations, generatedAt } = insight;
+  const { title, summary, metrics, recommendations, generatedAt, createdAt, rawResponse } = insight;
+  const timestamp = generatedAt || createdAt;
+  const isGemini = typeof rawResponse === 'string' && rawResponse.includes('"model"');
 
   return (
     <Card hover={false} className="border border-hairline hero-glass-card shadow-sm">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-hairline">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-hairline">
         <div className="flex items-center space-x-3">
           <div className="p-2.5 rounded-xl bg-info/10 text-info border border-info/20 shadow-sm">
             <Sparkles className="w-5 h-5" />
@@ -19,12 +49,12 @@ const InsightCard = ({ insight }) => {
             <h3 className="text-lg font-bold text-primary tracking-tight">{title}</h3>
             <p className="text-xs text-secondary flex items-center mt-0.5">
               <Cpu className="w-3.5 h-3.5 mr-1 text-info" />
-              LifeLink AI Service Layer • {formatDateTime(generatedAt)}
+              LifeLink AI Service Layer • {formatDateTime(timestamp)}
             </p>
           </div>
         </div>
         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-info/10 text-info border border-info/30">
-          AI Narrative Insight
+          {isGemini ? 'Gemini AI Insight' : 'AI Narrative Insight'}
         </span>
       </div>
 
@@ -36,14 +66,20 @@ const InsightCard = ({ insight }) => {
       {metrics && Object.keys(metrics).length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {Object.entries(metrics).map(([key, value]) => {
-            const isCriticalKey = /shortage|critical|deficit/i.test(key);
+            const formatted = formatMetricValue(key, value);
+            const hasActiveRisk = /shortage|critical|deficit|highRisk/i.test(key) && formatted !== 'None';
+            const isClearedRisk = /shortage|critical|deficit|highRisk/i.test(key) && formatted === 'None';
             return (
               <div key={key} className="bg-surface p-3 rounded-xl border border-hairline">
-                <span className="text-[11px] font-medium text-muted capitalize block truncate">
-                  {key.replace(/([A-Z])/g, ' $1')}
+                <span className="text-[11px] font-medium text-muted block truncate">
+                  {formatMetricLabel(key)}
                 </span>
-                <span className={`text-base font-extrabold block mt-1 ${isCriticalKey ? 'text-danger' : 'text-primary'}`}>
-                  {Array.isArray(value) ? value.join(', ') : String(value)}
+                <span
+                  className={`text-base font-extrabold block mt-1 tabular-nums ${
+                    hasActiveRisk ? 'text-danger' : isClearedRisk ? 'text-success' : 'text-primary'
+                  }`}
+                >
+                  {formatted}
                 </span>
               </div>
             );

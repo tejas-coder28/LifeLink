@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Google_SSO_Only-FFA000?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![Jest Tests](https://img.shields.io/badge/Jest_Tests-377_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Jest Tests](https://img.shields.io/badge/Jest_Tests-379_Passed-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
 [![WCAG](https://img.shields.io/badge/WCAG_2.1-AA%2FAAA_Compliant-005A9C)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 
 LifeLink is an emergency response web application powered by **MongoDB (Mongoose)** and **Express.js / React**, using **Firebase Auth strictly for Google Sign-In**. It bridges standby blood donors, individuals in critical need, and medical facilities through smart donor matching, real-time inventory management, spatial UI design, and role-based workflows.
@@ -25,7 +25,7 @@ LifeLink is an emergency response web application powered by **MongoDB (Mongoose
 - 🛡️ **Role-Based Access Control**: Strict JWT authentication with distinct access controls for standard `user` (donor & recipient), verified `hospital`, and system `admin`.
 - 💎 **Warm Nocturne Glass & Spatial UI**: Tactile editorial translucent UI pairing matte charcoal dark mode (`#141210`) and warm cream alabaster light mode (`#FAF7F2`) with 5 spatial elevation tiers, subtle radial ambient glows, dynamic refraction filters, and Coral Ember focus rings.
 - 📊 **AI Insights & Platform Analytics**: Administrative dashboard with Recharts analytics visualizations, emergency response indicators, shortage prediction alerts, and a role-aware, read-only AI Assistant chatbot.
-- 🧪 **Comprehensive Automated Testing & QA**: 377 automated Jest + Supertest backend tests (31 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
+- 🧪 **Comprehensive Automated Testing & QA**: 379 automated Jest + Supertest backend tests (31 test suites, 100% pass) alongside automated WCAG 2.1 AA/AAA contrast checks and Playwright visual audits.
 
 ---
 
@@ -122,7 +122,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/12-track-request-dark.png" alt="Recipient Emergency Request Tracking and Smart Donor Matching" width="100%" />
       <br />
       <strong>Emergency Request Tracker &amp; Match Engine (<code>/individual/track/:id</code>)</strong><br />
-      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, and ranked matching donors (<code>100%</code>, <code>85%</code>, <code>78%</code>).
+      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, pledged donor ledger, and the Smart Donor Matching Engine panel.
     </td>
   </tr>
 </table>
@@ -135,7 +135,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/13-hospital-overview-dark.png" alt="Hospital Command Center Overview" width="100%" />
       <br />
       <strong>Hospital Command Center (<code>/hospital/dashboard?tab=overview</code>)</strong><br />
-      Facility RBC total (81 Units), urgent emergency broadcasts, recent pledge activity displaying <code>Pledged on &hellip; &bull; Donated on &hellip;</code> and <code>Released on &hellip;</code> states.
+      Facility RBC total (79 Units), urgent emergency broadcasts, recent pledge activity displaying <code>Pledged on &hellip; &bull; Donated on &hellip;</code> and <code>Released on &hellip;</code> states.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/14-hospital-fulfilled-pledges-dark.png" alt="Hospital Fulfilled and Released Pledges History" width="100%" />
@@ -155,7 +155,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/16-hospital-smart-matching-modal.png" alt="Hospital Smart Donor Matching Engine Results Modal" width="100%" />
       <br />
       <strong>Hospital Smart Matching Modal</strong><br />
-      Displays compatible in-house blood bank reserves (<code>B+ 21</code>, <code>B- 5</code>, <code>O+ 22</code>, <code>O- 5</code>) alongside ranked standby donors scored by compatibility, cooldown status, and distance.
+      Displays compatible in-house blood bank reserves (<code>O- 5 unit(s)</code>) alongside ranked standby donors scored by compatibility, cooldown status, and distance.
     </td>
   </tr>
   <tr>
@@ -297,7 +297,7 @@ LifeLink features a bespoke **"Warm Nocturne + Vital Rose-Crimson + Coral Ember"
 | **Backend** | Node.js, Express.js 4, Mongoose 9, `firebase-admin` 14 (Google SSO only), JWT, bcryptjs, Zod validation |
 | **Database & Cloud** | MongoDB + Mongoose (Uniform Repository Architecture, replica-set transactions) |
 | **Authentication** | Custom JWT + bcryptjs & Google Login (Firebase Auth ID Token verification) |
-| **Testing & QA** | Jest, Supertest, `mongodb-memory-server`, Playwright, `@axe-core/playwright` (377 automated tests) |
+| **Testing & QA** | Jest, Supertest, `mongodb-memory-server`, Playwright, `@axe-core/playwright` (379 automated tests) |
 
 ---
 
@@ -481,11 +481,11 @@ LifeLink includes a rigorous automated testing and accessibility assurance suite
 
 ### Backend Automated Tests (Jest + Supertest + MongoMemoryReplSet)
 ```bash
-# Run 377 automated backend tests across 31 suites
+# Run 379 automated backend tests across 31 suites
 cd server
 npm test
 ```
-- **31 Test Suites / 377 Tests**: 100% pass rate against `mongodb-memory-server` replica set.
+- **31 Test Suites / 379 Tests**: 100% pass rate against `mongodb-memory-server` replica set.
 - Covers authentication, blood compatibility scoring, spatial matching algorithms, donation fulfillment, hospital workflows, multi-document ACID transaction integrity, unique pledge constraints, DB failure 503 guards, rate limiting, and role guards.
 
 ### Automated WCAG Contrast Audit
@@ -696,7 +696,7 @@ LifeLink/
 │   │   ├── app.js                   # Express application setup & Mongo availability 503 guard
 │   │   ├── index.js                 # Server entry point
 │   │   └── seed.js                  # MongoDB seed and reset script
-│   ├── tests/                       # Automated Jest + Supertest + MongoMemoryReplSet suites (377 tests / 31 suites)
+│   ├── tests/                       # Automated Jest + Supertest + MongoMemoryReplSet suites (379 tests / 31 suites)
 │   └── .env.example
 ├── docs/                            # Documentation & Visual Assets
 │   ├── screenshots/                 # 25 live captured dark & light portal screenshots embedded in README
