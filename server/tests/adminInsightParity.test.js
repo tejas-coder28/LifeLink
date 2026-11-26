@@ -1,7 +1,8 @@
 require('./setup');
 
 const { connect, clearDatabase, disconnect } = require('./helpers/db');
-const { registerUser, registerHospital } = require('./helpers/auth');
+const request = require('supertest');
+const { registerUser, registerHospital, registerAdmin } = require('./helpers/auth');
 const analyticsService = require('../src/services/analytics.service');
 const aiService = require('../src/services/ai.service');
 const { formatUnitsParts, formatUnits } = require('../src/config/bloodUnits');
@@ -227,6 +228,91 @@ describe('Admin Insight & Dashboard Parity', () => {
     expect(latestInsight.summary).toContain('Shortage alert identified for blood group(s): O-');
     expect(latestInsight.summary).not.toContain('A+');
     expect(latestInsight.summary.toLowerCase()).not.toContain('rare');
+  });
+
+  test('AI Insights routes require admin role (401/403 for non-admins) and respond meaningfully to customPrompt', async () => {
+    const hospReg = await registerHospital(app, {
+      name: 'Central Reserve Hospital',
+      email: 'central@hospital.org',
+    });
+    const hospUserId = hospReg.user?._id || hospReg.user?.id || hospReg.user?.user?._id;
+    const hospital = await Hospital.findOne({ user: hospUserId });
+    hospital.isVerified = true;
+    hospital.inventory = [
+      { bloodGroup: 'O-', units: 0 },
+      { bloodGroup: 'B+', units: 16 },
+    ];
+    await hospital.save();
+
+    const { token: userToken, user: donorData } = await registerUser(app, {
+      name: 'Donor Sam',
+      email: 'sam@donor.com',
+      accountType: 'user',
+    });
+    const donorId = donorData?._id || donorData?.id || donorData?.user?._id;
+
+    await BloodRequest.create({
+      requester: donorId,
+      hospital: hospital._id,
+      patientName: 'Urgent Trauma',
+      bloodGroup: 'O-',
+      unitsNeeded: 2,
+      urgency: 'critical',
+      status: 'open',
+    });
+
+    const { token: adminToken } = await registerAdmin(app, { email: 'sysadmin@lifelink.com' });
+
+    // Unauthenticated rejected
+    const unauthGet = await request(app).get('/api/ai/insights');
+    expect(unauthGet.status).toBe(401);
+
+    // Non-admin user & hospital rejected
+    const userGet = await request(app).get('/api/ai/insights').set('Authorization', `Bearer ${userToken}`);
+    expect(userGet.status).toBe(403);
+    const hospPost = await request(app)
+      .post('/api/ai/insights')
+      .set('Authorization', `Bearer ${hospReg.token}`)
+      .send({ prompt: 'Focus on O- stock' });
+    expect(hospPost.status).toBe(403);
+
+    // Admin custom prompt generation succeeds and tailors output cleanly
+    const adminPost = await request(app)
+      .post('/api/ai/insights')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ prompt: 'Focus on O- blood stock and open requests' });
+
+    expect(adminPost.status).toBe(201);
+    const created = adminPost.body.data;
+    expect(created.title).toContain('Focus on O- blood stock and open requests');
+    expect(created.summary).toContain('O-');
+    expect(created.summary).toContain('Hospital stock status');
+    expect(created.summary.toLowerCase()).not.toContain('rare');
+    expect(created.metrics.highRiskBloodGroups).toContain('O-');
+    expect(created.metrics.surplusGroups).not.toContain('O-');
+    expect(created.metrics.totalInventoryUnits).toBe(16);
+    expect(created.metrics.openRequests).toBe(1);
+  });
+
+  test('getLatestInsights automatically regenerates when openRequests count drifts', async () => {
+    const { user: donorData } = await registerUser(app, { email: 'drift@donor.com' });
+    const donorId = donorData?._id || donorData?.id || donorData?.user?._id;
+
+    const reqDoc = await BloodRequest.create({
+      requester: donorId,
+      patientName: 'Open Case',
+      bloodGroup: 'B+',
+      unitsNeeded: 1,
+      urgency: 'high',
+      status: 'open',
+    });
+
+    const firstBatch = await aiService.getLatestInsights(10);
+    expect(firstBatch[0].metrics.openRequests).toBe(1);
+
+    await BloodRequest.findByIdAndUpdate(reqDoc._id, { status: 'closed' });
+    const refreshedBatch = await aiService.getLatestInsights(10);
+    expect(refreshedBatch[0].metrics.openRequests).toBe(0);
   });
 });
 
