@@ -17,7 +17,9 @@ import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
 import RequestForm from '../../components/forms/RequestForm';
 import InventoryForm from '../../components/forms/InventoryForm';
+import ConfirmDonationModal from '../../components/forms/ConfirmDonationModal';
 import { compatibleDonorGroups } from '../../utils/bloodCompatibility';
+import { computeNextEligibleDate } from '../../utils/eligibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { createSmartPolling } from '../../utils/networkHealth';
 import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
@@ -152,6 +154,15 @@ const HospitalDashboard = () => {
     isOpen: false,
     request: null,
     submitting: false,
+  });
+
+  // Confirm Donation Date Dialog
+  const [confirmDonationModal, setConfirmDonationModal] = useState({
+    isOpen: false,
+    pledge: null,
+    request: null,
+    submitting: false,
+    error: null,
   });
 
   // Active Requests filter: 'active' | 'pledges' | 'fulfilled' | 'closed_cancelled'
@@ -508,16 +519,46 @@ const HospitalDashboard = () => {
     }
   };
 
-  const handleConfirmDonation = async (donationId, requestId) => {
+  const handleConfirmDonation = (donationId, requestId, pledgeObj = null, requestObj = null) => {
+    const resolvedPledge =
+      pledgeObj ||
+      hospitalPledges.find((p) => (p._id || p.id) === donationId) ||
+      { _id: donationId, status: 'pledged', unitsDonated: 1 };
+    const resolvedRequest =
+      requestObj ||
+      myRequests.find((r) => (r._id || r.id) === requestId) ||
+      null;
+
+    setConfirmDonationModal({
+      isOpen: true,
+      pledge: resolvedPledge,
+      request: resolvedRequest,
+      submitting: false,
+      error: null,
+    });
+  };
+
+  const handleConfirmDonationSubmit = async ({ donationId, requestId, donatedAt }) => {
     setActionInProgressId(donationId);
+    setConfirmDonationModal((prev) => ({ ...prev, submitting: true, error: null }));
     try {
-      const res = await requestApi.completeDonation(donationId);
+      const res = await requestApi.completeDonation(donationId, { donatedAt });
       if (res.data && res.data.success) {
         const donationData = res.data.data;
         const donorName = donationData?.donor?.name || donationData?.donorName || 'Donor';
         const donorFirstName = donorName.trim().split(/\s+/)[0] || donorName;
         const units = Number(donationData?.unitsDonated || 1);
-        showSuccess(`Donation confirmed: ${formatUnits(units)} from ${donorFirstName}`);
+        const confirmedDonatedAt = donationData?.donatedAt || donatedAt;
+        const nextEligible = computeNextEligibleDate(confirmedDonatedAt);
+        const cooldownNote = nextEligible ? ` • Cooldown ends ${formatDate(nextEligible)}` : '';
+        showSuccess(`Donation confirmed: ${formatUnits(units)} from ${donorFirstName}${cooldownNote}`);
+        setConfirmDonationModal({
+          isOpen: false,
+          pledge: null,
+          request: null,
+          submitting: false,
+          error: null,
+        });
         await Promise.all([
           fetchHospitalRequests(),
           fetchHospitalPledges(),
@@ -530,15 +571,16 @@ const HospitalDashboard = () => {
       }
     } catch (err) {
       const status = err.response?.status;
-      if (status === 409) {
-        showError(err.response?.data?.message || 'This donation has already been confirmed/fulfilled.');
-      } else if (status === 404) {
-        showError(err.response?.data?.message || 'Pledge record not found.');
-      } else if (status === 403) {
-        showError(err.response?.data?.message || 'Unauthorized: Only the owning hospital can confirm this donation.');
-      } else {
-        showError(err.response?.data?.message || 'Failed to confirm donation. Please try again.');
+      let errMsg = err.response?.data?.message || 'Failed to confirm donation. Please try again.';
+      if (status === 409 && !err.response?.data?.message) {
+        errMsg = 'This donation has already been confirmed/fulfilled.';
+      } else if (status === 404 && !err.response?.data?.message) {
+        errMsg = 'Pledge record not found.';
+      } else if (status === 403 && !err.response?.data?.message) {
+        errMsg = 'Unauthorized: Only the owning hospital can confirm this donation.';
       }
+      setConfirmDonationModal((prev) => ({ ...prev, submitting: false, error: errMsg }));
+      showError(errMsg);
     } finally {
       setActionInProgressId(null);
     }
@@ -921,7 +963,7 @@ const HospitalDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="text-xs font-bold text-info hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                  className="btn-secondary text-xs px-3.5 py-2 rounded-xl"
                   aria-label="Open New Blood Request modal"
                 >
                   + Create New Request
@@ -1036,23 +1078,23 @@ const HospitalDashboard = () => {
             </div>
 
             {/* Filter Toggle */}
-            <div className="flex items-center space-x-2 bg-surface p-1 rounded-xl border border-hairline">
+            <div className="flex items-center space-x-2 bg-raised/70 p-1.5 rounded-xl border border-hairline-strong">
               <button
                 onClick={() => setIncomingFilter('pending')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'pending'
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 Pending Review ({pendingIncomingCount})
               </button>
               <button
                 onClick={() => setIncomingFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                   incomingFilter === 'all'
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 All Demands ({incomingRequests.length})
@@ -1211,7 +1253,7 @@ const HospitalDashboard = () => {
 
                         <button
                           onClick={() => handleOpenRejectModal(req)}
-                          className="px-3.5 py-2.5 rounded-xl border border-danger/30 hover:bg-danger/10 text-danger font-bold text-xs flex items-center space-x-1 transition-colors cursor-pointer"
+                          className="btn-danger text-xs px-3.5 py-2.5 rounded-xl flex items-center space-x-1"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject</span>
@@ -1270,10 +1312,10 @@ const HospitalDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="btn-primary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2"
+                  className="btn-secondary text-xs px-4 py-2.5 rounded-xl flex items-center space-x-2"
                   aria-label="Create Request"
                 >
-                  <PlusCircle className="w-4 h-4" />
+                  <PlusCircle className="w-4 h-4 text-info" />
                   <span>Create Request</span>
                 </button>
               )}
@@ -1287,10 +1329,10 @@ const HospitalDashboard = () => {
                   setActiveRequestsFilter('active');
                   setSearchParams({ tab: 'active' });
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'active' && !urlFilter
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 Active ({activeRequestsCount})
@@ -1301,10 +1343,10 @@ const HospitalDashboard = () => {
                   setActiveRequestsFilter('pledges');
                   setSearchParams({ tab: 'active', filter: 'pledges' });
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   isFilterPledges
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 Awaiting Confirmation ({pendingPledgesCount})
@@ -1315,10 +1357,10 @@ const HospitalDashboard = () => {
                   setActiveRequestsFilter('fulfilled');
                   setSearchParams({ tab: 'active' });
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'fulfilled' && !urlFilter
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 Fulfilled ({completedRequestsCount})
@@ -1329,10 +1371,10 @@ const HospitalDashboard = () => {
                   setActiveRequestsFilter('closed_cancelled');
                   setSearchParams({ tab: 'active' });
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeRequestsFilter === 'closed_cancelled' && !urlFilter
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-elevated text-secondary hover:text-primary border border-surface-border'
+                    ? 'filter-pill-active shadow-sm'
+                    : 'filter-pill-inactive'
                 }`}
               >
                 Closed / Cancelled ({closedCancelledCount})
@@ -2362,6 +2404,18 @@ const HospitalDashboard = () => {
           </div>
         )}
       </Modal>
+
+      {/* Confirm Donation Dialog */}
+      <ConfirmDonationModal
+        isOpen={confirmDonationModal.isOpen}
+        onClose={() => setConfirmDonationModal({ isOpen: false, pledge: null, request: null, submitting: false, error: null })}
+        pledge={confirmDonationModal.pledge}
+        request={confirmDonationModal.request}
+        isAdmin={user?.accountType === 'admin'}
+        onConfirm={handleConfirmDonationSubmit}
+        submitting={confirmDonationModal.submitting}
+        serverError={confirmDonationModal.error}
+      />
     </PageTransition>
   );
 };

@@ -74,71 +74,61 @@ const Register = () => {
   return (
     <PageTransition className="min-h-[calc(100vh-var(--navbar-height)-6rem)] flex flex-col items-center justify-center p-3 sm:p-6 pb-12">
       <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated relative z-10">
-        {/* Left Visual Branding Panel (Midnight Navy Foundation) */}
-        <div
-          className="dark md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-[#0A0F1C]"
-          style={{
-            background: 'linear-gradient(150deg, #0A0F1C 0%, #111A2E 45%, #18233D 75%, #0A0F1C 100%)',
-          }}
-        >
-          {/* Harmonic orbs inside panel */}
+        {/* Left Visual Branding Panel (Warm Nocturne & Cream Alabaster) */}
+        <div className="md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-raised/85 dark:bg-[#161311]">
+          {/* Warm Ember atmospheric sheen */}
           <div
-            className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-30 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(43,76,140,0.30) 0%, transparent 68%)' }}
+            className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-55 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(200,29,59,0.12) 0%, transparent 68%)' }}
             aria-hidden="true"
           />
           <div
-            className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-20 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(165,216,255,0.20) 0%, transparent 68%)' }}
-            aria-hidden="true"
-          />
-          <div
-            className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full opacity-15 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(209,52,56,0.12) 0%, transparent 68%)' }}
+            className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-45 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(242,156,121,0.12) 0%, transparent 68%)' }}
             aria-hidden="true"
           />
 
           <div className="relative z-10 space-y-6">
             <Link to="/" className="inline-flex items-center space-x-3 group cursor-pointer">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform bg-danger text-white">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform bg-danger-solid text-white">
                 <HeartHandshake className="w-6 h-6" />
               </div>
-              <span className="text-xl font-black tracking-tight text-white font-heading">
-                Life<span className="text-[#E5484D]">Link</span>
+              <span className="text-xl font-black tracking-tight text-primary font-heading">
+                Life<span className="text-danger">Link</span>
               </span>
             </Link>
 
             <div className="space-y-3 pt-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#1D6FD6]/20 border border-[#60A5FA]/30 text-[#A5D8FF] shadow-sm">
-                <Sparkles className="w-3 h-3 text-[#A5D8FF]" />
-                <span className="text-[#A5D8FF]">Join the Standby Network</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-surface border border-hairline-strong text-primary shadow-sm">
+                <Sparkles className="w-3 h-3 text-danger" />
+                <span>Join the Standby Network</span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-white">
+              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-primary">
                 Every Donor <br />
-                <span className="text-white">Saves Lives</span>
+                <span>Saves Lives</span>
               </h2>
-              <p className="text-xs leading-relaxed text-[#9DAAC6]">
+              <p className="text-xs leading-relaxed text-secondary">
                 Register as an individual standby donor or register your hospital to broadcast emergency requests in seconds.
               </p>
             </div>
 
             {/* Role summaries */}
             <div className="space-y-2 pt-2">
-              <div className="p-3 rounded-2xl bg-[#18233D]/60 border border-white/10">
-                <p className="text-xs font-bold text-[#E8EEF9]">Standby Donor</p>
-                <p className="text-[10px] text-[#9DAAC6] mt-0.5">Receive matched alerts within your radius when lives are at risk.</p>
+              <div className="p-3 rounded-2xl bg-surface/90 border border-hairline">
+                <p className="text-xs font-bold text-primary">Standby Donor</p>
+                <p className="text-[10px] text-secondary mt-0.5">Receive matched alerts within your radius when lives are at risk.</p>
               </div>
-              <div className="p-3 rounded-2xl bg-[#18233D]/60 border border-white/10">
-                <p className="text-xs font-bold text-[#E8EEF9]">Hospital Medical Center</p>
-                <p className="text-[10px] text-[#9DAAC6] mt-0.5">Manage blood inventory and post instant emergency broadcasts.</p>
+              <div className="p-3 rounded-2xl bg-surface/90 border border-hairline">
+                <p className="text-xs font-bold text-primary">Hospital Medical Center</p>
+                <p className="text-[10px] text-secondary mt-0.5">Manage blood inventory and post instant emergency broadcasts.</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-3 relative z-10 pt-6 border-t border-hairline">
-            <div className="flex items-center space-x-3 text-xs font-semibold text-[#E8EEF9]">
+            <div className="flex items-center space-x-3 text-xs font-semibold text-primary">
               <ShieldCheck className="w-4 h-4 shrink-0 text-success" />
-              <span className="text-[#E8EEF9]">Verified Identity Protection</span>
+              <span>Verified Identity Protection</span>
             </div>
           </div>
         </div>
@@ -220,10 +210,10 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setAccountType('user')}
-                  className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 ${
+                  className={`p-3 rounded-2xl text-left border-2 transition-all cursor-pointer flex items-center gap-3 ${
                     accountType === 'user'
-                      ? 'bg-info/10 border-info/50 shadow-sm'
-                      : 'bg-surface/50 border-hairline hover:bg-surface/80 text-secondary'
+                      ? 'bg-info/15 border-info shadow-sm'
+                      : 'bg-raised/60 border-hairline-strong hover:border-info/50 text-secondary'
                   }`}
                 >
                   <div className={`p-2 rounded-xl shrink-0 ${accountType === 'user' ? 'bg-info/20 text-info border border-info/30' : 'bg-surface text-muted border border-hairline'}`}>
@@ -238,10 +228,10 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setAccountType('hospital')}
-                  className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 ${
+                  className={`p-3 rounded-2xl text-left border-2 transition-all cursor-pointer flex items-center gap-3 ${
                     accountType === 'hospital'
-                      ? 'bg-info/10 border-info/50 shadow-sm'
-                      : 'bg-surface/50 border-hairline hover:bg-surface/80 text-secondary'
+                      ? 'bg-info/15 border-info shadow-sm'
+                      : 'bg-raised/60 border-hairline-strong hover:border-info/50 text-secondary'
                   }`}
                 >
                   <div className={`p-2 rounded-xl shrink-0 ${accountType === 'hospital' ? 'bg-info/20 text-info border border-info/30' : 'bg-surface text-muted border border-hairline'}`}>
@@ -375,7 +365,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold shadow-glow-danger"
+              className="btn-action w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold"
             >
               {loading ? 'Creating Account...' : 'Complete Registration'}
             </button>

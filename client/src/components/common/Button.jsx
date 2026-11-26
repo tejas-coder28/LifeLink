@@ -32,6 +32,8 @@ const Button = ({
 
   const variantClasses = {
     primary: 'btn-primary',
+    action: 'btn-action',
+    success: 'btn-success',
     secondary: 'btn-secondary',
     glass: 'btn-glass',
     ghost: 'btn-ghost',

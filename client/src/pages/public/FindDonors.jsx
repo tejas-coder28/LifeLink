@@ -130,10 +130,10 @@ const FindDonors = () => {
               key={bg}
               type="button"
               onClick={() => setBloodGroup(bg)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all border cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
                 bloodGroup === bg
-                  ? 'bg-surface text-primary border-info ring-1 ring-info/30 shadow-sm'
-                  : 'bg-surface/60 text-secondary border-hairline hover:bg-surface'
+                  ? 'filter-pill-active shadow-sm'
+                  : 'filter-pill-inactive'
               }`}
             >
               {bg}

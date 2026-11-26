@@ -471,7 +471,8 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     // 3a. Eligibility / Cooldown
     if (norm.includes('eligible') || norm.includes('cooldown') || norm.includes('can i donate')) {
       const data = await aiTools.executeTool('getEligibility', {}, userContext);
-      const reply = `Eligible to donate: ${data.isEligible ? 'Yes' : 'No'}. Next eligible date: ${data.nextEligibleDate || 'Eligible today'}. Days remaining: ${data.daysLeft}. ${data.rationale}`;
+      const lastStr = data.lastDonationDate ? ` Last donation: ${data.lastDonationDate}.` : '';
+      const reply = `Eligible to donate: ${data.isEligible ? 'Yes' : 'No'}. Next eligible date: ${data.nextEligibleDate || 'Eligible today'}. Days remaining: ${data.daysLeft}.${lastStr} ${data.rationale}`;
       const action = buildAction('donor-profile');
       return {
         reply,
@@ -607,7 +608,13 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
     // 3d. Donation history & past pledges
     if (norm.includes('history') || norm.includes('past donate') || norm.includes('pledge')) {
       const data = await aiTools.executeTool('getMyDonationHistory', {}, userContext);
-      const reply = `You have completed ${data.completedDonations} donation(s) out of ${data.totalDonations} total pledge(s) recorded.`;
+      const latest = data.records && data.records[0];
+      const latestNote = latest
+        ? latest.donatedAt
+          ? ` Latest: Pledged on ${latest.pledgedAt} - Donated on ${latest.donatedAt}.`
+          : ` Latest: Pledged on ${latest.pledgedAt} (${latest.status}).`
+        : '';
+      const reply = `You have completed ${data.completedDonations} donation(s) out of ${data.totalDonations} total pledge(s) recorded.${latestNote}`;
       const action = buildAction('donor-history');
       return {
         reply,
@@ -723,7 +730,7 @@ async function routeWithKeywords(message, userContext = {}, options = {}) {
         };
       }
       const list = (data.pledges || []).slice(0, 5).map((p) =>
-        `• ${p.donorFirstName} • ${p.bloodGroup} • ${p.units} unit(s) • Pledged: ${p.time}`
+        `• ${p.donorFirstName} • ${p.bloodGroup} • ${p.units} unit(s) • Pledged on ${p.pledgedAt || p.time}`
       );
       const more = data.count > 5 ? `\n... and ${data.count - 5} more.` : '';
       const reply = `You have ${data.count} donor pledge(s) awaiting hospital confirmation:\n${list.join('\n')}${more}\n\nReview and confirm donor arrival to update hospital inventory.`;

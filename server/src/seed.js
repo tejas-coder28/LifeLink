@@ -199,8 +199,8 @@ const seedData = async (options = true) => {
         isWeight50KgPlus: true,
         consentContact: true,
         profileComplete: true,
-        completedDonations: dData.lastDonation ? 2 : 0,
-        totalDonations: dData.lastDonation ? 2 : 0,
+        completedDonations: dData.lastDonation ? 1 : 0,
+        totalDonations: dData.lastDonation ? 1 : 0,
       });
 
       donorProfiles.push({ user: u, profile: dp });
@@ -246,19 +246,60 @@ const seedData = async (options = true) => {
       },
       address: 'City General Hospital Room 302',
       status: 'fulfilled',
-      requiredByDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      requiredByDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       notes: 'Post-partum care blood replenishment.',
       matchedDonorsCount: 3,
     });
 
+    const req3 = await BloodRequest.create({
+      requester: recipientUser._id,
+      hospital: hospital._id,
+      targetHospital: hospital._id,
+      hospitalName: hospital.name,
+      patientName: 'Vikram Mehta',
+      bloodGroup: 'O-',
+      unitsNeeded: 1,
+      unitsFulfilled: 1,
+      urgency: 'critical',
+      location: {
+        type: 'Point',
+        coordinates: [77.2090, 28.6139],
+      },
+      address: 'City General Emergency ICU',
+      status: 'fulfilled',
+      requiredByDate: donorUsersData[0].lastDonation,
+      notes: 'Emergency trauma transfusion fulfilled by standby universal donor.',
+      matchedDonorsCount: 2,
+    });
+
     await Donation.create({
-      donor: donorProfiles[1].user._id, // Priya Sharma (A+)
-      donorProfile: donorProfiles[1].profile._id,
+      donor: donorProfiles[0].user._id, // Alex Rivera (O-, 95 days ago — matches lastDonationDate)
+      donorProfile: donorProfiles[0].profile._id,
+      request: req3._id,
+      hospitalName: hospital.name,
+      unitsDonated: 1,
+      pledgedAt: donorUsersData[0].lastDonation,
+      donatedAt: donorUsersData[0].lastDonation,
+      confirmedAt: donorUsersData[0].lastDonation,
+      donationDate: donorUsersData[0].lastDonation,
+      completedAt: donorUsersData[0].lastDonation,
+      fulfilledAt: donorUsersData[0].lastDonation,
+      status: 'completed',
+      notes: 'Completed O- universal blood donation at City General Emergency Hospital.',
+    });
+
+    await Donation.create({
+      donor: donorProfiles[3].user._id, // Elena Rostova (O+, 30 days ago — in cooldown)
+      donorProfile: donorProfiles[3].profile._id,
       request: req2._id,
       hospitalName: hospital.name,
       unitsDonated: 1,
-      donationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      pledgedAt: donorUsersData[3].lastDonation,
+      donatedAt: donorUsersData[3].lastDonation,
+      confirmedAt: donorUsersData[3].lastDonation,
+      donationDate: donorUsersData[3].lastDonation,
+      completedAt: donorUsersData[3].lastDonation,
+      fulfilledAt: donorUsersData[3].lastDonation,
       status: 'completed',
       notes: 'Successful blood donation at City General Hospital.',
     });
@@ -275,9 +316,9 @@ const seedData = async (options = true) => {
       title: 'LifeLink Regional Blood Reserve Analysis',
       summary: 'Emergency response metrics show high readiness for O-Negative and A-Positive requests in New Delhi Central. Demand spike observed in trauma care.',
       metrics: {
-        totalRequests: 2,
-        fulfilledRequests: 1,
-        fulfillmentRate: '50%',
+        totalRequests: 3,
+        fulfilledRequests: 2,
+        fulfillmentRate: '67%',
         activeStandbyDonors: 5,
         highRiskBloodGroups: ['O-', 'AB-'],
         surplusGroups: ['A+', 'O+'],

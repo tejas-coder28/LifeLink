@@ -75,63 +75,53 @@ const Login = () => {
   return (
     <PageTransition className="min-h-[calc(100vh-var(--navbar-height)-6rem)] flex flex-col items-center justify-center p-3 sm:p-6 pb-12">
       <div className="w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col md:flex-row glass-modal border border-hairline shadow-elevated relative z-10">
-        {/* Left Visual Branding Panel (Midnight Navy Foundation with subtle harmonic glows) */}
-        <div
-          className="dark md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-[#0A0F1C]"
-          style={{
-            background: 'linear-gradient(150deg, #0A0F1C 0%, #111A2E 45%, #18233D 75%, #0A0F1C 100%)',
-          }}
-        >
-          {/* Harmonic orbs inside panel */}
+        {/* Left Visual Branding Panel (Warm Nocturne & Cream Alabaster) */}
+        <div className="md:w-5/12 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-hairline bg-raised/85 dark:bg-[#161311]">
+          {/* Warm Ember atmospheric sheen */}
           <div
-            className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-60 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(43,76,140,0.30) 0%, transparent 68%)' }}
+            className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-55 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(200,29,59,0.12) 0%, transparent 68%)' }}
             aria-hidden="true"
           />
           <div
             className="absolute bottom-0 right-0 w-64 h-64 rounded-full opacity-45 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(165,216,255,0.20) 0%, transparent 68%)' }}
-            aria-hidden="true"
-          />
-          <div
-            className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full opacity-30 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(209,52,56,0.12) 0%, transparent 68%)' }}
+            style={{ background: 'radial-gradient(circle, rgba(242,156,121,0.12) 0%, transparent 68%)' }}
             aria-hidden="true"
           />
 
           <div className="relative z-10 space-y-6">
             <Link to="/" className="inline-flex items-center space-x-3 group cursor-pointer">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform bg-danger text-white">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-glow-danger group-hover:scale-105 transition-transform bg-danger-solid text-white">
                 <HeartHandshake className="w-6 h-6" />
               </div>
-              <span className="text-xl font-black tracking-tight text-white font-heading">
-                Life<span className="text-[#E5484D]">Link</span>
+              <span className="text-xl font-black tracking-tight text-primary font-heading">
+                Life<span className="text-danger">Link</span>
               </span>
             </Link>
 
             <div className="space-y-3 pt-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#1D6FD6]/20 border border-[#60A5FA]/30 text-[#A5D8FF] shadow-sm">
-                <Sparkles className="w-3 h-3 text-[#A5D8FF]" />
-                <span className="text-[#A5D8FF]">Life-Saving Network</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-surface border border-hairline-strong text-primary shadow-sm">
+                <Sparkles className="w-3 h-3 text-danger" />
+                <span>Life-Saving Network</span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-white">
+              <h2 className="text-2xl lg:text-3xl font-black leading-tight font-heading text-primary">
                 Access Your <br />
-                <span className="text-white">Emergency Portal</span>
+                <span>Emergency Portal</span>
               </h2>
-              <p className="text-xs leading-relaxed text-[#9DAAC6]">
+              <p className="text-xs leading-relaxed text-secondary">
                 Connect to real-time emergency requests, live hospital blood inventory, and automated donor matching.
               </p>
             </div>
           </div>
 
           <div className="space-y-3 relative z-10 pt-8 border-t border-hairline">
-            <div className="flex items-center space-x-3 text-xs font-semibold text-white">
+            <div className="flex items-center space-x-3 text-xs font-semibold text-primary">
               <ShieldCheck className="w-4 h-4 shrink-0 text-success" />
-              <span className="text-[#E8EEF9]">Encrypted Firebase Security</span>
+              <span>Encrypted JWT &amp; Google Auth Security</span>
             </div>
-            <div className="flex items-center space-x-3 text-xs font-semibold text-[#E8EEF9]">
-              <HeartHandshake className="w-4 h-4 shrink-0 text-[#60A5FA]" />
-              <span className="text-[#E8EEF9]">Real-Time Standby Network</span>
+            <div className="flex items-center space-x-3 text-xs font-semibold text-primary">
+              <HeartHandshake className="w-4 h-4 shrink-0 text-muted" />
+              <span>Real-Time Standby Network</span>
             </div>
           </div>
         </div>
@@ -271,7 +261,7 @@ const Login = () => {
               ref={submitButtonRef}
               type="submit"
               disabled={loading}
-              className="btn-primary w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold shadow-glow-danger"
+              className="btn-action w-full mt-3 py-3 rounded-xl text-xs sm:text-sm font-bold"
             >
               {loading ? 'Signing in...' : 'Sign In to Dashboard'}
             </button>
@@ -289,13 +279,13 @@ const Login = () => {
                   onClick={() => handleSelectDemo('donor', 'user@lifelink.com', 'user123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'donor'
-                      ? 'border-info shadow-sm bg-info/15'
-                      : 'border-hairline bg-surface/60 hover:border-info/40'
+                      ? 'border-accent-donor shadow-sm bg-accent-donor-subtle'
+                      : 'border-hairline-strong bg-raised/70 hover:border-accent-donor/60'
                   }`}
                   style={{ backdropFilter: 'blur(16px)' }}
                   aria-pressed={activeRole === 'donor'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                  <span className="font-extrabold text-[11px] block leading-tight text-accent-donor">
                     Donor
                   </span>
                   <span className="text-[9px] text-muted">O− Universal</span>
@@ -306,13 +296,13 @@ const Login = () => {
                   onClick={() => handleSelectDemo('hospital', 'hospital@lifelink.com', 'hospital123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'hospital'
-                      ? 'border-success shadow-sm bg-success/15'
-                      : 'border-hairline bg-surface/60 hover:border-success/40'
+                      ? 'border-accent-hospital shadow-sm bg-accent-hospital-subtle'
+                      : 'border-hairline-strong bg-raised/70 hover:border-accent-hospital/60'
                   }`}
                   style={{ backdropFilter: 'blur(16px)' }}
                   aria-pressed={activeRole === 'hospital'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                  <span className="font-extrabold text-[11px] block leading-tight text-accent-hospital">
                     Hospital
                   </span>
                   <span className="text-[9px] text-muted">Emergency Hub</span>
@@ -323,13 +313,13 @@ const Login = () => {
                   onClick={() => handleSelectDemo('admin', 'admin@lifelink.com', 'admin123')}
                   className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer hover:scale-[1.02] ${
                     activeRole === 'admin'
-                      ? 'border-warning shadow-sm bg-warning/15'
-                      : 'border-hairline bg-surface/60 hover:border-warning/40'
+                      ? 'border-accent-admin shadow-sm bg-accent-admin-subtle'
+                      : 'border-hairline-strong bg-raised/70 hover:border-accent-admin/60'
                   }`}
                   style={{ backdropFilter: 'blur(16px)' }}
                   aria-pressed={activeRole === 'admin'}
                 >
-                  <span className="font-extrabold text-[11px] block leading-tight text-primary">
+                  <span className="font-extrabold text-[11px] block leading-tight text-accent-admin">
                     Admin
                   </span>
                   <span className="text-[9px] text-muted">Full Control</span>

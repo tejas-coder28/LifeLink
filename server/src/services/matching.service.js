@@ -1,4 +1,5 @@
 const { canDonate, isBloodCompatible, compatibleDonorGroups, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { calculateEligibility } = require('../utils/eligibility');
 const { calculateHaversineDistance } = require('../utils/geo');
 const DonorProfile = require('../repositories/donorProfile.repository');
 const BloodRequest = require('../repositories/bloodRequest.repository');
@@ -53,19 +54,15 @@ function isDonorCandidate(request, donor) {
     }
   }
 
-  // 4. 90-day cooldown rule
-  let daysSinceLastDonation = null;
-  if (donor.lastDonationDate) {
-    const lastDate = new Date(donor.lastDonationDate);
-    const diffMs = Date.now() - lastDate.getTime();
-    daysSinceLastDonation = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (daysSinceLastDonation < COOLDOWN_DAYS) {
-      return {
-        isCandidate: false,
-        daysSinceLastDonation,
-        reason: `Inside 90-day cooldown window (${daysSinceLastDonation} days since last donation, ${COOLDOWN_DAYS - daysSinceLastDonation} day(s) remaining)`,
-      };
-    }
+  // 4. 90-day cooldown rule (shared eligibility helper)
+  const eligibility = calculateEligibility(donor.lastDonationDate);
+  const daysSinceLastDonation = eligibility.daysSince;
+  if (!eligibility.isEligible) {
+    return {
+      isCandidate: false,
+      daysSinceLastDonation,
+      reason: `Inside 90-day cooldown window (${daysSinceLastDonation} days since last donation, ${eligibility.daysLeft} day(s) remaining)`,
+    };
   }
 
   return { isCandidate: true, daysSinceLastDonation };

@@ -8,10 +8,14 @@ const getIconTileClasses = (color, isCritical) => {
     return 'bg-urgency-critical-subtle text-urgency-critical border-urgency-critical-border';
   }
   switch (color) {
+    case 'teal':
+    case 'donor':
+      return 'bg-accent-donor-subtle text-accent-donor border-accent-donor-border';
     case 'info':
     case 'sky':
     case 'blue':
-      return 'bg-info/10 text-info border-info/25';
+    case 'hospital':
+      return 'bg-accent-hospital-subtle text-accent-hospital border-accent-hospital-border';
     case 'success':
     case 'emerald':
     case 'green':
@@ -31,7 +35,7 @@ const getIconTileClasses = (color, isCritical) => {
       return 'bg-urgency-critical-subtle text-urgency-critical border-urgency-critical-border';
     case 'slate':
     case 'muted':
-      return 'bg-surface text-muted border-hairline';
+      return 'bg-raised text-muted border-hairline';
     default:
       return 'bg-info/10 text-info border-info/25';
   }
@@ -55,19 +59,19 @@ const StatCard = ({
   const isClickable = Boolean(onClick || to);
   const computedAriaLabel = ariaLabel || (isClickable ? `Open ${title} (${value})` : undefined);
 
-  const cardContent = (
+  const cardInner = (
     <>
       <div className="space-y-1 flex flex-col justify-between h-full flex-1 min-w-0 pr-2 text-left">
         <div>
           <span className="text-[11px] font-extrabold uppercase tracking-wider block text-muted truncate">
             {title}
           </span>
-          <span className="text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1 text-primary">
+          <span className="text-2xl sm:text-3xl font-black block tracking-tight font-heading mt-1.5 text-primary tabular-nums">
             <AnimatedCounter value={value} />
           </span>
         </div>
         {description && (
-          <p className="text-[11px] font-medium mt-1 text-secondary">
+          <p className="text-[11px] font-medium mt-1.5 text-secondary leading-snug">
             {description}
           </p>
         )}
@@ -80,7 +84,7 @@ const StatCard = ({
       <div className="flex flex-col items-end justify-between shrink-0 h-full gap-2">
         {isClickable && (
           <span
-            className="text-[10px] font-bold text-muted/60 group-hover:text-info group-focus-visible:text-info transition-colors flex items-center gap-0.5"
+            className="text-[10px] font-bold text-muted group-hover:text-info group-focus-visible:text-info transition-colors flex items-center gap-0.5"
             aria-hidden="true"
           >
             <span className="hidden sm:inline text-[9px] uppercase tracking-wider">View</span>
@@ -89,7 +93,7 @@ const StatCard = ({
         )}
         {Icon && (
           <div
-            className={`p-3 rounded-2xl shrink-0 transition-colors shadow-sm border ${getIconTileClasses(color, isCritical)}`}
+            className={`p-3 rounded-2xl shrink-0 transition-colors border ${getIconTileClasses(color, isCritical)}`}
           >
             <Icon className="w-5 h-5" />
           </div>
@@ -98,19 +102,28 @@ const StatCard = ({
     </>
   );
 
-  const baseClasses = `glass-card p-5 sm:p-6 flex items-start justify-between min-h-[110px] w-full text-left rounded-2xl border border-hairline transition-colors duration-150 ${
+  const shellClasses = `glass-card flex flex-col justify-between h-full w-full rounded-2xl border border-hairline overflow-hidden transition-all duration-150 ${
     isClickable
-      ? 'group cursor-pointer hover:border-info/40 hover:bg-surface/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+      ? 'group hover:border-info/40 hover:shadow-card-hover'
       : ''
   } ${className}`;
 
+  const interactiveClasses =
+    'flex items-start justify-between flex-1 w-full p-5 sm:p-6 min-h-[116px] text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-inset';
+
+  const footerNode = subLink ? (
+    <div className="px-5 sm:px-6 py-2.5 border-t border-hairline bg-raised/45 flex items-center justify-between">
+      {subLink}
+    </div>
+  ) : null;
+
   if (to) {
     return (
-      <div className="flex flex-col w-full">
+      <div className={shellClasses}>
         <Link
           to={to}
           aria-label={computedAriaLabel}
-          className={baseClasses}
+          className={interactiveClasses}
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Spacebar') {
               e.preventDefault();
@@ -118,35 +131,35 @@ const StatCard = ({
             }
           }}
         >
-          {cardContent}
+          {cardInner}
         </Link>
-        {subLink && <div className="mt-1 px-1">{subLink}</div>}
+        {footerNode}
       </div>
     );
   }
 
   if (onClick) {
     return (
-      <div className="flex flex-col w-full">
+      <div className={shellClasses}>
         <button
           type="button"
           onClick={onClick}
           aria-label={computedAriaLabel}
-          className={baseClasses}
+          className={interactiveClasses}
         >
-          {cardContent}
+          {cardInner}
         </button>
-        {subLink && <div className="mt-1 px-1">{subLink}</div>}
+        {footerNode}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col w-full">
-      <div className={baseClasses}>
-        {cardContent}
+    <div className={shellClasses}>
+      <div className="flex items-start justify-between flex-1 w-full p-5 sm:p-6 min-h-[116px]">
+        {cardInner}
       </div>
-      {subLink && <div className="mt-1 px-1">{subLink}</div>}
+      {footerNode}
     </div>
   );
 };

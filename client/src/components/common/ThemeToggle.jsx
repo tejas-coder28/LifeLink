@@ -24,7 +24,7 @@ const ThemeToggle = ({ className = '', showLabel = false }) => {
         />
         {/* Moon Icon */}
         <Moon
-          className={`w-4 h-4 text-ice transition-all duration-300 transform ${
+          className={`w-4 h-4 text-info transition-all duration-300 transform ${
             isDark
               ? 'rotate-0 scale-100 opacity-100'
               : '-rotate-90 scale-0 opacity-0 absolute'

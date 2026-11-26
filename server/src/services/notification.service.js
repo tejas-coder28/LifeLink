@@ -1,6 +1,7 @@
 const Notification = require('../repositories/notification.repository');
 const DonorProfile = require('../repositories/donorProfile.repository');
-const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { canDonate } = require('../utils/bloodCompatibility');
+const { calculateEligibility } = require('../utils/eligibility');
 
 /**
  * Creates in-app notifications for matched donors when a donor blood request opens
@@ -27,12 +28,8 @@ const notifyMatchedDonorsForRequest = async (bloodRequest, options = {}) => {
     if (excludeSet.has(donorUserId)) return false;
     // Compatibility check
     if (!canDonate(donor.bloodGroup, bloodRequest.bloodGroup)) return false;
-    // Cooldown check (90 days)
-    if (donor.lastDonationDate) {
-      const diffMs = Date.now() - new Date(donor.lastDonationDate).getTime();
-      const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      if (daysSince < DONATION_COOLDOWN_DAYS) return false;
-    }
+    // Cooldown check (90 days via shared eligibility helper)
+    if (!calculateEligibility(donor.lastDonationDate).isEligible) return false;
     return true;
   });
 

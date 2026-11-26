@@ -10,10 +10,11 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import RequestCard from '../../components/cards/RequestCard';
+import DonationHistoryCard from '../../components/cards/DonationHistoryCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import { canSeekDonors } from '../../utils/requestRules';
 import { formatDate } from '../../utils/dateFormatter';
-import { getDonationStatusExplanatory } from '../../utils/statusHelper';
+import { calculateEligibility } from '../../utils/eligibility';
 import {
   Heart,
   Activity,
@@ -254,9 +255,9 @@ const IndividualDashboard = () => {
               </div>
               <button
                 onClick={handleToggleAvailability}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   profile.isAvailable
-                    ? 'bg-success text-white dark:text-on-primary shadow-glow-success'
+                    ? 'btn-success'
                     : 'btn-secondary text-xs'
                 }`}
               >
@@ -389,12 +390,35 @@ const IndividualDashboard = () => {
               <span className="text-2xl font-black text-primary block mt-2">{myRequests.length}</span>
             </Card>
 
-            <Card hover={false}>
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Last Donation</span>
-              <span className="text-sm font-bold text-secondary block mt-2">
-                {formatDate(profile?.lastDonationDate, 'None Recorded')}
-              </span>
-            </Card>
+            {(() => {
+              const latestCompleted = donationHistory.find((d) =>
+                ['completed', 'fulfilled'].includes(d.status)
+              );
+              const lastDonatedAt =
+                profile?.lastDonationDate ||
+                latestCompleted?.donatedAt ||
+                latestCompleted?.confirmedAt ||
+                latestCompleted?.completedAt ||
+                null;
+              const eligibility = calculateEligibility(lastDonatedAt);
+              const subline = lastDonatedAt
+                ? eligibility.isEligible
+                  ? 'Eligible to donate now'
+                  : `Eligible again on ${formatDate(eligibility.nextEligibleDate)} (${eligibility.daysLeft} days left)`
+                : 'Eligible to donate now';
+
+              return (
+                <Card hover={false}>
+                  <span className="text-xs font-semibold text-muted uppercase tracking-wider block">Last Donation</span>
+                  <span className="text-sm font-bold text-primary block mt-2">
+                    {formatDate(lastDonatedAt, 'None Recorded')}
+                  </span>
+                  <span className="text-[11px] text-secondary block mt-1">
+                    {subline}
+                  </span>
+                </Card>
+              );
+            })()}
           </div>
 
           {/* Live Emergency Requests Feed */}
@@ -522,42 +546,7 @@ const IndividualDashboard = () => {
           ) : (
             <div className="space-y-4">
               {donationHistory.map((item) => (
-                <div
-                  key={item._id}
-                  className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-slate-300 dark:hover:border-white/20 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <div className="space-y-3 flex-1 min-w-0">
-                    <div className="flex items-center flex-wrap gap-2.5">
-                      <Badge bloodGroup={item.request?.bloodGroup || 'O+'} />
-                      <h4 className="text-base font-bold text-primary font-heading truncate">
-                        {item.request?.patientName ? `Donation for ${item.request.patientName}` : 'Emergency Blood Request'}
-                      </h4>
-                      <Badge status={item.status} />
-                    </div>
-                    <div className="text-xs space-y-1.5 text-secondary">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
-                      </div>
-                      <div className="text-[11px] font-semibold text-info pt-0.5">
-                        {getDonationStatusExplanatory(item.status)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                    <span className="text-base font-black text-success block tracking-tight">
-                      {item.unitsDonated} Unit(s)
-                    </span>
-                    <span className="text-[11px] text-secondary font-medium block mt-0.5">
-                      {formatDate(item.createdAt)}
-                    </span>
-                  </div>
-                </div>
+                <DonationHistoryCard key={item._id} item={item} />
               ))}
             </div>
           )}

@@ -161,8 +161,8 @@ const DonorProfileForm = ({ initialData = {}, onSubmit, loading }) => {
           onClick={() => setIsAvailable(!isAvailable)}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
             isAvailable
-              ? 'bg-success text-white dark:text-on-primary shadow-sm'
-              : 'bg-surface text-secondary border border-hairline'
+              ? 'btn-success'
+              : 'btn-secondary'
           }`}
         >
           {isAvailable ? '● ONLINE' : '○ OFFLINE'}

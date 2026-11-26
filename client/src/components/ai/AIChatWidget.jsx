@@ -83,11 +83,10 @@ const MessageBubble = memo(function MessageBubble({ msg, isLatestAI, onActionCli
   return (
     <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-sm cursor-pointer select-text ${
-          msg.role === 'user'
-            ? 'bg-raised text-primary border border-hairline rounded-br-none'
-            : 'bg-surface text-primary border border-hairline rounded-bl-none'
-        }`}
+        className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-sm cursor-pointer select-text ${msg.role === 'user'
+          ? 'bg-raised text-primary border border-hairline rounded-br-none'
+          : 'bg-surface text-primary border border-hairline rounded-bl-none'
+          }`}
         onClick={isLatestAI && !done ? onSkip : undefined}
         title={isLatestAI && !done ? 'Click to reveal full reply instantly' : undefined}
       >
@@ -290,10 +289,10 @@ const AIChatWidget = () => {
             setIsOpen(true);
             setTimeout(() => inputRef.current?.focus(), 150);
           }}
-          className="flex items-center space-x-2.5 bg-surface/90 hover:bg-surface text-primary px-4 py-3 rounded-full shadow-spatial-floating border border-hairline hover:border-info/40 cursor-pointer backdrop-blur-xl transition-all group"
+          className="flex items-center space-x-2.5 bg-surface/95 dark:bg-raised/95 hover:bg-raised text-primary px-4 py-2.5 rounded-full shadow-elevated border border-hairline-strong hover:border-info/60 cursor-pointer backdrop-blur-xl transition-all group"
           aria-label="Open LifeLink AI Assistant"
         >
-          <div className="w-6 h-6 rounded-full bg-info/10 text-info flex items-center justify-center border border-info/20">
+          <div className="w-6 h-6 rounded-full bg-info/15 text-info flex items-center justify-center border border-info/30">
             <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
           </div>
           <span className="font-extrabold text-xs sm:text-sm font-heading tracking-tight">Ask LifeLink AI</span>

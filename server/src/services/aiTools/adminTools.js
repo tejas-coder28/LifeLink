@@ -83,7 +83,8 @@ async function getRequestOverview(context) {
  * Privacy guard: Strips all email and phone fields.
  */
 async function getActiveDonors(context, args = {}) {
-  const { DONATION_COOLDOWN_DAYS } = require('../../utils/bloodCompatibility');
+  const { calculateEligibility } = require('../../utils/eligibility');
+  const { formatDate } = require('../../utils/dateFormatter');
   const DonorProfile = require('../../repositories/donorProfile.repository');
 
   const donors = await DonorProfile.find({ isAvailable: true }).populate('user', 'name');
@@ -96,21 +97,9 @@ async function getActiveDonors(context, args = {}) {
   });
 
   const top10 = donors.slice(0, 10).map((d) => {
-    let isEligible = true;
-    let nextEligibleDate = 'Eligible today';
-    let lastDateStr = null;
-
-    if (d.lastDonationDate) {
-      const lastDate = new Date(d.lastDonationDate);
-      lastDateStr = lastDate.toISOString().split('T')[0];
-      const diffMs = Date.now() - lastDate.getTime();
-      const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const daysLeft = Math.max(0, (DONATION_COOLDOWN_DAYS || 90) - daysSince);
-      isEligible = daysLeft === 0;
-      nextEligibleDate = isEligible
-        ? 'Eligible today'
-        : new Date(lastDate.getTime() + (DONATION_COOLDOWN_DAYS || 90) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    }
+    const eligibility = calculateEligibility(d.lastDonationDate);
+    const lastDateStr = eligibility.lastDonationDate ? formatDate(eligibility.lastDonationDate) : null;
+    const nextEligibleDate = eligibility.isEligible ? 'Eligible today' : formatDate(eligibility.nextEligibleDate);
 
     return {
       name: d.user?.name || 'Registered Donor',
@@ -118,7 +107,8 @@ async function getActiveDonors(context, args = {}) {
       city: d.address || 'New Delhi',
       isAvailable: true,
       standbyStatus: 'ACTIVE',
-      isEligible,
+      isEligible: eligibility.isEligible,
+      daysLeft: eligibility.daysLeft,
       lastDonationDate: lastDateStr,
       nextEligibleDate,
       // PRIVACY: email and phone strictly excluded
@@ -216,6 +206,7 @@ async function getRequestList(context, args = {}) {
 async function getRecentActivity(context) {
   const BloodRequest = require('../../repositories/bloodRequest.repository');
   const Donation = require('../../repositories/donation.repository');
+  const { formatDate } = require('../../utils/dateFormatter');
 
   const [recentRequests, recentDonations] = await Promise.all([
     BloodRequest.find().sort({ createdAt: -1 }).limit(5).populate('targetHospital', 'name'),
@@ -228,7 +219,7 @@ async function getRecentActivity(context) {
       id: r._id.toString(),
       title: `${r.bloodGroup} for ${r.patientName}`,
       status: r.status,
-      date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '',
+      date: formatDate(r.createdAt, ''),
     })),
     recentPledges: recentDonations.map((d) => ({
       type: 'pledge',
@@ -236,7 +227,9 @@ async function getRecentActivity(context) {
       patientName: d.request?.patientName || 'Emergency Patient',
       status: d.status,
       units: d.unitsDonated || 1,
-      date: d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '',
+      pledgedAt: formatDate(d.pledgedAt || d.createdAt, ''),
+      donatedAt: d.donatedAt ? formatDate(d.donatedAt, '') : null,
+      date: formatDate(d.donatedAt || d.confirmedAt || d.pledgedAt || d.createdAt, ''),
     })),
   };
 }

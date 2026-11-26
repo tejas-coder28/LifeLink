@@ -35,6 +35,18 @@ const donationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    pledgedAt: {
+      type: Date,
+      default: null,
+    },
+    donatedAt: {
+      type: Date,
+      default: null,
+    },
+    confirmedAt: {
+      type: Date,
+      default: null,
+    },
     completedAt: {
       type: Date,
       default: null,
@@ -102,5 +114,11 @@ donationSchema.index(
     name: 'unique_active_pledge_per_donor',
   }
 );
+
+donationSchema.pre('save', function syncDefaultPledgedAt() {
+  if (this.isNew && !this.pledgedAt) {
+    this.pledgedAt = this.createdAt || new Date();
+  }
+});
 
 module.exports = mongoose.models.Donation || mongoose.model('Donation', donationSchema);

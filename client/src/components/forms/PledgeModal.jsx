@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GlassModal from '../common/GlassModal';
 import Badge from '../common/Badge';
 import { MAX_UNITS_PER_DONOR_PER_PLEDGE, formatUnits } from '../../constants/bloodUnits';
-import { DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
+import { calculateEligibility } from '../../utils/eligibility';
 import { formatDate } from '../../utils/dateFormatter';
 import {
   Heart,
@@ -60,22 +60,16 @@ const PledgeModal = ({
 
   const maxUnits = Math.max(1, Math.min(MAX_UNITS_PER_DONOR_PER_PLEDGE, stillNeeded));
 
-  // Determine donor eligibility based on 90-day cooldown and standby availability
-  let isEligible = true;
+  // Determine donor eligibility based on 90-day cooldown (shared helper) and standby availability
+  const eligibility = calculateEligibility(donorProfile?.lastDonationDate);
+  let isEligible = eligibility.isEligible;
   let eligibilityMessage = 'You are eligible to donate today.';
   let nextEligibleDate = null;
-  let daysLeft = 0;
+  let daysLeft = eligibility.daysLeft;
 
-  if (donorProfile?.lastDonationDate) {
-    const lastDate = new Date(donorProfile.lastDonationDate);
-    const diffMs = Date.now() - lastDate.getTime();
-    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (daysSince < DONATION_COOLDOWN_DAYS) {
-      isEligible = false;
-      daysLeft = DONATION_COOLDOWN_DAYS - daysSince;
-      nextEligibleDate = formatDate(new Date(lastDate.getTime() + DONATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000));
-      eligibilityMessage = `In 90-day cooldown: ${daysLeft} day(s) remaining. Next eligible date: ${nextEligibleDate}.`;
-    }
+  if (!isEligible && eligibility.nextEligibleDate) {
+    nextEligibleDate = formatDate(eligibility.nextEligibleDate);
+    eligibilityMessage = `In 90-day cooldown: ${daysLeft} day(s) remaining. Next eligible date: ${nextEligibleDate}.`;
   }
 
   if (donorProfile && donorProfile.isAvailable === false) {

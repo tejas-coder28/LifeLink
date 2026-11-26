@@ -69,7 +69,7 @@ const ForgotPassword = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="primary" className="w-full py-3 rounded-xl text-xs font-bold shadow-glow-danger">
+            <Button type="submit" variant="action" className="w-full py-3 rounded-xl text-xs font-bold">
               Send Reset Link
             </Button>
           </form>

@@ -15,16 +15,16 @@ import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import StatCard from '../../components/cards/StatCard';
 import RequestCard from '../../components/cards/RequestCard';
+import DonationHistoryCard from '../../components/cards/DonationHistoryCard';
 import DonorProfileForm from '../../components/forms/DonorProfileForm';
 import PledgeModal from '../../components/forms/PledgeModal';
 import PageTransition from '../../components/common/PageTransition';
 import SlidingTabs from '../../components/common/SlidingTabs';
 import Skeleton from '../../components/common/Skeleton';
-import { canDonate, DONATION_COOLDOWN_DAYS } from '../../utils/bloodCompatibility';
+import { calculateEligibility } from '../../utils/eligibility';
 import { canSeekDonors } from '../../utils/requestRules';
 import { formatUnits, formatUnitsParts } from '../../constants/bloodUnits';
 import { formatDate, formatTime, formatDateTime } from '../../utils/dateFormatter';
-import { getDonationStatusExplanatory } from '../../utils/statusHelper';
 
 import {
   Heart,
@@ -416,8 +416,8 @@ const DonorDashboard = () => {
     <PageTransition className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
       {/* Banner Header */}
-      <div className="glass-card hero-donor p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-glass shadow-card">
-        <div className="space-y-2">
+      <div className="hero-glass-card hero-donor relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-2 relative z-10">
           <div className="flex items-center flex-wrap gap-3">
             <h1 className="text-2xl sm:text-3xl font-black text-primary font-heading flex items-center gap-2">
               <span>Donor Portal</span>
@@ -432,24 +432,26 @@ const DonorDashboard = () => {
         </div>
 
         {/* Availability Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 relative z-10 shrink-0">
           {profile && (
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-2xl bg-surface border border-hairline">
-              <div>
-                <span className="text-[10px] font-bold block text-muted">Standby Status</span>
-                <span className={`text-xs font-black ${profile.isAvailable ? 'text-success' : 'text-muted'}`}>
-                  {profile.isAvailable ? '● ONLINE (ACTIVE)' : '○ OFFLINE'}
+            <div className="flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-raised/75 border border-hairline">
+              <div className="whitespace-nowrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider block text-muted">Standby Status</span>
+                <span className={`text-xs font-black flex items-center gap-1.5 mt-0.5 ${profile.isAvailable ? 'text-success' : 'text-muted'}`}>
+                  <span className={`w-2 h-2 rounded-full inline-block ${profile.isAvailable ? 'bg-success animate-pulse' : 'bg-muted/50'}`} />
+                  {profile.isAvailable ? 'ONLINE (ACTIVE)' : 'OFFLINE'}
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleToggleAvailability}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   profile.isAvailable
-                    ? 'bg-success text-white dark:text-on-primary shadow-glow-success'
-                    : 'bg-surface text-secondary border border-hairline hover:bg-surface/80'
+                    ? 'btn-success'
+                    : 'btn-action'
                 }`}
               >
-                Toggle Status
+                {profile.isAvailable ? 'Switch Offline' : 'Go Online'}
               </button>
             </div>
           )}
@@ -562,14 +564,35 @@ const DonorDashboard = () => {
               onClick={handleNavigateToStandbySetting}
               ariaLabel={`Open Standby Status settings in Profile & Health (${profile?.isAvailable ? 'ONLINE' : 'OFFLINE'})`}
             />
-            <StatCard
-              title="Last Donation"
-              value={formatDate(profile?.lastDonationDate)}
-              icon={Calendar}
-              color="sky"
-              onClick={() => setTab('history')}
-              ariaLabel={`Open Donation History (Last donation: ${formatDate(profile?.lastDonationDate)})`}
-            />
+            {(() => {
+              const latestCompleted = donationHistory.find((d) =>
+                ['completed', 'fulfilled'].includes(d.status)
+              );
+              const lastDonatedAt =
+                profile?.lastDonationDate ||
+                latestCompleted?.donatedAt ||
+                latestCompleted?.confirmedAt ||
+                latestCompleted?.completedAt ||
+                null;
+              const eligibility = calculateEligibility(lastDonatedAt);
+              const eligibilitySubline = lastDonatedAt
+                ? eligibility.isEligible
+                  ? 'Eligible to donate now'
+                  : `Eligible again on ${formatDate(eligibility.nextEligibleDate)} (${eligibility.daysLeft} days left)`
+                : 'Eligible to donate now';
+
+              return (
+                <StatCard
+                  title="Last Donation"
+                  value={formatDate(lastDonatedAt)}
+                  description={eligibilitySubline}
+                  icon={Calendar}
+                  color="sky"
+                  onClick={() => setTab('history')}
+                  ariaLabel={`Open Donation History (Last donation: ${formatDate(lastDonatedAt)})`}
+                />
+              );
+            })()}
             <StatCard
               title="Completed donations"
               value={donationHistory.filter((d) => d.status === 'completed').length}
@@ -590,7 +613,7 @@ const DonorDashboard = () => {
               <button
                 type="button"
                 onClick={() => setTab('requests')}
-                className="text-xs font-bold text-info hover:underline transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                className="btn-secondary text-xs px-3.5 py-1.5 rounded-xl"
                 aria-label="View all open emergency blood requests"
               >
                 View All →
@@ -719,64 +742,12 @@ const DonorDashboard = () => {
           ) : (
             <div className="space-y-4">
               {donationHistory.map((item) => (
-                <div
+                <DonationHistoryCard
                   key={item._id}
-                  className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-theme hover:border-brand-500/40 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <div className="space-y-3 flex-1 min-w-0">
-                    <div className="flex items-center flex-wrap gap-2.5">
-                      <Badge bloodGroup={item.request?.bloodGroup || 'O+'} />
-                      <h4 className="text-base font-bold text-primary font-heading truncate">
-                        {item.request?.patientName ? `Donation for ${item.request.patientName}` : 'Emergency Blood Request'}
-                      </h4>
-                      <Badge status={item.status} />
-                    </div>
-                    <div className="text-xs space-y-1.5 text-secondary">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="truncate font-semibold text-primary">
-                          {item.hospitalName || item.request?.targetHospital?.name || item.hospital?.name || item.request?.hospitalName || (() => {
-                            console.error('[DonorDashboard Error] Hospital unavailable for donation record', item._id);
-                            return 'Hospital unavailable';
-                          })()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="truncate">{item.request?.address || 'Medical Facility'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 shrink-0 text-muted" />
-                        <span className="font-mono text-[11px]">Pledged on: {formatDate(item.createdAt)}</span>
-                      </div>
-                      <div className="text-[11px] font-semibold text-info pt-0.5">
-                        {getDonationStatusExplanatory(item.status)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-hairline w-full sm:w-auto flex flex-col items-end gap-2">
-                    <div className="w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end bg-success/10 px-4 py-2.5 rounded-xl border border-success/20">
-                      <span className="text-sm font-black text-success block tracking-tight">
-                        {formatUnits(item.unitsDonated || 1)}
-                      </span>
-                      <span className="text-[11px] text-secondary font-medium block mt-0.5">
-                        {formatDate(item.createdAt)}
-                      </span>
-                    </div>
-
-                    {item.status === 'pledged' && (
-                      <button
-                        type="button"
-                        disabled={cancellingPledgeId === item._id}
-                        onClick={() => handleCancelPledge(item._id)}
-                        className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer text-center"
-                      >
-                        {cancellingPledgeId === item._id ? 'Cancelling...' : 'Cancel Pledge'}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  item={item}
+                  cancellingPledgeId={cancellingPledgeId}
+                  onCancelPledge={handleCancelPledge}
+                />
               ))}
             </div>
           )}

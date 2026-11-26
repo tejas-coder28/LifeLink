@@ -63,8 +63,8 @@ const RequestCard = ({
   const neededFromDonors = request.unitsFromDonors !== undefined && request.unitsFromDonors !== null && request.unitsFromDonors > 0
     ? request.unitsFromDonors
     : request.status === 'pending_hospital_review'
-    ? 0
-    : Math.max(0, totalNeeded - fromStock);
+      ? 0
+      : Math.max(0, totalNeeded - fromStock);
 
   // If this is a donor card and needed from donors is 0, hide the card
   if (isDonorCard && neededFromDonors <= 0) {
@@ -84,8 +84,8 @@ const RequestCard = ({
   const receivedUnits = request.unitsFulfilled !== undefined
     ? request.unitsFulfilled
     : pledges && pledges.length > 0
-    ? pledges.filter((p) => p.status === 'completed').reduce((sum, p) => sum + (p.unitsDonated || 1), 0)
-    : 0;
+      ? pledges.filter((p) => p.status === 'completed').reduce((sum, p) => sum + (p.unitsDonated || 1), 0)
+      : 0;
 
   const pctReceived = Math.min(100, Math.round((receivedUnits / (totalNeeded || 1)) * 100));
   const pctPledged = Math.min(100 - pctReceived, Math.round((pledgedUnits / (totalNeeded || 1)) * 100));
@@ -122,8 +122,8 @@ const RequestCard = ({
   const dateStr = request.createdAt
     ? formatDate(request.createdAt)
     : request.requiredByDate
-    ? `Needed: ${formatDate(request.requiredByDate)}`
-    : 'Active Broadcast';
+      ? `Needed: ${formatDate(request.requiredByDate)}`
+      : 'Active Broadcast';
 
   const isCritical = urgency === 'critical';
   const isCompatible = donorBloodGroup && request.bloodGroup
@@ -132,11 +132,10 @@ const RequestCard = ({
 
   return (
     <div
-      className={`glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border transition-all duration-200 ${
-        isCritical
-          ? 'border-danger/40 shadow-glow-danger/30'
-          : 'border-hairline'
-      } ${className}`}
+      className={`glass-card glass-card-hover flex flex-col justify-between h-full rounded-2xl overflow-hidden border transition-all duration-200 ${isCritical
+        ? 'border-danger/40 shadow-glow-danger/30'
+        : 'border-hairline'
+        } ${className}`}
     >
       {/* ── 1. HEADER SECTION ──────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 pb-4 sm:pb-5">
@@ -199,38 +198,38 @@ const RequestCard = ({
 
       {/* ── 2. DETAILS SECTION ────────────────────────────────────────────── */}
       <div className="p-5 sm:p-6 py-4 sm:py-5 flex-1 space-y-3.5 text-xs text-secondary">
-        {/* Five Unit Metrics Breakdown Box */}
-        <div className="p-3 rounded-2xl bg-surface/90 border border-hairline space-y-2.5">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-            <div className="p-1.5 rounded-xl bg-surface border border-hairline flex flex-col items-center justify-center">
+        {/* Unified Telemetry Metrics Strip (clean single tray, zero nested border clutter) */}
+        <div className="p-3.5 rounded-2xl bg-raised/65 border border-hairline space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-y-2.5 sm:gap-y-0 sm:divide-x divide-hairline text-center text-xs">
+            <div className="px-1.5 flex flex-col items-center justify-center">
               <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">Total needed</span>
-              <span className="font-black text-primary text-xs sm:text-sm block whitespace-nowrap">{formatUnitsParts(totalNeeded).unitsText}</span>
-              <span className="text-[10px] text-muted block whitespace-nowrap">{formatUnitsParts(totalNeeded).volumeText}</span>
+              <span className="font-black text-primary text-xs sm:text-sm block whitespace-nowrap tabular-nums">{formatUnitsParts(totalNeeded).unitsText}</span>
+              <span className="text-[10px] text-muted block whitespace-nowrap tabular-nums">{formatUnitsParts(totalNeeded).volumeText}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-hairline flex flex-col items-center justify-center">
-              <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">From hospital stock</span>
-              <span className="font-black text-primary text-xs sm:text-sm block whitespace-nowrap">{formatUnitsParts(fromStock).unitsText}</span>
-              <span className="text-[10px] text-muted block whitespace-nowrap">{formatUnitsParts(fromStock).volumeText}</span>
+            <div className="px-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">From stock</span>
+              <span className="font-black text-primary text-xs sm:text-sm block whitespace-nowrap tabular-nums">{formatUnitsParts(fromStock).unitsText}</span>
+              <span className="text-[10px] text-muted block whitespace-nowrap tabular-nums">{formatUnitsParts(fromStock).volumeText}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-hairline flex flex-col items-center justify-center">
-              <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">Needed from donors</span>
-              <span className={`font-black text-xs sm:text-sm block whitespace-nowrap ${isCritical ? 'text-danger' : 'text-primary'}`}>{formatUnitsParts(neededFromDonors).unitsText}</span>
-              <span className="text-[10px] text-muted block whitespace-nowrap">{formatUnitsParts(neededFromDonors).volumeText}</span>
+            <div className="px-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">From donors</span>
+              <span className={`font-black text-xs sm:text-sm block whitespace-nowrap tabular-nums ${isCritical ? 'text-danger' : 'text-primary'}`}>{formatUnitsParts(neededFromDonors).unitsText}</span>
+              <span className="text-[10px] text-muted block whitespace-nowrap tabular-nums">{formatUnitsParts(neededFromDonors).volumeText}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-hairline flex flex-col items-center justify-center">
+            <div className="px-1.5 flex flex-col items-center justify-center">
               <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">Pledged</span>
-              <span className="font-black text-info text-xs sm:text-sm block whitespace-nowrap">{formatUnitsParts(pledgedUnits).unitsText}</span>
-              <span className="text-[10px] text-muted block whitespace-nowrap">{formatUnitsParts(pledgedUnits).volumeText}</span>
+              <span className="font-black text-info text-xs sm:text-sm block whitespace-nowrap tabular-nums">{formatUnitsParts(pledgedUnits).unitsText}</span>
+              <span className="text-[10px] text-muted block whitespace-nowrap tabular-nums">{formatUnitsParts(pledgedUnits).volumeText}</span>
             </div>
-            <div className="p-1.5 rounded-xl bg-surface border border-hairline flex flex-col items-center justify-center">
+            <div className="col-span-2 sm:col-span-1 px-1.5 flex flex-col items-center justify-center pt-2 sm:pt-0 border-t sm:border-t-0 border-hairline">
               <span className="text-[10px] text-muted uppercase font-bold block mb-0.5">Received</span>
-              <span className="font-black text-success text-xs sm:text-sm block whitespace-nowrap">{formatUnitsParts(receivedUnits).unitsText}</span>
-              <span className="text-[10px] text-muted block whitespace-nowrap">{formatUnitsParts(receivedUnits).volumeText}</span>
+              <span className="font-black text-success text-xs sm:text-sm block whitespace-nowrap tabular-nums">{formatUnitsParts(receivedUnits).unitsText}</span>
+              <span className="text-[10px] text-muted block whitespace-nowrap tabular-nums">{formatUnitsParts(receivedUnits).volumeText}</span>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="w-full bg-surface border border-hairline h-2 rounded-full overflow-hidden flex">
               <div
                 style={{ width: `${pctReceived}%` }}
@@ -257,7 +256,7 @@ const RequestCard = ({
                 <Building2 className="w-3.5 h-3.5 text-info" />
                 Current stock ({request.bloodGroup}):
               </span>
-              <span className="font-black text-primary px-2 py-0.5 rounded-lg bg-surface border border-hairline">
+              <span className="font-black text-primary px-2.5 py-0.5 rounded-lg bg-surface border border-hairline">
                 {formatUnits(currentStock)} available in inventory
               </span>
             </div>
@@ -361,9 +360,15 @@ const RequestCard = ({
               {pledges.map((p) => {
                 const donorName = p.donor?.name || 'Anonymous Donor';
                 const donorBlood = p.donorProfile?.bloodGroup || p.donor?.bloodGroup || request.bloodGroup;
-                const pledgedTime = p.createdAt
-                  ? formatDateTime(p.createdAt)
-                  : '';
+                const pledgedAt = p.pledgedAt || p.createdAt;
+                const isFulfilled = p.status === 'completed' || p.status === 'fulfilled';
+                const donatedAt = p.donatedAt || p.confirmedAt || p.completedAt || p.fulfilledAt;
+                const releasedAt = p.releasedAt || p.cancelledAt || p.updatedAt;
+                const dateText = isFulfilled
+                  ? `Pledged on ${formatDate(pledgedAt)} • Donated on ${formatDate(donatedAt)}`
+                  : ['released', 'cancelled', 'rejected'].includes(p.status)
+                  ? `Pledged on ${formatDate(pledgedAt)} • Released on ${formatDate(releasedAt)}`
+                  : `Pledged on ${formatDate(pledgedAt)}`;
                 const isActionLoading = actionInProgressId === p._id;
 
                 return (
@@ -380,7 +385,7 @@ const RequestCard = ({
                       <div className="flex items-center gap-2 mt-1 text-[11px] text-muted flex-wrap">
                         <span>{formatUnits(p.unitsDonated || 1)}</span>
                         <span>•</span>
-                        <span>{pledgedTime}</span>
+                        <span>{dateText}</span>
                         {!isDonorCard && Boolean(onConfirmDonation) && p.donor?.phone && (
                           <>
                             <span>•</span>
@@ -395,8 +400,8 @@ const RequestCard = ({
                         <button
                           type="button"
                           disabled={Boolean(actionInProgressId)}
-                          onClick={() => onConfirmDonation && onConfirmDonation(p._id, request._id)}
-                          className="px-3 py-1.5 rounded-lg bg-success hover:opacity-90 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => onConfirmDonation && onConfirmDonation(p._id, request._id, p, request)}
+                          className="btn-success px-3 py-1.5 rounded-lg font-extrabold text-xs flex items-center gap-1"
                           aria-label={`Confirm donation of ${formatUnits(p.unitsDonated || 1)} from ${donorName}`}
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -406,7 +411,7 @@ const RequestCard = ({
                           type="button"
                           disabled={Boolean(actionInProgressId)}
                           onClick={() => onDeclineDonation && onDeclineDonation(p._id, request._id)}
-                          className="px-2.5 py-1.5 rounded-lg bg-surface text-secondary hover:text-primary border border-hairline font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="btn-secondary px-2.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1"
                           aria-label={`Decline or report no-show for ${donorName}`}
                         >
                           <XCircle className="w-3.5 h-3.5" />
@@ -435,7 +440,7 @@ const RequestCard = ({
               <button
                 type="button"
                 onClick={() => onSelect(request)}
-                className="text-xs font-bold text-secondary hover:text-primary transition-colors cursor-pointer flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                className="btn-secondary text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
                 aria-label={`View details for ${request.patientName || 'blood request'}`}
               >
                 <span>View Details</span>
@@ -444,7 +449,7 @@ const RequestCard = ({
             ) : trackLink ? (
               <Link
                 to={trackLink}
-                className="text-xs font-bold text-info hover:underline flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                className="btn-secondary text-xs font-bold px-3 py-1.5 rounded-xl text-info flex items-center gap-1"
                 aria-label={`Track status for ${request.patientName || 'blood request'}`}
               >
                 <span>Track Status</span>
@@ -453,7 +458,7 @@ const RequestCard = ({
             ) : (
               <Link
                 to={`/individual/track/${request._id || request.id}`}
-                className="text-xs font-bold text-secondary hover:text-primary transition-colors flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info rounded px-1"
+                className="btn-secondary text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
                 aria-label={`View details for ${request.patientName || 'blood request'}`}
               >
                 <span>View Details</span>
@@ -468,7 +473,7 @@ const RequestCard = ({
                     type="button"
                     disabled={Boolean(actionInProgressId)}
                     onClick={() => onEdit(request)}
-                    className="px-2.5 py-1.5 rounded-xl border border-hairline bg-surface hover:text-primary text-secondary text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                    className="btn-secondary px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1"
                     aria-label={`Edit ${patientName}`}
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -481,7 +486,7 @@ const RequestCard = ({
                     type="button"
                     disabled={Boolean(actionInProgressId)}
                     onClick={() => onDelete(request)}
-                    className="px-2.5 py-1.5 rounded-xl border border-danger/30 bg-danger/10 text-danger hover:bg-danger/20 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                    className="btn-danger px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1"
                     aria-label={`Delete ${patientName}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -492,7 +497,7 @@ const RequestCard = ({
                     type="button"
                     disabled={Boolean(actionInProgressId)}
                     onClick={() => onClose(request)}
-                    className="px-2.5 py-1.5 rounded-xl border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                    className="px-2.5 py-1.5 rounded-xl border border-warning/40 bg-warning/15 text-warning hover:bg-warning/25 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
                     aria-label={`Close ${patientName}`}
                   >
                     <Ban className="w-3.5 h-3.5" />
@@ -503,7 +508,7 @@ const RequestCard = ({
                     type="button"
                     disabled={Boolean(actionInProgressId)}
                     onClick={() => onCancel(request)}
-                    className="px-2.5 py-1.5 rounded-xl border border-danger/30 bg-danger/10 text-danger hover:bg-danger/20 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                    className="btn-danger px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1"
                     aria-label={`Cancel ${patientName}`}
                   >
                     <Ban className="w-3.5 h-3.5" />
@@ -546,24 +551,23 @@ const RequestCard = ({
                   isProfileIncomplete
                     ? (disabledReason || 'Please complete your donor profile to pledge blood.')
                     : !isCompatible
-                    ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}`
-                    : ''
+                      ? `Your blood group (${donorBloodGroup}) is not compatible with ${request.bloodGroup}`
+                      : ''
                 }
-                className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all ${
-                  !isCompatible || isProfileIncomplete
-                    ? 'bg-surface text-muted cursor-not-allowed border border-hairline shadow-none'
-                    : 'btn-primary'
-                }`}
+                className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all ${!isCompatible || isProfileIncomplete
+                  ? 'bg-surface text-muted cursor-not-allowed border border-hairline shadow-none'
+                  : 'btn-primary'
+                  }`}
               >
                 <Heart className={`w-3.5 h-3.5 ${!isCompatible || isProfileIncomplete ? 'text-muted' : 'fill-white'}`} />
                 <span>
                   {isPledging
                     ? 'Pledging...'
                     : isProfileIncomplete
-                    ? 'Complete profile to pledge'
-                    : !isCompatible
-                    ? 'Not compatible with your blood group'
-                    : pledgeText}
+                      ? 'Complete profile to pledge'
+                      : !isCompatible
+                        ? 'Not compatible with your blood group'
+                        : pledgeText}
                 </span>
               </button>
             ) : null}

@@ -1,4 +1,5 @@
 const { canDonate, DONATION_COOLDOWN_DAYS } = require('../utils/bloodCompatibility');
+const { calculateEligibility, validateDonatedAt } = require('../utils/eligibility');
 const { MAX_UNITS_PER_DONOR_PER_PLEDGE, formatUnits } = require('../config/bloodUnits');
 const Donation = require('../repositories/donation.repository');
 const DonorProfile = require('../repositories/donorProfile.repository');
@@ -35,19 +36,14 @@ function assertDonorEligible(currentProfile, requestBloodGroup) {
     throw err;
   }
 
-  // 2. Cooldown check: reject with 403 if inside the 90-day window
-  if (currentProfile.lastDonationDate) {
-    const lastDate = new Date(currentProfile.lastDonationDate);
-    const diffMs = Date.now() - lastDate.getTime();
-    const daysSince = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (daysSince < COOLDOWN_DAYS) {
-      const daysRemaining = COOLDOWN_DAYS - daysSince;
-      const err = new Error(
-        `Donation cooldown active: You must wait 90 days between donations (${daysRemaining} day(s) remaining).`
-      );
-      err.statusCode = 403;
-      throw err;
-    }
+  // 2. Cooldown check: reject with 403 if inside the 90-day window (uses shared eligibility helper)
+  const eligibility = calculateEligibility(currentProfile.lastDonationDate);
+  if (!eligibility.isEligible) {
+    const err = new Error(
+      `Donation cooldown active: You must wait 90 days between donations (${eligibility.daysLeft} day(s) remaining).`
+    );
+    err.statusCode = 403;
+    throw err;
   }
 
   // 3. Standby / availability check
@@ -111,7 +107,7 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
       try {
         const existingReq = await BloodRequest.findById(otherActivePledge.request, session);
         reqLabel = existingReq?.patientName || existingReq?._id?.toString()?.slice(-6) || reqLabel;
-      } catch (_) {}
+      } catch (_) { }
       const err = new Error(`You already have a pending pledge for "${reqLabel}". Cancel it before pledging to a new request.`);
       err.statusCode = 409;
       throw err;
@@ -166,6 +162,10 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
           unitsDonated: pledgeUnits,
           status: 'pledged',
           hospitalName: resolvedHospitalName || null,
+          pledgedAt: now,
+          donatedAt: null,
+          confirmedAt: null,
+          donationDate: now,
           createdAt: now,
           updatedAt: now,
         },
@@ -212,16 +212,25 @@ const pledgeDonation = async (donorUserId, requestId, unitsDonated) => {
 
 /**
  * Confirm / fulfill a donation atomically with Mongo session.
+ * Reads all documents before performing any writes.
+ * Validates donatedAt against pledgedAt, confirmation time, and role-based backdate limits.
+ * Updates donor.lastDonationDate to the latest donatedAt across fulfilled donations.
  * Idempotent: confirming an already-fulfilled pledge returns 409.
  */
-const completeDonation = async (donationId, callerUser = null) => {
+const completeDonation = async (donationId, callerUser = null, options = {}) => {
   let callerHospitalId = null;
   if (callerUser && callerUser.accountType === 'hospital') {
     const hosp = await Hospital.findByUserId(callerUser._id);
     if (hosp) callerHospitalId = hosp._id.toString();
   }
 
+  const donatedAtInput =
+    options && typeof options === 'object' && options.donatedAt !== undefined
+      ? options.donatedAt
+      : undefined;
+
   const txResult = await withTransaction(async (session) => {
+    // ── READ PHASE (all reads strictly precede all writes) ─────────────────
     const donation = await Donation.findById(donationId, session);
     if (!donation) {
       const err = new Error('Donation record not found');
@@ -259,7 +268,8 @@ const completeDonation = async (donationId, callerUser = null) => {
     }
 
     // Authorization check
-    if (callerUser && callerUser.accountType !== 'admin') {
+    const isAdmin = Boolean(callerUser && callerUser.accountType === 'admin');
+    if (callerUser && !isAdmin) {
       let isAuthorized = false;
       if (callerUser.accountType === 'hospital') {
         const curTargetHospId = (requestData.targetHospital || requestData.hospital)?.toString();
@@ -284,22 +294,67 @@ const completeDonation = async (donationId, callerUser = null) => {
       donorProfile = await DonorProfile.findByUserId(donation.donor, session);
     }
 
+    const donorUserId = (donation.donor?._id || donation.donor)?.toString();
+    const existingFulfilledDonations = donorUserId
+      ? await Donation.find(
+          { donor: donorUserId, status: { $in: ['completed', 'fulfilled'] } },
+          session
+        )
+      : [];
+
     const targetHospId = (requestData.targetHospital || requestData.hospital)?.toString();
     const hospitalData = targetHospId ? await Hospital.findById(targetHospId, session) : null;
 
+    // ── DATE VALIDATION (zero writes before validation passes) ─────────────
+    const now = new Date();
+    const pledgedAtDate = donation.pledgedAt
+      ? new Date(donation.pledgedAt)
+      : (donation.createdAt ? new Date(donation.createdAt) : now);
+
+    const dateCheck = validateDonatedAt({
+      donatedAt: donatedAtInput,
+      pledgedAt: pledgedAtDate,
+      confirmationDate: now,
+      isAdmin,
+    });
+    if (!dateCheck.valid) {
+      const err = new Error(dateCheck.error);
+      err.statusCode = dateCheck.statusCode || 400;
+      throw err;
+    }
+
+    const finalDonatedAt = dateCheck.donatedAtDate;
+    const confirmedAt = dateCheck.confirmationDate;
+
+    // Determine donor.lastDonationDate = donatedAt of the latest fulfilled donation
+    let latestDonatedAt = finalDonatedAt;
+    for (const prev of existingFulfilledDonations) {
+      if (prev._id && prev._id.toString() === donationId.toString()) continue;
+      const prevDateRaw = prev.donatedAt || prev.confirmedAt || prev.completedAt || prev.fulfilledAt || prev.donationDate;
+      if (prevDateRaw) {
+        const prevDate = new Date(prevDateRaw);
+        if (!isNaN(prevDate.getTime()) && prevDate.getTime() > latestDonatedAt.getTime()) {
+          latestDonatedAt = prevDate;
+        }
+      }
+    }
+
     const donorGroup = donorProfile?.bloodGroup || requestData.bloodGroup || 'O+';
     const unitsDonated = Number(donation.unitsDonated) || 1;
-    const now = new Date();
 
+    // ── WRITE PHASE ─────────────────────────────────────────────────────────
     // 1. Update donation (pledged -> completed)
     await Donation.findByIdAndUpdate(
       donationId,
       {
         status: 'completed',
-        completedAt: now,
-        fulfilledAt: now,
+        pledgedAt: pledgedAtDate,
+        donatedAt: finalDonatedAt,
+        confirmedAt,
+        completedAt: confirmedAt,
+        fulfilledAt: confirmedAt,
         fulfilledBy: callerHospitalId || (callerUser ? callerUser._id.toString() : null),
-        donationDate: now,
+        donationDate: finalDonatedAt,
         updatedAt: now,
       },
       {},
@@ -323,14 +378,14 @@ const completeDonation = async (donationId, callerUser = null) => {
       session
     );
 
-    // 3. Update donor profile cooldown & donation counts
+    // 3. Update donor profile cooldown (= latest donatedAt) & donation counts
     if (donorProfile) {
       const currentCompleted = Number(donorProfile.completedDonations || donorProfile.totalDonations || 0);
       const newCompleted = currentCompleted + unitsDonated;
       await DonorProfile.findByIdAndUpdate(
         donorProfile._id,
         {
-          lastDonationDate: now,
+          lastDonationDate: latestDonatedAt,
           completedDonations: newCompleted,
           totalDonations: newCompleted,
           updatedAt: now,
@@ -480,11 +535,12 @@ const declineDonation = async (donationId, callerUser = null) => {
 
 const getHospitalPledges = async (callerUser) => {
   if (callerUser.accountType === 'admin') {
-    return await Donation.find()
+    const all = await Donation.find()
       .populate('donor', 'name email phone')
       .populate('donorProfile', 'bloodGroup phone location')
       .populate('request', 'patientName bloodGroup unitsNeeded unitsFulfilled status address urgency hospital requiredByDate')
       .sort({ createdAt: -1 });
+    return all.map(normalizeDonationDates);
   }
 
   const hospital = await Hospital.findByUserId(callerUser._id);
@@ -501,11 +557,12 @@ const getHospitalPledges = async (callerUser) => {
 
   if (requestIds.length === 0) return [];
 
-  return await Donation.find({ request: { $in: requestIds } })
+  const list = await Donation.find({ request: { $in: requestIds } })
     .populate('donor', 'name email phone')
     .populate('donorProfile', 'bloodGroup phone location')
     .populate('request', 'patientName bloodGroup unitsNeeded unitsFulfilled status address urgency hospital targetHospital requiredByDate')
     .sort({ createdAt: -1 });
+  return list.map(normalizeDonationDates);
 };
 
 const getDonationsByRequest = async (requestId, callerUser = null) => {
@@ -533,7 +590,7 @@ const getDonationsByRequest = async (requestId, callerUser = null) => {
 
   if (!canViewPhone) {
     return donations.map((d) => {
-      const plain = typeof d.toObject === 'function' ? d.toObject() : { ...d };
+      const plain = normalizeDonationDates(d);
       if (plain.donor && typeof plain.donor === 'object') {
         const { phone, ...safeDonor } = plain.donor;
         plain.donor = safeDonor;
@@ -546,7 +603,25 @@ const getDonationsByRequest = async (requestId, callerUser = null) => {
     });
   }
 
-  return donations;
+  return donations.map(normalizeDonationDates);
+};
+
+const normalizeDonationDates = (doc) => {
+  const plain = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+  const isFulfilled = plain.status === 'completed' || plain.status === 'fulfilled';
+  const isReleased = ['released', 'cancelled', 'rejected'].includes(plain.status);
+  const pledgedAt = plain.pledgedAt || plain.createdAt || null;
+  const confirmedAt = plain.confirmedAt || (isFulfilled ? (plain.fulfilledAt || plain.completedAt || null) : null);
+  const donatedAt = plain.donatedAt || (isFulfilled ? (confirmedAt || plain.donationDate || null) : null);
+  const releasedAt = plain.releasedAt || (isReleased ? (plain.cancelledAt || plain.updatedAt || null) : null);
+
+  return {
+    ...plain,
+    pledgedAt,
+    confirmedAt,
+    donatedAt,
+    releasedAt,
+  };
 };
 
 const getUserDonationHistory = async (userId) => {
@@ -562,7 +637,7 @@ const getUserDonationHistory = async (userId) => {
     .sort({ createdAt: -1 });
 
   return donations.map((d) => {
-    const plain = typeof d.toObject === 'function' ? d.toObject() : { ...d };
+    const plain = normalizeDonationDates(d);
     if (!plain.hospitalName) {
       plain.hospitalName = plain.request?.targetHospital?.name || plain.request?.hospital?.name || plain.hospital?.name || null;
     }
@@ -571,11 +646,12 @@ const getUserDonationHistory = async (userId) => {
 };
 
 const getAllDonations = async () => {
-  return await Donation.find()
+  const all = await Donation.find()
     .populate('donor', 'name email phone')
     .populate('donorProfile', 'bloodGroup phone location')
     .populate('request', 'patientName bloodGroup unitsNeeded unitsFulfilled urgency address status hospital targetHospital')
     .sort({ createdAt: -1 });
+  return all.map(normalizeDonationDates);
 };
 
 const cancelPledge = async (donorUserId, donationId) => {
