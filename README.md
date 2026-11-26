@@ -122,7 +122,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/12-track-request-dark.png" alt="Recipient Emergency Request Tracking and Smart Donor Matching" width="100%" />
       <br />
       <strong>Emergency Request Tracker &amp; Match Engine (<code>/individual/track/:id</code>)</strong><br />
-      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, and ranked matching donors (<code>100%</code>, <code>85%</code>, <code>78%</code>).
+      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, pledged donor ledger, and the Smart Donor Matching Engine panel.
     </td>
   </tr>
 </table>
@@ -135,7 +135,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/13-hospital-overview-dark.png" alt="Hospital Command Center Overview" width="100%" />
       <br />
       <strong>Hospital Command Center (<code>/hospital/dashboard?tab=overview</code>)</strong><br />
-      Facility RBC total (81 Units), urgent emergency broadcasts, recent pledge activity displaying <code>Pledged on &hellip; &bull; Donated on &hellip;</code> and <code>Released on &hellip;</code> states.
+      Facility RBC total (79 Units), urgent emergency broadcasts, recent pledge activity displaying <code>Pledged on &hellip; &bull; Donated on &hellip;</code> and <code>Released on &hellip;</code> states.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/14-hospital-fulfilled-pledges-dark.png" alt="Hospital Fulfilled and Released Pledges History" width="100%" />
@@ -155,7 +155,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/16-hospital-smart-matching-modal.png" alt="Hospital Smart Donor Matching Engine Results Modal" width="100%" />
       <br />
       <strong>Hospital Smart Matching Modal</strong><br />
-      Displays compatible in-house blood bank reserves (<code>B+ 21</code>, <code>B- 5</code>, <code>O+ 22</code>, <code>O- 5</code>) alongside ranked standby donors scored by compatibility, cooldown status, and distance.
+      Displays compatible in-house blood bank reserves (<code>O- 5 unit(s)</code>) alongside ranked standby donors scored by compatibility, cooldown status, and distance.
     </td>
   </tr>
   <tr>
