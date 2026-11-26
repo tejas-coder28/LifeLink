@@ -88,7 +88,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/07-donor-overview-dark.png" alt="Donor Portal Overview — Dark Mode" width="100%" />
       <br />
       <strong>Donor Overview &amp; Cooldown Status (Dark)</strong><br />
-      Displays live <code>ONLINE</code> availability, <code>Last Donation: 15 Nov 2026</code> anchored to actual <code>donatedAt</code>, and computed countdown <code>Eligible again on 13 Feb 2027 (80 days left)</code>.
+      Displays live <code>ONLINE</code> availability, <code>Last Donation: 15 Nov 2026</code> anchored to actual <code>donatedAt</code>, and computed countdown <code>Eligible again on 13 Feb 2027 (79 days left)</code>.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/08-donor-overview-light.png" alt="Donor Portal Overview — Light Mode" width="100%" />
@@ -122,7 +122,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/12-track-request-dark.png" alt="Recipient Emergency Request Tracking and Smart Donor Matching" width="100%" />
       <br />
       <strong>Emergency Request Tracker &amp; Match Engine (<code>/individual/track/:id</code>)</strong><br />
-      Real-time 4-stage lifecycle progress bar (Created &rarr; Searching &rarr; Partially Fulfilled &rarr; Fulfilled), unit breakdown bar, pledged donor ledger, and the Smart Donor Matching Engine panel.
+      Real-time 4-stage lifecycle progress bar (Sent to Hospital &rarr; Under Review &rarr; Stock Check &rarr; Donors / Fulfilled), unit breakdown bar, pledged donor section, and ranked Smart Donor Matching Engine candidates (<code>100%</code>, <code>93%</code>).
     </td>
   </tr>
 </table>
@@ -175,13 +175,13 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/19-admin-overview-dark.png" alt="Admin Control Center Overview" width="100%" />
       <br />
       <strong>Admin Overview &amp; Telemetry (<code>/admin/dashboard</code>)</strong><br />
-      Platform KPI cards (total donors, verified hospitals, active emergencies, total requests) and pinned latest Regional AI Narrative Insight.
+      Platform KPI cards (total donors, total requests, fulfillment rate, completed donations) and pinned latest Regional AI Narrative Insight.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/20-admin-users-hospitals-dark.png" alt="Admin Registered Donors and Hospitals Directory" width="100%" />
       <br />
       <strong>Donors &amp; Hospital Verification Directory (<code>?tab=users</code>)</strong><br />
-      Account governance table tracking donor blood types, last donation records, role badges, and facility approval workflow.
+      Account governance directory listing Registered Donors (10) with blood group pills, contact phone, address, and active standby badges alongside Medical Facilities (2) verification.
     </td>
   </tr>
   <tr>
@@ -189,13 +189,13 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/21-admin-requests-dark.png" alt="Admin Master Blood Requests Directory" width="100%" />
       <br />
       <strong>Master Blood Requests Directory (<code>?tab=requests</code>)</strong><br />
-      Full network audit table of active and fulfilled blood requests with blood group pills, units fulfilled, urgency chips, and hospital locations.
+      Full network audit table displaying patient/facility, blood group pills, units needed, urgency chips, status badges, location, date, and inline status controls.
     </td>
     <td width="50%" valign="top">
       <img src="docs/screenshots/18-admin-ai-insights-dark.png" alt="Admin AI Medical Logistics Insights Tab" width="100%" />
       <br />
       <strong>AI Medical Logistics Insights (<code>?tab=ai-insights</code>)</strong><br />
-      On-demand Gemini synthesis with custom trend prompt input, shortage risk analysis, and historical narrative report cards.
+      On-demand Gemini synthesis with Custom Intelligence Prompt bar, synced KPIs (Hospital Reserve Units, High Risk Blood Groups, Surplus Groups), and strategic recommendations.
     </td>
   </tr>
   <tr>
@@ -228,7 +228,7 @@ Interactive captures taken directly from the live running client (`1440×900` `@
       <img src="docs/screenshots/25-ai-assistant-donor-light.png" alt="Donor AI Assistant Cooldown Response — Light Mode" width="100%" />
       <br />
       <strong>Donor Eligibility AI Assistant (Light)</strong><br />
-      Evaluates 90-day cooldown directly from <code>donatedAt</code> (<code>15 Nov 2026</code> &rarr; next eligible <code>13 Feb 2027</code>, <code>80 days remaining</code>) and links to <code>Profile &amp; Health &rarr;</code>.
+      Evaluates 90-day cooldown directly from <code>donatedAt</code> (<code>15 Nov 2026</code> &rarr; next eligible <code>13 Feb 2027</code>, <code>79 days remaining</code>) and links to <code>Profile &amp; Health &rarr;</code>.
     </td>
   </tr>
 </table>
@@ -316,9 +316,9 @@ LifeLink features a bespoke **"Warm Nocturne + Vital Rose-Crimson + Coral Ember"
 
 ## 🏗️ System Architecture
 
-![LifeLink System Architecture Diagram](docs/figures/light/Fig_3.1_System_Architecture_Diagram.png)
+![LifeLink System Architecture Diagram](docs/architecture/system-architecture-light.png)
 
-> High-resolution diagram exports: [Light (Report Print)](docs/figures/light/Fig_3.1_System_Architecture_Diagram.png) • [Dark (Mono Ink)](docs/figures/Fig_3.1_System_Architecture_Diagram.png)
+> High-resolution diagram exports: [Light (Report Print)](docs/architecture/system-architecture-light.png) • [Dark (Mono Ink)](docs/architecture/system-architecture-dark.png)
 
 ---
 
@@ -700,7 +700,7 @@ LifeLink/
 │   └── .env.example
 ├── docs/                            # Documentation & Visual Assets
 │   ├── screenshots/                 # 25 live captured dark & light portal screenshots embedded in README
-│   ├── figures/                     # System architecture diagrams (dark/light prints)
+│   ├── architecture/                # System architecture diagrams (light & dark PNG exports)
 │   ├── data-model.md                # MongoDB collections, indexes, and domain lifecycles
 │   ├── design-system.md             # Liquid Glass & Spatial UI specification
 │   └── ui-audit.md                  # Comprehensive UI inventory and audit
@@ -733,4 +733,4 @@ LifeLink/
 
 ## 📄 License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source and available under the MIT License.
